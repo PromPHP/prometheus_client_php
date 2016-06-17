@@ -9,6 +9,13 @@ use Prometheus\Client;
 
 class ClientTest extends PHPUnit_Framework_TestCase
 {
+    public function setUp()
+    {
+        $redis = new \Redis();
+        $redis->connect('192.168.59.100');
+        $redis->del(Client::PROMETHEUS_SAMPLE_KEYS);
+    }
+
     /**
      * @test
      */
