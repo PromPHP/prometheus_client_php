@@ -12,6 +12,12 @@ class Client
      * @var Gauge[]
      */
     private $metrics;
+    private $redisAdapter;
+
+    public function __construct(RedisAdapter $redisAdapter)
+    {
+        $this->redisAdapter = $redisAdapter;
+    }
 
     /**
      * @param string $namespace e.g. cms
@@ -43,23 +49,18 @@ class Client
 
     public function flush()
     {
-        $redis = new \Redis();
-        $redis->connect('192.168.59.100');
         foreach ($this->metrics as $m) {
             foreach ($m->getSamples() as $sample) {
-                $this->storeSample($sample, $redis);
+                $this->redisAdapter->storeSample($sample);
             }
         };
     }
 
     public function toText()
     {
-        $redis = new \Redis();
-        $redis->connect('192.168.59.100');
-        $samples = $this->fetchSamples($redis);
         $result = '';
         $metrics = array();
-        foreach ($samples as $sample) {
+        foreach ($this->redisAdapter->fetchSamples() as $sample) {
             $result .= "# HELP " . $sample['name'] . " {$sample['help']}\n";
             $result .= "# TYPE " . $sample['name'] . " gauge\n";
             $escapedLabels = array();
@@ -73,8 +74,6 @@ class Client
             }
         }
         return $result . implode("\n", $metrics) . "\n";
-
-
     }
 
     private function escapeLabelValue($v)
@@ -83,30 +82,5 @@ class Client
         $v = str_replace("\n", "\\n", $v);
         $v = str_replace("\"", "\\\"", $v);
         return $v;
-    }
-
-    private function storeSample(array $sample, \Redis $redis)
-    {
-        $sampleKey = sha1($sample['name'] . '_' . serialize($sample['labels']));
-        $redis->sAdd(self::PROMETHEUS_SAMPLE_KEYS, $sampleKey);
-        $redis->hSet(self::PROMETHEUS_GAUGES . $sampleKey, 'value', $sample['value']);
-        $redis->hSet(self::PROMETHEUS_GAUGES . $sampleKey, 'labels', serialize($sample['labels']));
-        $redis->hSet(self::PROMETHEUS_GAUGES . $sampleKey, 'name', $sample['name']);
-        $redis->hSet(self::PROMETHEUS_GAUGES . $sampleKey, 'help', $sample['help']);
-    }
-
-    private function fetchSamples(\Redis $redis)
-    {
-        $sampleKeys = $redis->sMembers(self::PROMETHEUS_SAMPLE_KEYS);
-        $samples = array();
-        foreach ($sampleKeys as $sampleKey) {
-            $sample = array();
-            $sample['value'] = $redis->hGet(self::PROMETHEUS_GAUGES . $sampleKey, 'value');
-            $sample['labels'] = unserialize($redis->hGet(self::PROMETHEUS_GAUGES . $sampleKey, 'labels'));
-            $sample['name'] = $redis->hGet(self::PROMETHEUS_GAUGES . $sampleKey, 'name');
-            $sample['help'] = $redis->hGet(self::PROMETHEUS_GAUGES . $sampleKey, 'help');
-            $samples[] = $sample;
-        }
-        return $samples;
     }
 }

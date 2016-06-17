@@ -6,14 +6,13 @@ namespace Test\Prometheus;
 
 use PHPUnit_Framework_TestCase;
 use Prometheus\Client;
+use Prometheus\RedisAdapter;
 
 class ClientTest extends PHPUnit_Framework_TestCase
 {
     public function setUp()
     {
-        $redis = new \Redis();
-        $redis->connect('192.168.59.100');
-        $redis->del(Client::PROMETHEUS_SAMPLE_KEYS);
+        $this->newRedisAdapter()->deleteSampleKeys();
     }
 
     /**
@@ -21,13 +20,13 @@ class ClientTest extends PHPUnit_Framework_TestCase
      */
     public function itShouldSaveGaugesInRedis()
     {
-        $client = new Client();
+        $client = new Client($this->newRedisAdapter());
         $metric = $client->registerGauge('test', 'some_metric', 'this is for testing', array('foo', 'bar'));
         $metric->set(14, array('foo' => 'lalal', 'bar' => 'lululu'));
         $client->getGauge('test', 'some_metric')->set(34, array('foo' => 'lalal', 'bar' => 'lululu'));
         $client->flush();
 
-        $client = new Client();
+        $client = new Client($this->newRedisAdapter());
         $this->assertThat(
             $client->toText(),
             $this->equalTo(<<<EOF
@@ -40,4 +39,8 @@ EOF
         );
     }
 
+    private function newRedisAdapter()
+    {
+        return new RedisAdapter('127.0.0.1');
+    }
 }
