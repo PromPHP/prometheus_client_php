@@ -12,5 +12,10 @@
     "require-dev": {
         "phpunit/phpunit": "5.4.6"
     },
+    "autoload": {
+        "psr-0": {
+            "Prometheus\\": "src/"
+        }
+    },
     "license": "Apache-2.0"
 }
