@@ -1,0 +1,9 @@
+client_php:
+  build: .
+  volumes:
+    - .:/prometheus_client_php
+  links:
+    - redis
+
+redis:
+  image: redis
