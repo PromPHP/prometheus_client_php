@@ -1,0 +1,10 @@
+{
+    "name": "jimdo/prometheus_client_php",
+    "authors": [
+        {
+            "name": "Joscha",
+            "email": "joscha@schnipseljagd.org"
+        }
+    ],
+    "require": {}
+}
