@@ -28,7 +28,8 @@ class cc_Status_Prometheus_GaugeTest extends PHPUnit_Framework_TestCase
                             array('name' => 'bar', 'value' => 'lululu')
                         ),
                         'value' => 123,
-                        'help' => 'this is for testing'
+                        'help' => 'this is for testing',
+                        'type' => Gauge::TYPE
                     )
                 )
             )
@@ -38,7 +39,7 @@ class cc_Status_Prometheus_GaugeTest extends PHPUnit_Framework_TestCase
     /**
      * @test
      */
-    public function itShouldAllowSetWithoutLabelWhenNotLabelsAreDefined()
+    public function itShouldAllowSetWithoutLabelWhenNoLabelsAreDefined()
     {
         $gauge = new Gauge('test', 'some_metric', 'this is for testing');
         $gauge->set(123);
@@ -50,7 +51,8 @@ class cc_Status_Prometheus_GaugeTest extends PHPUnit_Framework_TestCase
                         'name' => 'test_some_metric',
                         'labels' => array(),
                         'value' => 123,
-                        'help' => 'this is for testing'
+                        'help' => 'this is for testing',
+                        'type' => Gauge::TYPE
                     )
                 )
             )

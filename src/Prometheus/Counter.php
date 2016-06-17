@@ -1,12 +1,11 @@
 <?php
 
-
 namespace Prometheus;
 
 
-class Gauge
+class Counter
 {
-    const TYPE = 'gauge';
+    const TYPE = 'counter';
 
     private $namespace;
     private $name;
@@ -65,5 +64,28 @@ class Gauge
     private function getType()
     {
         return self::TYPE;
+    }
+
+    /**
+     * @param array $labels e.g. ['controller' => 'status', 'action' => 'opcode']
+     */
+    public function increase(array $labels)
+    {
+        $this->increaseBy(1, $labels);
+    }
+
+    /**
+     * @param int $count e.g. 2
+     * @param array $labels e.g. ['controller' => 'status', 'action' => 'opcode']
+     */
+    public function increaseBy($count, array $labels)
+    {
+        if (array_keys($labels) != $this->labels) {
+            throw new \InvalidArgumentException(sprintf('Label %s is not defined.', $labels));
+        }
+        if (!isset($this->values[serialize($labels)])) {
+            $this->values[serialize($labels)] = 0;
+        }
+        $this->values[serialize($labels)] += $count;
     }
 }

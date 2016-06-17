@@ -12,7 +12,7 @@ class ClientTest extends PHPUnit_Framework_TestCase
 {
     public function setUp()
     {
-        $this->newRedisAdapter()->deleteSampleKeys();
+        $this->newRedisAdapter()->deleteMetrics();
     }
 
     /**
@@ -33,6 +33,30 @@ class ClientTest extends PHPUnit_Framework_TestCase
 # HELP test_some_metric this is for testing
 # TYPE test_some_metric gauge
 test_some_metric{foo="lalal",bar="lululu"} 34
+
+EOF
+            )
+        );
+    }
+
+    /**
+     * @test
+     */
+    public function itShouldSaveCountersInRedis()
+    {
+        $client = new Client($this->newRedisAdapter());
+        $metric = $client->registerCounter('test', 'some_metric', 'this is for testing', array('foo', 'bar'));
+        $metric->increaseBy(2, array('foo' => 'lalal', 'bar' => 'lululu'));
+        $client->getCounter('test', 'some_metric')->increase(array('foo' => 'lalal', 'bar' => 'lululu'));
+        $client->flush();
+
+        $client = new Client($this->newRedisAdapter());
+        $this->assertThat(
+            $client->toText(),
+            $this->equalTo(<<<EOF
+# HELP test_some_metric this is for testing
+# TYPE test_some_metric counter
+test_some_metric{foo="lalal",bar="lululu"} 3
 
 EOF
             )

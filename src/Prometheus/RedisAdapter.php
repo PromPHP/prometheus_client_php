@@ -6,7 +6,9 @@ namespace Prometheus;
 class RedisAdapter
 {
     const PROMETHEUS_GAUGES = 'PROMETHEUS_GAUGES_';
-    const PROMETHEUS_SAMPLE_KEYS = 'PROMETHEUS_METRICS';
+    const PROMETHEUS_GAUGE_KEYS = 'PROMETHEUS_GAUGE_KEYS';
+    const PROMETHEUS_COUNTERS = 'PROMETHEUS_COUNTERS_';
+    const PROMETHEUS_COUNTER_KEYS = 'PROMETHEUS_COUNTER_KEYS';
 
     private $hostname;
     private $redis;
@@ -17,41 +19,83 @@ class RedisAdapter
         $this->redis = new \Redis();
     }
 
-    public function storeSample($sample)
+    public function storeGauge($gauge)
     {
         $this->openConnection();
-        $sampleKey = sha1($sample['name'] . '_' . serialize($sample['labels']));
-        $this->redis->sAdd(self::PROMETHEUS_SAMPLE_KEYS, $sampleKey);
-        $this->redis->hSet(self::PROMETHEUS_GAUGES . $sampleKey, 'value', $sample['value']);
-        $this->redis->hSet(self::PROMETHEUS_GAUGES . $sampleKey, 'labels', serialize($sample['labels']));
-        $this->redis->hSet(self::PROMETHEUS_GAUGES . $sampleKey, 'name', $sample['name']);
-        $this->redis->hSet(self::PROMETHEUS_GAUGES . $sampleKey, 'help', $sample['help']);
+        $key = sha1($gauge['name'] . '_' . serialize($gauge['labels']));
+        $this->redis->sAdd(self::PROMETHEUS_GAUGE_KEYS, $key);
+        $this->redis->hSet(self::PROMETHEUS_GAUGES . $key, 'value', $gauge['value']);
+        $this->redis->hSet(self::PROMETHEUS_GAUGES . $key, 'labels', serialize($gauge['labels']));
+        $this->redis->hSet(self::PROMETHEUS_GAUGES . $key, 'name', $gauge['name']);
+        $this->redis->hSet(self::PROMETHEUS_GAUGES . $key, 'help', $gauge['help']);
+        $this->redis->hSet(self::PROMETHEUS_GAUGES . $key, 'type', $gauge['type']);
     }
 
-    public function fetchSamples()
+    public function fetchGauges()
     {
         $this->openConnection();
-        $sampleKeys = $this->redis->sMembers(self::PROMETHEUS_SAMPLE_KEYS);
-        $samples = array();
-        foreach ($sampleKeys as $sampleKey) {
+        $keys = $this->redis->sMembers(self::PROMETHEUS_GAUGE_KEYS);
+        $gauges = array();
+        foreach ($keys as $key) {
             $sample = array();
-            $sample['value'] = $this->redis->hGet(self::PROMETHEUS_GAUGES . $sampleKey, 'value');
-            $sample['labels'] = unserialize($this->redis->hGet(self::PROMETHEUS_GAUGES . $sampleKey, 'labels'));
-            $sample['name'] = $this->redis->hGet(self::PROMETHEUS_GAUGES . $sampleKey, 'name');
-            $sample['help'] = $this->redis->hGet(self::PROMETHEUS_GAUGES . $sampleKey, 'help');
-            $samples[] = $sample;
+            $sample['value'] = $this->redis->hGet(self::PROMETHEUS_GAUGES . $key, 'value');
+            $sample['labels'] = unserialize($this->redis->hGet(self::PROMETHEUS_GAUGES . $key, 'labels'));
+            $sample['name'] = $this->redis->hGet(self::PROMETHEUS_GAUGES . $key, 'name');
+            $sample['help'] = $this->redis->hGet(self::PROMETHEUS_GAUGES . $key, 'help');
+            $sample['type'] = $this->redis->hGet(self::PROMETHEUS_GAUGES . $key, 'type');
+            $gauges[] = $sample;
         }
-        return $samples;
+        return $gauges;
     }
-    
-    public function deleteSampleKeys()
+
+    public function deleteMetrics()
     {
         $this->openConnection();
-        $this->redis->del(Client::PROMETHEUS_SAMPLE_KEYS);
+
+        $keys = $this->redis->sMembers(self::PROMETHEUS_GAUGE_KEYS);
+        foreach($keys as $key) {
+            $this->redis->delete(self::PROMETHEUS_GAUGES . $key);
+        }
+        $this->redis->del(self::PROMETHEUS_GAUGE_KEYS);
+
+        $keys = $this->redis->sMembers(self::PROMETHEUS_COUNTER_KEYS);
+        foreach($keys as $key) {
+            $this->redis->delete(self::PROMETHEUS_COUNTERS . $key);
+        }
+        $this->redis->del(self::PROMETHEUS_COUNTER_KEYS);
     }
 
     private function openConnection()
     {
         $this->redis->connect('127.0.0.1');
+    }
+
+    public function storeCounter($counter)
+    {
+        $this->openConnection();
+        $key = sha1($counter['name'] . '_' . serialize($counter['labels']));
+        $this->redis->sAdd(self::PROMETHEUS_COUNTER_KEYS, $key);
+        $this->redis->hIncrBy(self::PROMETHEUS_COUNTERS . $key, 'value', $counter['value']);
+        $this->redis->hSet(self::PROMETHEUS_COUNTERS . $key, 'labels', serialize($counter['labels']));
+        $this->redis->hSet(self::PROMETHEUS_COUNTERS . $key, 'name', $counter['name']);
+        $this->redis->hSet(self::PROMETHEUS_COUNTERS . $key, 'help', $counter['help']);
+        $this->redis->hSet(self::PROMETHEUS_COUNTERS . $key, 'type', $counter['type']);
+    }
+
+    public function fetchCounters()
+    {
+        $this->openConnection();
+        $keys = $this->redis->sMembers(self::PROMETHEUS_COUNTER_KEYS);
+        $gauges = array();
+        foreach ($keys as $key) {
+            $sample = array();
+            $sample['value'] = $this->redis->hGet(self::PROMETHEUS_COUNTERS . $key, 'value');
+            $sample['labels'] = unserialize($this->redis->hGet(self::PROMETHEUS_COUNTERS . $key, 'labels'));
+            $sample['name'] = $this->redis->hGet(self::PROMETHEUS_COUNTERS . $key, 'name');
+            $sample['help'] = $this->redis->hGet(self::PROMETHEUS_COUNTERS . $key, 'help');
+            $sample['type'] = $this->redis->hGet(self::PROMETHEUS_COUNTERS . $key, 'type');
+            $gauges[] = $sample;
+        }
+        return $gauges;
     }
 }
