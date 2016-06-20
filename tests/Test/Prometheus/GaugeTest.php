@@ -8,7 +8,7 @@ use Prometheus\Gauge;
 /**
  * See https://prometheus.io/docs/instrumenting/exposition_formats/
  */
-class cc_Status_Prometheus_GaugeTest extends PHPUnit_Framework_TestCase
+class GaugeTest extends PHPUnit_Framework_TestCase
 {
     /**
      * @test
