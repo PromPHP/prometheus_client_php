@@ -34,23 +34,24 @@ class Registry
      */
     public function registerGauge($namespace, $name, $help, $labels)
     {
-        $this->gauges[Metric::metricName($namespace, $name)] = new Gauge(
+        $this->gauges[Metric::metricIdentifier($namespace, $name, $labels)] = new Gauge(
             $namespace,
             $name,
             $help,
             $labels
         );
-        return $this->gauges[Metric::metricName($namespace, $name)];
+        return $this->gauges[Metric::metricIdentifier($namespace, $name, $labels)];
     }
 
     /**
      * @param string $namespace
      * @param string $name
+     * @param array $labels e.g. ['controller', 'action']
      * @return Gauge
      */
-    public function getGauge($namespace, $name)
+    public function getGauge($namespace, $name, $labels)
     {
-        return $this->gauges[Metric::metricName($namespace, $name)];
+        return $this->gauges[Metric::metricIdentifier($namespace, $name, $labels)];
     }
 
     public function flush()
@@ -74,48 +75,47 @@ class Registry
 
     public function toText()
     {
-        $result = '';
-        $metrics = array();
+        $lines = array();
         foreach ($this->redisAdapter->fetchGauges() as $sample) {
-            $result .= "# HELP " . $sample['name'] . " {$sample['help']}\n";
-            $result .= "# TYPE " . $sample['name'] . " {$sample['type']}\n";
+            $lines[] = "# HELP " . $sample['name'] . " {$sample['help']}";
+            $lines[] = "# TYPE " . $sample['name'] . " {$sample['type']}";
             $escapedLabels = array();
             if (!empty($sample['labels'])) {
                 foreach ($sample['labels'] as $label) {
                     $escapedLabels[] = $label['name'] . '="' . $this->escapeLabelValue($label['value']) . '"';
                 }
-                $metrics[] = $sample['name'] . '{' . implode(',', $escapedLabels) . '} ' . $sample['value'];
+                $lines[] = $sample['name'] . '{' . implode(',', $escapedLabels) . '} ' . $sample['value'];
             } else {
-                $metrics[] = $sample['name'] . ' ' . $sample['value'];
+                $lines[] = $sample['name'] . ' ' . $sample['value'];
             }
         }
         foreach ($this->redisAdapter->fetchCounters() as $sample) {
-            $result .= "# HELP " . $sample['name'] . " {$sample['help']}\n";
-            $result .= "# TYPE " . $sample['name'] . " {$sample['type']}\n";
+            $lines[] = "# HELP " . $sample['name'] . " {$sample['help']}";
+            $lines[] = "# TYPE " . $sample['name'] . " {$sample['type']}";
             $escapedLabels = array();
             if (!empty($sample['labels'])) {
                 foreach ($sample['labels'] as $label) {
                     $escapedLabels[] = $label['name'] . '="' . $this->escapeLabelValue($label['value']) . '"';
                 }
-                $metrics[] = $sample['name'] . '{' . implode(',', $escapedLabels) . '} ' . $sample['value'];
+                $lines[] = $sample['name'] . '{' . implode(',', $escapedLabels) . '} ' . $sample['value'];
             } else {
-                $metrics[] = $sample['name'] . ' ' . $sample['value'];
+                $lines[] = $sample['name'] . ' ' . $sample['value'];
             }
         }
         foreach ($this->redisAdapter->fetchHistograms() as $sample) {
-            $result .= "# HELP " . $sample['name'] . " {$sample['help']}\n";
-            $result .= "# TYPE " . $sample['name'] . " {$sample['type']}\n";
+            $lines[] = "# HELP " . $sample['name'] . " {$sample['help']}";
+            $lines[] = "# TYPE " . $sample['name'] . " {$sample['type']}";
             $escapedLabels = array();
             if (!empty($sample['labels'])) {
                 foreach ($sample['labels'] as $label) {
                     $escapedLabels[] = $label['name'] . '="' . $this->escapeLabelValue($label['value']) . '"';
                 }
-                $metrics[] = $sample['name'] . '{' . implode(',', $escapedLabels) . '} ' . $sample['value'];
+                $lines[] = $sample['name'] . '{' . implode(',', $escapedLabels) . '} ' . $sample['value'];
             } else {
-                $metrics[] = $sample['name'] . ' ' . $sample['value'];
+                $lines[] = $sample['name'] . ' ' . $sample['value'];
             }
         }
-        return $result . implode("\n", $metrics) . "\n";
+        return implode("\n", $lines) . "\n";
     }
 
     private function escapeLabelValue($v)
@@ -129,11 +129,12 @@ class Registry
     /**
      * @param string $namespace
      * @param string $name
+     * @param array $labels e.g. ['controller', 'action']
      * @return Counter
      */
-    public function getCounter($namespace, $name)
+    public function getCounter($namespace, $name, $labels)
     {
-        return $this->counters[Metric::metricName($namespace, $name)];
+        return $this->counters[Metric::metricIdentifier($namespace, $name, $labels)];
     }
 
     /**
@@ -145,13 +146,13 @@ class Registry
      */
     public function registerCounter($namespace, $name, $help, $labels)
     {
-        $this->counters[Metric::metricName($namespace, $name)] = new Counter(
+        $this->counters[Metric::metricIdentifier($namespace, $name, $labels)] = new Counter(
             $namespace,
             $name,
             $help,
             $labels
         );
-        return $this->counters[Metric::metricName($namespace, $name)];
+        return $this->counters[Metric::metricIdentifier($namespace, $name, $labels)];
     }
 
     /**
@@ -164,23 +165,24 @@ class Registry
      */
     public function registerHistogram($namespace, $name, $help, $labels, $buckets)
     {
-        $this->histograms[Metric::metricName($namespace, $name)] = new Histogram(
+        $this->histograms[Metric::metricIdentifier($namespace, $name, $labels)] = new Histogram(
             $namespace,
             $name,
             $help,
             $labels,
             $buckets
         );
-        return $this->histograms[Metric::metricName($namespace, $name)];
+        return $this->histograms[Metric::metricIdentifier($namespace, $name, $labels)];
     }
 
     /**
      * @param string $namespace
      * @param string $name
+     * @param array $labels e.g. ['controller', 'action']
      * @return Histogram
      */
-    public function getHistogram($namespace, $name)
+    public function getHistogram($namespace, $name, $labels)
     {
-        return $this->histograms[Metric::metricName($namespace, $name)];
+        return $this->histograms[Metric::metricIdentifier($namespace, $name, $labels)];
     }
 }

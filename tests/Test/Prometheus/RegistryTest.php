@@ -31,13 +31,20 @@ class RegistryTest extends PHPUnit_Framework_TestCase
         $client = new Registry($this->newRedisAdapter());
         $metric = $client->registerGauge('test', 'some_metric', 'this is for testing', array('foo', 'bar'));
         $metric->set(14, array('foo' => 'lalal', 'bar' => 'lululu'));
-        $client->getGauge('test', 'some_metric')->set(34, array('foo' => 'lalal', 'bar' => 'lululu'));
+        $client->getGauge('test', 'some_metric', array('foo', 'bar'))->set(34, array('foo' => 'lalal', 'bar' => 'lululu'));
+
+        $client->registerGauge('test', 'some_metric', 'this is for testing', array('foo'))
+            ->set(32, array('foo' => 'lalal'));
+
         $client->flush();
 
         $client = new Registry($this->newRedisAdapter());
         $this->assertThat(
             $client->toText(),
             $this->equalTo(<<<EOF
+# HELP test_some_metric this is for testing
+# TYPE test_some_metric gauge
+test_some_metric{foo="lalal"} 32
 # HELP test_some_metric this is for testing
 # TYPE test_some_metric gauge
 test_some_metric{foo="lalal",bar="lululu"} 34
@@ -55,7 +62,7 @@ EOF
         $client = new Registry($this->newRedisAdapter());
         $metric = $client->registerCounter('test', 'some_metric', 'this is for testing', array('foo', 'bar'));
         $metric->increaseBy(2, array('foo' => 'lalal', 'bar' => 'lululu'));
-        $client->getCounter('test', 'some_metric')->increase(array('foo' => 'lalal', 'bar' => 'lululu'));
+        $client->getCounter('test', 'some_metric', array('foo', 'bar'))->increase(array('foo' => 'lalal', 'bar' => 'lululu'));
         $client->flush();
 
         $client = new Registry($this->newRedisAdapter());
@@ -79,8 +86,8 @@ EOF
         $client = new Registry($this->newRedisAdapter());
         $metric = $client->registerHistogram('test', 'some_metric', 'this is for testing', array('foo', 'bar'), array(0.1, 1, 5, 10));
         $metric->observe(2, array('foo' => 'lalal', 'bar' => 'lululu'));
-        $client->getHistogram('test', 'some_metric')->observe(13, array('foo' => 'lalal', 'bar' => 'lululu'));
-        $client->getHistogram('test', 'some_metric')->observe(7, array('foo' => 'lalal', 'bar' => 'lululu'));
+        $client->getHistogram('test', 'some_metric', array('foo', 'bar'))->observe(13, array('foo' => 'lalal', 'bar' => 'lululu'));
+        $client->getHistogram('test', 'some_metric', array('foo', 'bar'))->observe(7, array('foo' => 'lalal', 'bar' => 'lululu'));
         $client->flush();
 
         $client = new Registry($this->newRedisAdapter());

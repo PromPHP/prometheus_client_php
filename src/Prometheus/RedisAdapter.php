@@ -65,6 +65,12 @@ class RedisAdapter
             $this->redis->delete(self::PROMETHEUS_COUNTERS . $key);
         }
         $this->redis->del(self::PROMETHEUS_COUNTER_KEYS);
+
+        $keys = $this->redis->sMembers(self::PROMETHEUS_HISTOGRAMS_KEYS);
+        foreach($keys as $key) {
+            $this->redis->delete(self::PROMETHEUS_HISTOGRAMS . $key);
+        }
+        $this->redis->del(self::PROMETHEUS_HISTOGRAMS_KEYS);
     }
 
     private function openConnection()
