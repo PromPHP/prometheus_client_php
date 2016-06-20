@@ -97,31 +97,24 @@ class RedisAdapter
 
     public function fetchHistograms()
     {
-        $this->openConnection();
-        $keys = $this->redis->sMembers(self::PROMETHEUS_HISTOGRAMS_KEYS);
-        $gauges = array();
-        foreach ($keys as $key) {
-            $sample = array();
-            $sample['value'] = $this->redis->hGet(self::PROMETHEUS_HISTOGRAMS . $key, 'value');
-            $sample['labels'] = unserialize($this->redis->hGet(self::PROMETHEUS_HISTOGRAMS . $key, 'labels'));
-            $sample['name'] = $this->redis->hGet(self::PROMETHEUS_HISTOGRAMS . $key, 'name');
-            $sample['help'] = $this->redis->hGet(self::PROMETHEUS_HISTOGRAMS . $key, 'help');
-            $sample['type'] = $this->redis->hGet(self::PROMETHEUS_HISTOGRAMS . $key, 'type');
-            $gauges[] = $sample;
-        }
-        return $gauges;
+        return $this->fetchMetricsByType(self::PROMETHEUS_HISTOGRAMS_KEYS, self::PROMETHEUS_HISTOGRAMS);
     }
 
     public function storeHistogram(Histogram $histogram)
     {
         $this->openConnection();
-        $key = sha1($histogram['name'] . '_' . serialize($histogram['labels']));
+        $key = sha1($histogram->getFullName() . '_' . implode('_', $histogram->getLabelNames()));
+        foreach ($histogram->getSamples() as $sample) {
+            $this->redis->hIncrBy(
+                self::PROMETHEUS_COUNTERS . $key . self::PROMETHEUS_LABEL_VALUES_SUFFIX,
+                serialize($sample['labelValues']), $sample['value']
+            );
+        }
+        $this->redis->hSet(self::PROMETHEUS_HISTOGRAMS . $key, 'name', $histogram->getFullName());
+        $this->redis->hSet(self::PROMETHEUS_HISTOGRAMS . $key, 'help', $histogram->getHelp());
+        $this->redis->hSet(self::PROMETHEUS_HISTOGRAMS . $key, 'type', $histogram->getType());
+        $this->redis->hSet(self::PROMETHEUS_HISTOGRAMS . $key, 'labelNames', serialize($histogram->getLabelNames()));
         $this->redis->sAdd(self::PROMETHEUS_HISTOGRAMS_KEYS, $key);
-        $this->redis->hIncrBy(self::PROMETHEUS_HISTOGRAMS . $key, 'value', $histogram['value']);
-        $this->redis->hSet(self::PROMETHEUS_HISTOGRAMS . $key, 'labels', serialize($histogram['labels']));
-        $this->redis->hSet(self::PROMETHEUS_HISTOGRAMS . $key, 'name', $histogram['name']);
-        $this->redis->hSet(self::PROMETHEUS_HISTOGRAMS . $key, 'help', $histogram['help']);
-        $this->redis->hSet(self::PROMETHEUS_HISTOGRAMS . $key, 'type', $histogram['type']);
     }
 
     /**

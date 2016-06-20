@@ -25,56 +25,33 @@ class HistogramTest extends PHPUnit_Framework_TestCase
                 array(
                     array(
                         'name' => 'test_some_metric',
-                        'labels' => array(
-                            array('name' => 'foo', 'value' => 'lalal'),
-                            array('name' => 'bar', 'value' => 'lululu'),
-                            array('name' => 'le', 'value' => 100)
-                        ),
+                        'labelNames' => array('foo', 'bar', 'le'),
+                        'labelValues' => array('lalal', 'lululu', 100),
                         'value' => 0,
-                        'help' => 'this is for testing',
-                        'type' => Histogram::TYPE
                     ),
                     array(
                         'name' => 'test_some_metric',
-                        'labels' => array(
-                            array('name' => 'foo', 'value' => 'lalal'),
-                            array('name' => 'bar', 'value' => 'lululu'),
-                            array('name' => 'le', 'value' => 200)
-                        ),
+                        'labelNames' => array('foo', 'bar', 'le'),
+                        'labelValues' => array('lalal', 'lululu', 200),
                         'value' => 1,
-                        'help' => 'this is for testing',
-                        'type' => Histogram::TYPE
                     ),
                     array(
                         'name' => 'test_some_metric',
-                        'labels' => array(
-                            array('name' => 'foo', 'value' => 'lalal'),
-                            array('name' => 'bar', 'value' => 'lululu'),
-                            array('name' => 'le', 'value' => 300)
-                        ),
+                        'labelNames' => array('foo', 'bar', 'le'),
+                        'labelValues' => array('lalal', 'lululu', 300),
                         'value' => 2,
-                        'help' => 'this is for testing',
-                        'type' => Histogram::TYPE
                     ),
                     array(
                         'name' => 'test_some_metric_sum',
-                        'labels' => array(
-                            array('name' => 'foo', 'value' => 'lalal'),
-                            array('name' => 'bar', 'value' => 'lululu'),
-                        ),
+                        'labelNames' => array('foo', 'bar'),
+                        'labelValues' => array('lalal', 'lululu'),
                         'value' => 368,
-                        'help' => 'this is for testing',
-                        'type' => Histogram::TYPE
                     ),
                     array(
                         'name' => 'test_some_metric_count',
-                        'labels' => array(
-                            array('name' => 'foo', 'value' => 'lalal'),
-                            array('name' => 'bar', 'value' => 'lululu'),
-                        ),
+                        'labelNames' => array('foo', 'bar'),
+                        'labelValues' => array('lalal', 'lululu'),
                         'value' => 2,
-                        'help' => 'this is for testing',
-                        'type' => Histogram::TYPE
                     ),
                 )
             )
@@ -94,45 +71,34 @@ class HistogramTest extends PHPUnit_Framework_TestCase
                 array(
                     array(
                         'name' => 'test_some_metric',
-                        'labels' => array(
-                            array('name' => 'le', 'value' => 100)
-                        ),
+                        'labelNames' => array('le'),
+                        'labelValues' => array(100),
                         'value' => 0,
-                        'help' => 'this is for testing',
-                        'type' => Histogram::TYPE
                     ),
                     array(
                         'name' => 'test_some_metric',
-                        'labels' => array(
-                            array('name' => 'le', 'value' => 200)
-                        ),
+                        'labelNames' => array('le'),
+                        'labelValues' => array(200),
                         'value' => 0,
-                        'help' => 'this is for testing',
-                        'type' => Histogram::TYPE
                     ),
                     array(
                         'name' => 'test_some_metric',
-                        'labels' => array(
-                            array('name' => 'le', 'value' => 300)
-                        ),
+                        'labelNames' => array('le'),
+                        'labelValues' => array(300),
                         'value' => 1,
-                        'help' => 'this is for testing',
-                        'type' => Histogram::TYPE
                     ),
                     array(
                         'name' => 'test_some_metric_sum',
-                        'labels' => array(),
+                        'labelNames' => array(),
+                        'labelValues' => array(),
                         'value' => 245,
-                        'help' => 'this is for testing',
-                        'type' => Histogram::TYPE
                     ),
                     array(
                         'name' => 'test_some_metric_count',
-                        'labels' => array(),
+                        'labelNames' => array(),
+                        'labelValues' => array(),
                         'value' => 1,
-                        'help' => 'this is for testing',
-                        'type' => Histogram::TYPE
-                    ),
+                    )
                 )
             )
         );

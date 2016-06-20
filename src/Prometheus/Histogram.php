@@ -63,41 +63,51 @@ class Histogram
      */
     public function getSamples()
     {
-        $metrics = array();
+        $samples = array();
         foreach ($this->values as $serializedLabels => $value) {
-            $labels = array();
-            foreach (unserialize($serializedLabels) as $labelName => $labelValue) {
-                $labels[] = array('name' => $labelName, 'value' => $labelValue);
-            }
+            $labels = unserialize($serializedLabels);
+            $labelValues = array_values($labels);
             foreach ($value['buckets'] as $bucket => $bucketCounter) {
-                $metrics[] = array(
-                    'name' => Metric::metricName($this->namespace, $this->name),
-                    'labels' => array_merge($labels, array(array('name' => 'le', 'value' => $bucket))),
-                    'value' => $bucketCounter,
-                    'help' => $this->help,
-                    'type' => $this->getType()
+                $samples[] = array(
+                    'name' => $this->getFullName(),
+                    'labelNames' => array_merge($this->getLabelNames(), array('le')),
+                    'labelValues' => array_merge($labelValues, array($bucket)),
+                    'value' => $bucketCounter
                 );
             }
-            $metrics[] = array(
-                'name' => Metric::metricName($this->namespace, $this->name) . '_sum',
-                'labels' => $labels,
-                'value' => $value['sum'],
-                'help' => $this->help,
-                'type' => $this->getType()
+            $samples[] = array(
+                'name' => $this->getFullName() . '_sum',
+                'labelNames' => $this->getLabelNames(),
+                'labelValues' => $labelValues,
+                'value' => $value['sum']
             );
-            $metrics[] = array(
-                'name' => Metric::metricName($this->namespace, $this->name) . '_count',
-                'labels' => $labels,
-                'value' => $value['count'],
-                'help' => $this->help,
-                'type' => $this->getType()
+            $samples[] = array(
+                'name' => $this->getFullName() . '_count',
+                'labelNames' => $this->getLabelNames(),
+                'labelValues' => $labelValues,
+                'value' => $value['count']
             );
         }
-        return $metrics;
+        return $samples;
     }
 
-    private function getType()
+    public function getType()
     {
         return self::TYPE;
+    }
+
+    public function getFullName()
+    {
+        return Metric::metricName($this->namespace, $this->name);
+    }
+
+    public function getLabelNames()
+    {
+        return $this->labels;
+    }
+
+    public function getHelp()
+    {
+        return $this->help;
     }
 }

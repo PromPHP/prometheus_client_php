@@ -61,10 +61,10 @@ class Registry
         };
         foreach ($this->counters as $c) {
             $this->redisAdapter->storeCounter($c);
-        };/*
+        };
         foreach ($this->histograms as $h) {
             $this->redisAdapter->storeHistogram($h);
-        };*/
+        };
     }
 
     public function toText()
@@ -83,20 +83,14 @@ class Registry
             foreach ($counter['samples'] as $sample) {
                 $lines[] = $this->renderSample($sample);
             }
-        }/*
-        foreach ($this->redisAdapter->fetchHistograms() as $sample) {
-            $lines[] = "# HELP " . $sample['name'] . " {$sample['help']}";
-            $lines[] = "# TYPE " . $sample['name'] . " {$sample['type']}";
-            $escapedLabels = array();
-            if (!empty($sample['labels'])) {
-                foreach ($sample['labels'] as $label) {
-                    $escapedLabels[] = $label['name'] . '="' . $this->escapeLabelValue($label['value']) . '"';
-                }
-                $lines[] = $sample['name'] . '{' . implode(',', $escapedLabels) . '} ' . $sample['value'];
-            } else {
-                $lines[] = $sample['name'] . ' ' . $sample['value'];
+        }
+        foreach ($this->redisAdapter->fetchHistograms() as $histogram) {
+            $lines[] = "# HELP " . $histogram['name'] . " {$histogram['help']}";
+            $lines[] = "# TYPE " . $histogram['name'] . " {$histogram['type']}";
+            foreach ($histogram['samples'] as $sample) {
+                $lines[] = $this->renderSample($sample);
             }
-        }*/
+        }
         return implode("\n", $lines) . "\n";
     }
 

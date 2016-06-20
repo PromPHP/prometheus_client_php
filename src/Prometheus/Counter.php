@@ -37,7 +37,7 @@ class Counter
             $labels = unserialize($serializedLabels);
             $metrics[] = array(
                 'name' => $this->getFullName(),
-                'labelNames' => array_keys($labels),
+                'labelNames' => $this->getLabelNames(),
                 'labelValues' => array_values($labels),
                 'value' => $value
             );
