@@ -28,18 +28,6 @@ class Counter
     }
 
     /**
-     * @param double $value e.g. 123
-     * @param array $labels e.g. ['controller' => 'status', 'action' => 'opcode']
-     */
-    public function set($value, $labels = array())
-    {
-        if (array_keys($labels) != $this->labels) {
-            throw new \InvalidArgumentException(sprintf('Label %s is not defined.', $labels));
-        }
-        $this->values[serialize($labels)] = $value;
-    }
-
-    /**
      * @return array [['name' => 'foo_bar', labels => ['name' => 'foo', value='bar'], value => '23']]
      */
     public function getSamples()
@@ -69,7 +57,7 @@ class Counter
     /**
      * @param array $labels e.g. ['controller' => 'status', 'action' => 'opcode']
      */
-    public function increase(array $labels)
+    public function increase(array $labels = array())
     {
         $this->increaseBy(1, $labels);
     }
@@ -78,7 +66,7 @@ class Counter
      * @param int $count e.g. 2
      * @param array $labels e.g. ['controller' => 'status', 'action' => 'opcode']
      */
-    public function increaseBy($count, array $labels)
+    public function increaseBy($count, array $labels = array())
     {
         if (array_keys($labels) != $this->labels) {
             throw new \InvalidArgumentException(sprintf('Label %s is not defined.', $labels));
