@@ -15,6 +15,10 @@ class Client
      * @var Counter[]
      */
     private $counters = array();
+    /**
+     * @var Histogram[]
+     */
+    private $histograms = array();
 
     public function __construct(RedisAdapter $redisAdapter)
     {
@@ -131,4 +135,18 @@ class Client
         );
         return $this->counters[Metric::metricName($namespace, $name)];
     }
+
+    public function registerHistogram($namespace, $name, $help, $labels, $buckets)
+    {
+        $this->histograms[Metric::metricName($namespace, $name)] = new Histogram(
+            $namespace,
+            $name,
+            $help,
+            $labels,
+            $buckets
+        );
+        return $this->histograms[Metric::metricName($namespace, $name)];
+    }
+
+
 }
