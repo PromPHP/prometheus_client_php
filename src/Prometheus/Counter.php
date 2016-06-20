@@ -34,22 +34,18 @@ class Counter
     {
         $metrics = array();
         foreach ($this->values as $serializedLabels => $value) {
-            $labels = array();
-            foreach (unserialize($serializedLabels) as $labelName => $labelValue) {
-                $labels[] = array('name' => $labelName, 'value' => $labelValue);
-            }
+            $labels = unserialize($serializedLabels);
             $metrics[] = array(
-                'name' => Metric::metricName($this->namespace, $this->name),
-                'labels' => $labels,
-                'value' => $value,
-                'help' => $this->help,
-                'type' => $this->getType()
+                'name' => $this->getFullName(),
+                'labelNames' => array_keys($labels),
+                'labelValues' => array_values($labels),
+                'value' => $value
             );
         }
         return $metrics;
     }
 
-    private function getType()
+    public function getType()
     {
         return self::TYPE;
     }
@@ -75,5 +71,20 @@ class Counter
             $this->values[serialize($labels)] = 0;
         }
         $this->values[serialize($labels)] += $count;
+    }
+
+    public function getFullName()
+    {
+        return Metric::metricName($this->namespace, $this->name);
+    }
+
+    public function getLabelNames()
+    {
+        return $this->labels;
+    }
+
+    public function getHelp()
+    {
+        return $this->help;
     }
 }

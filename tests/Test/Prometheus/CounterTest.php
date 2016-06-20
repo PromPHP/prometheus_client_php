@@ -25,13 +25,9 @@ class CounterTest extends PHPUnit_Framework_TestCase
                 array(
                     array(
                         'name' => 'test_some_metric',
-                        'labels' => array(
-                            array('name' => 'foo', 'value' => 'lalal'),
-                            array('name' => 'bar', 'value' => 'lululu')
-                        ),
+                        'labelNames' => array('foo', 'bar'),
+                        'labelValues' => array('lalal', 'lululu'),
                         'value' => 3,
-                        'help' => 'this is for testing',
-                        'type' => Counter::TYPE
                     )
                 )
             )
@@ -51,10 +47,9 @@ class CounterTest extends PHPUnit_Framework_TestCase
                 array(
                     array(
                         'name' => 'test_some_metric',
-                        'labels' => array(),
+                        'labelNames' => array(),
+                        'labelValues' => array(),
                         'value' => 1,
-                        'help' => 'this is for testing',
-                        'type' => Counter::TYPE
                     )
                 )
             )
@@ -75,13 +70,9 @@ class CounterTest extends PHPUnit_Framework_TestCase
                 array(
                     array(
                         'name' => 'test_some_metric',
-                        'labels' => array(
-                            array('name' => 'foo', 'value' => 'lalal'),
-                            array('name' => 'bar', 'value' => 'lululu')
-                        ),
+                        'labelNames' => array('foo', 'bar'),
+                        'labelValues' => array('lalal', 'lululu'),
                         'value' => 124,
-                        'help' => 'this is for testing',
-                        'type' => Counter::TYPE
                     )
                 )
             )

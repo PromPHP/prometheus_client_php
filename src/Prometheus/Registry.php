@@ -56,52 +56,34 @@ class Registry
 
     public function flush()
     {
-        foreach ($this->gauges as $m) {
-            foreach ($m->getSamples() as $sample) {
-                $this->redisAdapter->storeGauge($sample);
-            }
+        foreach ($this->gauges as $g) {
+            $this->redisAdapter->storeGauge($g);
         };
-        foreach ($this->counters as $m) {
-            foreach ($m->getSamples() as $sample) {
-                $this->redisAdapter->storeCounter($sample);
-            }
-        };
-        foreach ($this->histograms as $m) {
-            foreach ($m->getSamples() as $sample) {
-                $this->redisAdapter->storeHistogram($sample);
-            }
-        };
+        foreach ($this->counters as $c) {
+            $this->redisAdapter->storeCounter($c);
+        };/*
+        foreach ($this->histograms as $h) {
+            $this->redisAdapter->storeHistogram($h);
+        };*/
     }
 
     public function toText()
     {
         $lines = array();
-        foreach ($this->redisAdapter->fetchGauges() as $sample) {
-            $lines[] = "# HELP " . $sample['name'] . " {$sample['help']}";
-            $lines[] = "# TYPE " . $sample['name'] . " {$sample['type']}";
-            $escapedLabels = array();
-            if (!empty($sample['labels'])) {
-                foreach ($sample['labels'] as $label) {
-                    $escapedLabels[] = $label['name'] . '="' . $this->escapeLabelValue($label['value']) . '"';
-                }
-                $lines[] = $sample['name'] . '{' . implode(',', $escapedLabels) . '} ' . $sample['value'];
-            } else {
-                $lines[] = $sample['name'] . ' ' . $sample['value'];
+        foreach ($this->redisAdapter->fetchGauges() as $gauge) {
+            $lines[] = "# HELP " . $gauge['name'] . " {$gauge['help']}";
+            $lines[] = "# TYPE " . $gauge['name'] . " {$gauge['type']}";
+            foreach ($gauge['samples'] as $sample) {
+                $lines[] = $this->renderSample($sample);
             }
         }
-        foreach ($this->redisAdapter->fetchCounters() as $sample) {
-            $lines[] = "# HELP " . $sample['name'] . " {$sample['help']}";
-            $lines[] = "# TYPE " . $sample['name'] . " {$sample['type']}";
-            $escapedLabels = array();
-            if (!empty($sample['labels'])) {
-                foreach ($sample['labels'] as $label) {
-                    $escapedLabels[] = $label['name'] . '="' . $this->escapeLabelValue($label['value']) . '"';
-                }
-                $lines[] = $sample['name'] . '{' . implode(',', $escapedLabels) . '} ' . $sample['value'];
-            } else {
-                $lines[] = $sample['name'] . ' ' . $sample['value'];
+        foreach ($this->redisAdapter->fetchCounters() as $counter) {
+            $lines[] = "# HELP " . $counter['name'] . " {$counter['help']}";
+            $lines[] = "# TYPE " . $counter['name'] . " {$counter['type']}";
+            foreach ($counter['samples'] as $sample) {
+                $lines[] = $this->renderSample($sample);
             }
-        }
+        }/*
         foreach ($this->redisAdapter->fetchHistograms() as $sample) {
             $lines[] = "# HELP " . $sample['name'] . " {$sample['help']}";
             $lines[] = "# TYPE " . $sample['name'] . " {$sample['type']}";
@@ -114,7 +96,7 @@ class Registry
             } else {
                 $lines[] = $sample['name'] . ' ' . $sample['value'];
             }
-        }
+        }*/
         return implode("\n", $lines) . "\n";
     }
 
@@ -184,5 +166,21 @@ class Registry
     public function getHistogram($namespace, $name, $labels)
     {
         return $this->histograms[Metric::metricIdentifier($namespace, $name, $labels)];
+    }
+
+    /**
+     * @param array $sample e.g. ['labels' => ['foo' => 'bar'], 'name' => 'some_metric', 'value' => 30]
+     * @return string
+     */
+    private function renderSample(array $sample)
+    {
+        $escapedLabels = array();
+        if (!empty($sample['labels'])) {
+            foreach ($sample['labels'] as $labelName => $labelValue) {
+                $escapedLabels[] = $labelName . '="' . $this->escapeLabelValue($labelValue) . '"';
+            }
+            return $sample['name'] . '{' . implode(',', $escapedLabels) . '} ' . $sample['value'];
+        }
+        return $sample['name'] . ' ' . $sample['value'];
     }
 }

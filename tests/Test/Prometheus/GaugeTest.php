@@ -23,17 +23,15 @@ class GaugeTest extends PHPUnit_Framework_TestCase
                 array(
                     array(
                         'name' => 'test_some_metric',
-                        'labels' => array(
-                            array('name' => 'foo', 'value' => 'lalal'),
-                            array('name' => 'bar', 'value' => 'lululu')
-                        ),
+                        'labelNames' => array('foo', 'bar'),
+                        'labelValues' => array('lalal', 'lululu'),
                         'value' => 123,
-                        'help' => 'this is for testing',
-                        'type' => Gauge::TYPE
                     )
                 )
             )
         );
+        $this->assertThat($gauge->getHelp(), $this->equalTo('this is for testing'));
+        $this->assertThat($gauge->getType(), $this->equalTo(Gauge::TYPE));
     }
 
     /**
@@ -49,13 +47,14 @@ class GaugeTest extends PHPUnit_Framework_TestCase
                 array(
                     array(
                         'name' => 'test_some_metric',
-                        'labels' => array(),
+                        'labelNames' => array(),
+                        'labelValues' => array(),
                         'value' => 123,
-                        'help' => 'this is for testing',
-                        'type' => Gauge::TYPE
                     )
                 )
             )
         );
+        $this->assertThat($gauge->getHelp(), $this->equalTo('this is for testing'));
+        $this->assertThat($gauge->getType(), $this->equalTo(Gauge::TYPE));
     }
 }

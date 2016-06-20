@@ -33,8 +33,9 @@ class RegistryTest extends PHPUnit_Framework_TestCase
         $metric->set(14, array('foo' => 'lalal', 'bar' => 'lululu'));
         $client->getGauge('test', 'some_metric', array('foo', 'bar'))->set(34, array('foo' => 'lalal', 'bar' => 'lululu'));
 
-        $client->registerGauge('test', 'some_metric', 'this is for testing', array('foo'))
-            ->set(32, array('foo' => 'lalal'));
+        $g = $client->registerGauge('test', 'some_metric', 'this is for testing', array('foo'));
+        $g->set(32, array('foo' => 'lalal'));
+        $g->set(35, array('foo' => 'lalab'));
 
         $client->flush();
 
@@ -45,6 +46,7 @@ class RegistryTest extends PHPUnit_Framework_TestCase
 # HELP test_some_metric this is for testing
 # TYPE test_some_metric gauge
 test_some_metric{foo="lalal"} 32
+test_some_metric{foo="lalab"} 35
 # HELP test_some_metric this is for testing
 # TYPE test_some_metric gauge
 test_some_metric{foo="lalal",bar="lululu"} 34
