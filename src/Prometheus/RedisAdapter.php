@@ -67,7 +67,7 @@ class RedisAdapter
 
     private function openConnection()
     {
-        $this->redis->connect('127.0.0.1');
+        $this->redis->connect($this->hostname);
     }
 
     public function storeCounter($counter)
