@@ -98,4 +98,8 @@ class RedisAdapter
         }
         return $gauges;
     }
+
+    public function fetchHistograms()
+    {
+    }
 }

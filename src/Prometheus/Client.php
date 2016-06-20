@@ -97,6 +97,19 @@ class Client
                 $metrics[] = $sample['name'] . ' ' . $sample['value'];
             }
         }
+        foreach ($this->redisAdapter->fetchHistograms() as $sample) {
+            $result .= "# HELP " . $sample['name'] . " {$sample['help']}\n";
+            $result .= "# TYPE " . $sample['name'] . " {$sample['type']}\n";
+            $escapedLabels = array();
+            if (!empty($sample['labels'])) {
+                foreach ($sample['labels'] as $label) {
+                    $escapedLabels[] = $label['name'] . '="' . $this->escapeLabelValue($label['value']) . '"';
+                }
+                $metrics[] = $sample['name'] . '{' . implode(',', $escapedLabels) . '} ' . $sample['value'];
+            } else {
+                $metrics[] = $sample['name'] . ' ' . $sample['value'];
+            }
+        }
         return $result . implode("\n", $metrics) . "\n";
     }
 
@@ -145,6 +158,16 @@ class Client
             $labels,
             $buckets
         );
+        return $this->histograms[Metric::metricName($namespace, $name)];
+    }
+
+    /**
+     * @param string $namespace
+     * @param string $name
+     * @return Counter
+     */
+    public function getHistogram($namespace, $name)
+    {
         return $this->histograms[Metric::metricName($namespace, $name)];
     }
 
