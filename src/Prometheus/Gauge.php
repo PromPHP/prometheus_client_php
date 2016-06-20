@@ -35,7 +35,7 @@ class Gauge
     public function set($value, $labels = array())
     {
         if (array_keys($labels) != $this->labels) {
-            throw new \InvalidArgumentException(sprintf('Label %s is not defined.', $labels));
+            throw new \InvalidArgumentException(sprintf('Label combination %s is not defined.', print_r($labels, true)));
         }
         $this->values[serialize($labels)] = $value;
     }
