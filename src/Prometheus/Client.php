@@ -65,6 +65,11 @@ class Client
                 $this->redisAdapter->storeCounter($sample);
             }
         };
+        foreach ($this->histograms as $m) {
+            foreach ($m->getSamples() as $sample) {
+                $this->redisAdapter->storeHistogram($sample);
+            }
+        };
     }
 
     public function toText()
@@ -149,6 +154,14 @@ class Client
         return $this->counters[Metric::metricName($namespace, $name)];
     }
 
+    /**
+     * @param string $namespace e.g. cms
+     * @param string $name e.g. duration_seconds
+     * @param string $help e.g. A histogram of the duration in seconds.
+     * @param array $labels e.g. ['controller', 'action']
+     * @param array $buckets e.g. [100, 200, 300]
+     * @return Histogram
+     */
     public function registerHistogram($namespace, $name, $help, $labels, $buckets)
     {
         $this->histograms[Metric::metricName($namespace, $name)] = new Histogram(
@@ -164,12 +177,10 @@ class Client
     /**
      * @param string $namespace
      * @param string $name
-     * @return Counter
+     * @return Histogram
      */
     public function getHistogram($namespace, $name)
     {
         return $this->histograms[Metric::metricName($namespace, $name)];
     }
-
-
 }

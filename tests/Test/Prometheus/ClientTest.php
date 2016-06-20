@@ -18,6 +18,14 @@ class ClientTest extends PHPUnit_Framework_TestCase
     /**
      * @test
      */
+    public function itShouldRenderOnlyOneHelpForTheSameMetric()
+    {
+
+    }
+
+    /**
+     * @test
+     */
     public function itShouldSaveGaugesInRedis()
     {
         $client = new Client($this->newRedisAdapter());
@@ -96,6 +104,6 @@ EOF
 
     private function newRedisAdapter()
     {
-        return new RedisAdapter('192.168.59.100');
+        return new RedisAdapter('127.0.0.1');
     }
 }

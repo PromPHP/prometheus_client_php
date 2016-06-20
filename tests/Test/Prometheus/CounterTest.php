@@ -4,7 +4,6 @@
 namespace Test\Prometheus;
 use PHPUnit_Framework_TestCase;
 use Prometheus\Counter;
-use Prometheus\Gauge;
 
 /**
  * See https://prometheus.io/docs/instrumenting/exposition_formats/
