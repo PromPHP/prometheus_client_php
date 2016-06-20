@@ -4,7 +4,7 @@
 namespace Prometheus;
 
 
-class Client
+class Registry
 {
     private $redisAdapter;
     /**
