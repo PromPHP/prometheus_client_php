@@ -160,10 +160,10 @@ class RedisAdapter
     {
         $this->openConnection();
         $keys = $this->redis->sMembers($typeKeysPrefix);
-        $gauges = array();
+        $metrics = array();
         foreach ($keys as $key) {
             $redisGauge = $this->redis->hGetAll($typePrefix . $key);
-            $gauge = array(
+            $metric = array(
                 'name' => $redisGauge['name'],
                 'help' => $redisGauge['help'],
                 'type' => $redisGauge['type'],
@@ -181,15 +181,15 @@ class RedisAdapter
                     $this->redis->hGet($typePrefix . $key . self::PROMETHEUS_SAMPLE_LABEL_NAMES_SUFFIX, serialize($labelValues))
                 );
                 $name = $this->redis->hGet($typePrefix . $key . self::PROMETHEUS_SAMPLE_NAME_SUFFIX, serialize($labelValues));
-                $gauge['samples'][] = array(
+                $metric['samples'][] = array(
                     'name' => $name,
                     'labels' => array_combine($labelNames, $labelValues),
                     'value' => $values[$sampleKey]
                 );
 
             }
-            $gauges[] = $gauge;
+            $metrics[] = $metric;
         }
-        return array_reverse($gauges);
+        return array_reverse($metrics);
     }
 }
