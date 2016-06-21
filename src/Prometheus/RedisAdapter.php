@@ -136,7 +136,7 @@ class RedisAdapter
         $sampleKeys = array();
         foreach ($histogram->getSamples() as $sample) {
             $sampleKey = $sample->getKey();
-            $this->redis->hIncrBy(
+            $this->redis->hIncrByFloat(
                 self::PROMETHEUS_HISTOGRAMS . $key . self::PROMETHEUS_SAMPLE_VALUE_SUFFIX,
                 $sampleKey,
                 $sample->getValue()
