@@ -16,6 +16,9 @@ class RedisAdapter
     private $redis;
 
     const PROMETHEUS_LABEL_VALUES_SUFFIX = '_labelValues';
+    const PROMETHEUS_LABEL_NAMES_SUFFIX = '_labelNames';
+    const PROMETHEUS_SAMPLE_NAME_SUFFIX = '_name';
+
 
     public function __construct($hostname)
     {
@@ -28,7 +31,21 @@ class RedisAdapter
         $this->openConnection();
         $key = sha1($gauge->getFullName() . '_' . implode('_', $gauge->getLabelNames()));
         foreach ($gauge->getSamples() as $sample) {
-            $this->redis->hSet(self::PROMETHEUS_GAUGES . $key . self::PROMETHEUS_LABEL_VALUES_SUFFIX, serialize($sample['labelValues']), $sample['value']);
+            $this->redis->hSet(
+                self::PROMETHEUS_GAUGES . $key . self::PROMETHEUS_LABEL_VALUES_SUFFIX,
+                serialize($sample['labelValues']),
+                $sample['value']
+            );
+            $this->redis->hSet(
+                self::PROMETHEUS_GAUGES . $key . self::PROMETHEUS_LABEL_NAMES_SUFFIX,
+                serialize($sample['labelValues']),
+                serialize($sample['labelNames'])
+            );
+            $this->redis->hSet(
+                self::PROMETHEUS_GAUGES . $key . self::PROMETHEUS_SAMPLE_NAME_SUFFIX,
+                serialize($sample['labelValues']),
+                $sample['name']
+            );
         }
         $this->redis->hSet(self::PROMETHEUS_GAUGES . $key, 'name', $gauge->getFullName());
         $this->redis->hSet(self::PROMETHEUS_GAUGES . $key, 'help', $gauge->getHelp());
@@ -63,6 +80,16 @@ class RedisAdapter
                 self::PROMETHEUS_COUNTERS . $key . self::PROMETHEUS_LABEL_VALUES_SUFFIX,
                 serialize($sample['labelValues']), $sample['value']
             );
+            $this->redis->hSet(
+                self::PROMETHEUS_COUNTERS . $key . self::PROMETHEUS_LABEL_NAMES_SUFFIX,
+                serialize($sample['labelValues']),
+                serialize($sample['labelNames'])
+            );
+            $this->redis->hSet(
+                self::PROMETHEUS_COUNTERS . $key . self::PROMETHEUS_SAMPLE_NAME_SUFFIX,
+                serialize($sample['labelValues']),
+                $sample['name']
+            );
         }
         $this->redis->hSet(self::PROMETHEUS_COUNTERS . $key, 'name', $counter->getFullName());
         $this->redis->hSet(self::PROMETHEUS_COUNTERS . $key, 'help', $counter->getHelp());
@@ -90,6 +117,16 @@ class RedisAdapter
                 self::PROMETHEUS_HISTOGRAMS . $key . self::PROMETHEUS_LABEL_VALUES_SUFFIX,
                 serialize($sample['labelValues']), $sample['value']
             );
+            $this->redis->hSet(
+                self::PROMETHEUS_HISTOGRAMS . $key . self::PROMETHEUS_LABEL_NAMES_SUFFIX,
+                serialize($sample['labelValues']),
+                serialize($sample['labelNames'])
+            );
+            $this->redis->hSet(
+                self::PROMETHEUS_HISTOGRAMS . $key . self::PROMETHEUS_SAMPLE_NAME_SUFFIX,
+                serialize($sample['labelValues']),
+                $sample['name']
+            );
         }
         $this->redis->hSet(self::PROMETHEUS_HISTOGRAMS . $key, 'name', $histogram->getFullName());
         $this->redis->hSet(self::PROMETHEUS_HISTOGRAMS . $key, 'help', $histogram->getHelp());
@@ -116,15 +153,18 @@ class RedisAdapter
             );
 
             // Fill samples
-            $labelNames = unserialize($redisGauge['labelNames']);
             $redisLabelValues = $this->redis->hGetAll($typePrefix . $key . self::PROMETHEUS_LABEL_VALUES_SUFFIX);
             $listOfLabelValues = array_map(function ($value) {
                 return unserialize($value);
             }, array_keys($redisLabelValues));
             $values = array_values($redisLabelValues);
             foreach ($listOfLabelValues as $i => $labelValues) {
+                $labelNames = unserialize(
+                    $this->redis->hGet($typePrefix . $key . self::PROMETHEUS_LABEL_NAMES_SUFFIX, serialize($labelValues))
+                );
+                $name = $this->redis->hGet($typePrefix . $key . self::PROMETHEUS_SAMPLE_NAME_SUFFIX, serialize($labelValues));
                 $gauge['samples'][] = array(
-                    'name' => $gauge['name'],
+                    'name' => $name,
                     'labels' => array_combine($labelNames, $labelValues),
                     'value' => $values[$i]
                 );

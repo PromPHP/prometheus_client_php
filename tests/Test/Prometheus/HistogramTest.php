@@ -24,19 +24,19 @@ class HistogramTest extends PHPUnit_Framework_TestCase
             $this->equalTo(
                 array(
                     array(
-                        'name' => 'test_some_metric',
+                        'name' => 'test_some_metric_bucket',
                         'labelNames' => array('foo', 'bar', 'le'),
                         'labelValues' => array('lalal', 'lululu', 100),
                         'value' => 0,
                     ),
                     array(
-                        'name' => 'test_some_metric',
+                        'name' => 'test_some_metric_bucket',
                         'labelNames' => array('foo', 'bar', 'le'),
                         'labelValues' => array('lalal', 'lululu', 200),
                         'value' => 1,
                     ),
                     array(
-                        'name' => 'test_some_metric',
+                        'name' => 'test_some_metric_bucket',
                         'labelNames' => array('foo', 'bar', 'le'),
                         'labelValues' => array('lalal', 'lululu', 300),
                         'value' => 2,
@@ -70,19 +70,19 @@ class HistogramTest extends PHPUnit_Framework_TestCase
             $this->equalTo(
                 array(
                     array(
-                        'name' => 'test_some_metric',
+                        'name' => 'test_some_metric_bucket',
                         'labelNames' => array('le'),
                         'labelValues' => array(100),
                         'value' => 0,
                     ),
                     array(
-                        'name' => 'test_some_metric',
+                        'name' => 'test_some_metric_bucket',
                         'labelNames' => array('le'),
                         'labelValues' => array(200),
                         'value' => 0,
                     ),
                     array(
-                        'name' => 'test_some_metric',
+                        'name' => 'test_some_metric_bucket',
                         'labelNames' => array('le'),
                         'labelValues' => array(300),
                         'value' => 1,

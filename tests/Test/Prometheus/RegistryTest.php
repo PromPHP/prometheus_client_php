@@ -92,11 +92,11 @@ EOF
 # TYPE test_some_metric histogram
 test_some_metric_sum{foo="lalal",bar="lululu"} 22
 test_some_metric_count{foo="lalal",bar="lululu"} 3
-test_some_metric_bucket{foo="lalal",bar="lululu", le="0.1"} 0
-test_some_metric_bucket{foo="lalal",bar="lululu", le="1"} 0
-test_some_metric_bucket{foo="lalal",bar="lululu", le="5"} 1
-test_some_metric_bucket{foo="lalal",bar="lululu", le="10"} 2
-test_some_metric_bucket{foo="lalal",bar="lululu", le="+Inf"} 3
+test_some_metric_bucket{foo="lalal",bar="lululu",le="0.1"} 0
+test_some_metric_bucket{foo="lalal",bar="lululu",le="1"} 0
+test_some_metric_bucket{foo="lalal",bar="lululu",le="5"} 1
+test_some_metric_bucket{foo="lalal",bar="lululu",le="10"} 2
+test_some_metric_bucket{foo="lalal",bar="lululu",le="+Inf"} 3
 
 EOF
             )

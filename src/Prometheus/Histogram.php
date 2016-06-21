@@ -69,7 +69,7 @@ class Histogram
             $labelValues = array_values($labels);
             foreach ($value['buckets'] as $bucket => $bucketCounter) {
                 $samples[] = array(
-                    'name' => $this->getFullName(),
+                    'name' => $this->getFullName() . '_bucket',
                     'labelNames' => array_merge($this->getLabelNames(), array('le')),
                     'labelValues' => array_merge($labelValues, array($bucket)),
                     'value' => $bucketCounter
