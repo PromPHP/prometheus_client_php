@@ -132,6 +132,6 @@ class RedisAdapter
             }
             $gauges[] = $gauge;
         }
-        return $gauges;
+        return array_reverse($gauges);
     }
 }
