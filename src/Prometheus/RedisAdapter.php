@@ -87,7 +87,7 @@ class RedisAdapter
         $key = sha1($histogram->getFullName() . '_' . implode('_', $histogram->getLabelNames()));
         foreach ($histogram->getSamples() as $sample) {
             $this->redis->hIncrBy(
-                self::PROMETHEUS_COUNTERS . $key . self::PROMETHEUS_LABEL_VALUES_SUFFIX,
+                self::PROMETHEUS_HISTOGRAMS . $key . self::PROMETHEUS_LABEL_VALUES_SUFFIX,
                 serialize($sample['labelValues']), $sample['value']
             );
         }
