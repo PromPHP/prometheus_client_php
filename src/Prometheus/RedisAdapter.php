@@ -42,30 +42,11 @@ class RedisAdapter
         return $this->fetchMetricsByType(self::PROMETHEUS_GAUGE_KEYS, self::PROMETHEUS_GAUGES);
     }
 
-    public function deleteMetrics()
+    public function flushRedis()
     {
         $this->openConnection();
 
-        $keys = $this->redis->sMembers(self::PROMETHEUS_GAUGE_KEYS);
-        foreach ($keys as $key) {
-            $this->redis->delete(self::PROMETHEUS_GAUGES . $key);
-            $this->redis->delete(self::PROMETHEUS_GAUGES . $key . self::PROMETHEUS_LABEL_VALUES_SUFFIX);
-        }
-        $this->redis->del(self::PROMETHEUS_GAUGE_KEYS);
-
-        $keys = $this->redis->sMembers(self::PROMETHEUS_COUNTER_KEYS);
-        foreach ($keys as $key) {
-            $this->redis->delete(self::PROMETHEUS_COUNTERS . $key);
-            $this->redis->delete(self::PROMETHEUS_COUNTERS . $key . self::PROMETHEUS_LABEL_VALUES_SUFFIX);
-        }
-        $this->redis->del(self::PROMETHEUS_COUNTER_KEYS);
-
-        $keys = $this->redis->sMembers(self::PROMETHEUS_HISTOGRAMS_KEYS);
-        foreach ($keys as $key) {
-            $this->redis->delete(self::PROMETHEUS_HISTOGRAMS . $key);
-            $this->redis->delete(self::PROMETHEUS_HISTOGRAMS . $key . self::PROMETHEUS_LABEL_VALUES_SUFFIX);
-        }
-        $this->redis->del(self::PROMETHEUS_HISTOGRAMS_KEYS);
+        $this->redis->flushAll();
     }
 
     private function openConnection()

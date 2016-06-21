@@ -12,7 +12,7 @@ class RegistryTest extends PHPUnit_Framework_TestCase
 {
     public function setUp()
     {
-        $this->newRedisAdapter()->deleteMetrics();
+        $this->newRedisAdapter()->flushRedis();
     }
 
     /**
