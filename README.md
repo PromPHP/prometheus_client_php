@@ -3,6 +3,10 @@
 This uses redis to do the client side aggregation.
 We recommend to run a local redis instance next to your PHP workers.
 
+## Usage
+
+see [example.php](example.php)
+
 ## Development
 
 ### Dependencies
