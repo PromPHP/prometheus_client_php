@@ -2,8 +2,10 @@
 
 
 namespace Test\Prometheus;
+
 use PHPUnit_Framework_TestCase;
 use Prometheus\Counter;
+use Prometheus\Sample;
 
 /**
  * See https://prometheus.io/docs/instrumenting/exposition_formats/
@@ -23,11 +25,13 @@ class CounterTest extends PHPUnit_Framework_TestCase
             $gauge->getSamples(),
             $this->equalTo(
                 array(
-                    array(
-                        'name' => 'test_some_metric',
-                        'labelNames' => array('foo', 'bar'),
-                        'labelValues' => array('lalal', 'lululu'),
-                        'value' => 3,
+                    new Sample(
+                        array(
+                            'name' => 'test_some_metric',
+                            'labelNames' => array('foo', 'bar'),
+                            'labelValues' => array('lalal', 'lululu'),
+                            'value' => 3,
+                        )
                     )
                 )
             )
@@ -45,11 +49,13 @@ class CounterTest extends PHPUnit_Framework_TestCase
             $gauge->getSamples(),
             $this->equalTo(
                 array(
-                    array(
-                        'name' => 'test_some_metric',
-                        'labelNames' => array(),
-                        'labelValues' => array(),
-                        'value' => 1,
+                    new Sample(
+                        array(
+                            'name' => 'test_some_metric',
+                            'labelNames' => array(),
+                            'labelValues' => array(),
+                            'value' => 1,
+                        )
                     )
                 )
             )
@@ -68,11 +74,13 @@ class CounterTest extends PHPUnit_Framework_TestCase
             $gauge->getSamples(),
             $this->equalTo(
                 array(
-                    array(
-                        'name' => 'test_some_metric',
-                        'labelNames' => array('foo', 'bar'),
-                        'labelValues' => array('lalal', 'lululu'),
-                        'value' => 124,
+                    new Sample(
+                        array(
+                            'name' => 'test_some_metric',
+                            'labelNames' => array('foo', 'bar'),
+                            'labelValues' => array('lalal', 'lululu'),
+                            'value' => 124,
+                        )
                     )
                 )
             )
