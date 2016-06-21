@@ -69,37 +69,13 @@ class Registry
 
     public function toText()
     {
-        $lines = array();
-        foreach ($this->redisAdapter->fetchGauges() as $gauge) {
-            $lines[] = "# HELP " . $gauge['name'] . " {$gauge['help']}";
-            $lines[] = "# TYPE " . $gauge['name'] . " {$gauge['type']}";
-            foreach ($gauge['samples'] as $sample) {
-                $lines[] = $this->renderSample($sample);
-            }
-        }
-        foreach ($this->redisAdapter->fetchCounters() as $counter) {
-            $lines[] = "# HELP " . $counter['name'] . " {$counter['help']}";
-            $lines[] = "# TYPE " . $counter['name'] . " {$counter['type']}";
-            foreach ($counter['samples'] as $sample) {
-                $lines[] = $this->renderSample($sample);
-            }
-        }
-        foreach ($this->redisAdapter->fetchHistograms() as $histogram) {
-            $lines[] = "# HELP " . $histogram['name'] . " {$histogram['help']}";
-            $lines[] = "# TYPE " . $histogram['name'] . " {$histogram['type']}";
-            foreach ($histogram['samples'] as $sample) {
-                $lines[] = $this->renderSample($sample);
-            }
-        }
-        return implode("\n", $lines) . "\n";
-    }
-
-    private function escapeLabelValue($v)
-    {
-        $v = str_replace("\\", "\\\\", $v);
-        $v = str_replace("\n", "\\n", $v);
-        $v = str_replace("\"", "\\\"", $v);
-        return $v;
+        $renderer = new RenderTextFormat();
+        $metrics = array_merge(
+            $this->redisAdapter->fetchGauges(),
+            $this->redisAdapter->fetchCounters(),
+            $this->redisAdapter->fetchHistograms()
+        );
+        return $renderer->render($metrics);
     }
 
     /**
@@ -160,21 +136,5 @@ class Registry
     public function getHistogram($namespace, $name, $labels)
     {
         return $this->histograms[Metric::metricIdentifier($namespace, $name, $labels)];
-    }
-
-    /**
-     * @param array $sample e.g. ['labels' => ['foo' => 'bar'], 'name' => 'some_metric', 'value' => 30]
-     * @return string
-     */
-    private function renderSample(array $sample)
-    {
-        $escapedLabels = array();
-        if (!empty($sample['labels'])) {
-            foreach ($sample['labels'] as $labelName => $labelValue) {
-                $escapedLabels[] = $labelName . '="' . $this->escapeLabelValue($labelValue) . '"';
-            }
-            return $sample['name'] . '{' . implode(',', $escapedLabels) . '} ' . $sample['value'];
-        }
-        return $sample['name'] . ' ' . $sample['value'];
     }
 }
