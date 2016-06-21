@@ -45,17 +45,18 @@ class Histogram
                 'count' => 0
             );
             foreach ($this->buckets as $bucket) {
-                $this->values[serialize($labels)]['buckets'][$bucket] = 0;
+                $this->values[serialize($labels)]['buckets'][(string)$bucket] = 0;
             }
+            $this->values[serialize($labels)]['buckets']['+Inf'] = 0;
         }
         $this->values[serialize($labels)]['sum'] += $value;
         $this->values[serialize($labels)]['count']++;
         foreach ($this->values[serialize($labels)]['buckets'] as $bucket => $bucketCounter) {
             if ($value <= $bucket) {
-                $this->values[serialize($labels)]['buckets'][$bucket] = $bucketCounter + 1;
+                $this->values[serialize($labels)]['buckets'][(string)$bucket] = $bucketCounter + 1;
             }
         }
-
+        $this->values[serialize($labels)]['buckets']['+Inf']++;
     }
 
     /**
