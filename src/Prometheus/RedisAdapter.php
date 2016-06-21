@@ -32,32 +32,36 @@ class RedisAdapter
     {
         $this->openConnection();
         $key = sha1($gauge->getFullName() . '_' . implode('_', $gauge->getLabelNames()));
+        $sampleKeys = array();
         foreach ($gauge->getSamples() as $sample) {
+            $sampleKey = $sample['name'] . serialize($sample['labelValues']);
             $this->redis->hSet(
                 self::PROMETHEUS_GAUGES . $key . self::PROMETHEUS_SAMPLE_VALUE_SUFFIX,
-                serialize($sample['labelValues']),
+                $sampleKey,
                 $sample['value']
             );
             $this->redis->hSet(
                 self::PROMETHEUS_GAUGES . $key . self::PROMETHEUS_SAMPLE_LABEL_VALUES_SUFFIX,
-                serialize($sample['labelValues']),
+                $sampleKey,
                 serialize($sample['labelValues'])
             );
             $this->redis->hSet(
                 self::PROMETHEUS_GAUGES . $key . self::PROMETHEUS_SAMPLE_LABEL_NAMES_SUFFIX,
-                serialize($sample['labelValues']),
+                $sampleKey,
                 serialize($sample['labelNames'])
             );
             $this->redis->hSet(
                 self::PROMETHEUS_GAUGES . $key . self::PROMETHEUS_SAMPLE_NAME_SUFFIX,
-                serialize($sample['labelValues']),
+                $sampleKey,
                 $sample['name']
             );
+            $sampleKeys[] = $sampleKey;
         }
         $this->redis->hSet(self::PROMETHEUS_GAUGES . $key, 'name', $gauge->getFullName());
         $this->redis->hSet(self::PROMETHEUS_GAUGES . $key, 'help', $gauge->getHelp());
         $this->redis->hSet(self::PROMETHEUS_GAUGES . $key, 'type', $gauge->getType());
         $this->redis->hSet(self::PROMETHEUS_GAUGES . $key, 'labelNames', serialize($gauge->getLabelNames()));
+        $this->redis->hSet(self::PROMETHEUS_GAUGES . $key, 'sampleKeys', serialize($sampleKeys));
         $this->storeNewMetricKey(self::PROMETHEUS_GAUGE_KEYS, $key);
     }
 
@@ -82,32 +86,36 @@ class RedisAdapter
     {
         $this->openConnection();
         $key = sha1($counter->getFullName() . '_' . implode('_', $counter->getLabelNames()));
+        $sampleKeys = array();
         foreach ($counter->getSamples() as $sample) {
+            $sampleKey = $sample['name'] . serialize($sample['labelValues']);
             $this->redis->hIncrBy(
                 self::PROMETHEUS_COUNTERS . $key . self::PROMETHEUS_SAMPLE_VALUE_SUFFIX,
-                serialize($sample['labelValues']),
+                $sampleKey,
                 $sample['value']
             );
             $this->redis->hSet(
                 self::PROMETHEUS_COUNTERS . $key . self::PROMETHEUS_SAMPLE_LABEL_VALUES_SUFFIX,
-                serialize($sample['labelValues']),
+                $sampleKey,
                 serialize($sample['labelValues'])
             );
             $this->redis->hSet(
                 self::PROMETHEUS_COUNTERS . $key . self::PROMETHEUS_SAMPLE_LABEL_NAMES_SUFFIX,
-                serialize($sample['labelValues']),
+                $sampleKey,
                 serialize($sample['labelNames'])
             );
             $this->redis->hSet(
                 self::PROMETHEUS_COUNTERS . $key . self::PROMETHEUS_SAMPLE_NAME_SUFFIX,
-                serialize($sample['labelValues']),
+                $sampleKey,
                 $sample['name']
             );
+            $sampleKeys[] = $sampleKey;
         }
         $this->redis->hSet(self::PROMETHEUS_COUNTERS . $key, 'name', $counter->getFullName());
         $this->redis->hSet(self::PROMETHEUS_COUNTERS . $key, 'help', $counter->getHelp());
         $this->redis->hSet(self::PROMETHEUS_COUNTERS . $key, 'type', $counter->getType());
         $this->redis->hSet(self::PROMETHEUS_COUNTERS . $key, 'labelNames', serialize($counter->getLabelNames()));
+        $this->redis->hSet(self::PROMETHEUS_COUNTERS . $key, 'sampleKeys', serialize($sampleKeys));
         $this->storeNewMetricKey(self::PROMETHEUS_COUNTER_KEYS, $key);
     }
 
@@ -125,32 +133,36 @@ class RedisAdapter
     {
         $this->openConnection();
         $key = sha1($histogram->getFullName() . '_' . implode('_', $histogram->getLabelNames()));
+        $sampleKeys = array();
         foreach ($histogram->getSamples() as $sample) {
+            $sampleKey = $sample['name'] . serialize($sample['labelValues']);
             $this->redis->hIncrBy(
                 self::PROMETHEUS_HISTOGRAMS . $key . self::PROMETHEUS_SAMPLE_VALUE_SUFFIX,
-                serialize($sample['labelValues']),
+                $sampleKey,
                 $sample['value']
             );
             $this->redis->hSet(
                 self::PROMETHEUS_HISTOGRAMS . $key . self::PROMETHEUS_SAMPLE_LABEL_VALUES_SUFFIX,
-                serialize($sample['labelValues']),
+                $sampleKey,
                 serialize($sample['labelValues'])
             );
             $this->redis->hSet(
                 self::PROMETHEUS_HISTOGRAMS . $key . self::PROMETHEUS_SAMPLE_LABEL_NAMES_SUFFIX,
-                serialize($sample['labelValues']),
+                $sampleKey,
                 serialize($sample['labelNames'])
             );
             $this->redis->hSet(
                 self::PROMETHEUS_HISTOGRAMS . $key . self::PROMETHEUS_SAMPLE_NAME_SUFFIX,
-                serialize($sample['labelValues']),
+                $sampleKey,
                 $sample['name']
             );
+            $sampleKeys[] = $sampleKey;
         }
         $this->redis->hSet(self::PROMETHEUS_HISTOGRAMS . $key, 'name', $histogram->getFullName());
         $this->redis->hSet(self::PROMETHEUS_HISTOGRAMS . $key, 'help', $histogram->getHelp());
         $this->redis->hSet(self::PROMETHEUS_HISTOGRAMS . $key, 'type', $histogram->getType());
         $this->redis->hSet(self::PROMETHEUS_HISTOGRAMS . $key, 'labelNames', serialize($histogram->getLabelNames()));
+        $this->redis->hSet(self::PROMETHEUS_HISTOGRAMS . $key, 'sampleKeys', serialize($sampleKeys));
         $this->storeNewMetricKey(self::PROMETHEUS_HISTOGRAMS_KEYS, $key);
     }
 
@@ -173,20 +185,16 @@ class RedisAdapter
 
             // Fill samples
             $values = $this->redis->hGetAll($typePrefix . $key . self::PROMETHEUS_SAMPLE_VALUE_SUFFIX);
-            ksort($values);
-            $labelValuesList = array_map(
-                function ($labelValue) {return unserialize($labelValue);},
-                $this->redis->hGetAll($typePrefix . $key . self::PROMETHEUS_SAMPLE_LABEL_VALUES_SUFFIX)
-            );
-            ksort($labelValuesList);
-            foreach ($labelValuesList as $sampleKey => $labelValues) {
+            $labelValuesList = $this->redis->hGetAll($typePrefix . $key . self::PROMETHEUS_SAMPLE_LABEL_VALUES_SUFFIX);
+            $sampleKeys = unserialize($redisGauge['sampleKeys']);
+            foreach ($sampleKeys as $sampleKey) {
                 $labelNames = unserialize(
-                    $this->redis->hGet($typePrefix . $key . self::PROMETHEUS_SAMPLE_LABEL_NAMES_SUFFIX, serialize($labelValues))
+                    $this->redis->hGet($typePrefix . $key . self::PROMETHEUS_SAMPLE_LABEL_NAMES_SUFFIX, $sampleKey)
                 );
-                $name = $this->redis->hGet($typePrefix . $key . self::PROMETHEUS_SAMPLE_NAME_SUFFIX, serialize($labelValues));
+                $name = $this->redis->hGet($typePrefix . $key . self::PROMETHEUS_SAMPLE_NAME_SUFFIX, $sampleKey);
                 $metric['samples'][] = array(
                     'name' => $name,
-                    'labels' => array_combine($labelNames, $labelValues),
+                    'labels' => array_combine($labelNames, unserialize($labelValuesList[$sampleKey])),
                     'value' => $values[$sampleKey]
                 );
 

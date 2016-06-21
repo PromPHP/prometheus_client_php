@@ -48,17 +48,17 @@ class HistogramTest extends PHPUnit_Framework_TestCase
                         'value' => 2,
                     ),
                     array(
-                        'name' => 'test_some_metric_sum',
-                        'labelNames' => array('foo', 'bar'),
-                        'labelValues' => array('lalal', 'lululu'),
-                        'value' => 368,
-                    ),
-                    array(
                         'name' => 'test_some_metric_count',
                         'labelNames' => array('foo', 'bar'),
                         'labelValues' => array('lalal', 'lululu'),
                         'value' => 2,
                     ),
+                    array(
+                        'name' => 'test_some_metric_sum',
+                        'labelNames' => array('foo', 'bar'),
+                        'labelValues' => array('lalal', 'lululu'),
+                        'value' => 368,
+                    )
                 )
             )
         );
@@ -100,16 +100,16 @@ class HistogramTest extends PHPUnit_Framework_TestCase
                         'value' => 1,
                     ),
                     array(
-                        'name' => 'test_some_metric_sum',
-                        'labelNames' => array(),
-                        'labelValues' => array(),
-                        'value' => 245,
-                    ),
-                    array(
                         'name' => 'test_some_metric_count',
                         'labelNames' => array(),
                         'labelValues' => array(),
                         'value' => 1,
+                    ),
+                    array(
+                        'name' => 'test_some_metric_sum',
+                        'labelNames' => array(),
+                        'labelValues' => array(),
+                        'value' => 245,
                     )
                 )
             )

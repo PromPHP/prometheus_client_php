@@ -77,16 +77,16 @@ class Histogram
                 );
             }
             $samples[] = array(
-                'name' => $this->getFullName() . '_sum',
-                'labelNames' => $this->getLabelNames(),
-                'labelValues' => $labelValues,
-                'value' => $value['sum']
-            );
-            $samples[] = array(
                 'name' => $this->getFullName() . '_count',
                 'labelNames' => $this->getLabelNames(),
                 'labelValues' => $labelValues,
                 'value' => $value['count']
+            );
+            $samples[] = array(
+                'name' => $this->getFullName() . '_sum',
+                'labelNames' => $this->getLabelNames(),
+                'labelValues' => $labelValues,
+                'value' => $value['sum']
             );
         }
         return $samples;
