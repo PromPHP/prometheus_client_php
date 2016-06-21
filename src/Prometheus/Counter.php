@@ -3,29 +3,9 @@
 namespace Prometheus;
 
 
-class Counter
+class Counter extends Metric
 {
     const TYPE = 'counter';
-
-    private $namespace;
-    private $name;
-    private $help;
-    private $values = array();
-    private $labels;
-
-    /**
-     * @param string $namespace
-     * @param string $name
-     * @param string $help
-     * @param array $labels
-     */
-    public function __construct($namespace, $name, $help, $labels = array())
-    {
-        $this->namespace = $namespace;
-        $this->name = $name;
-        $this->help = $help;
-        $this->labels = $labels;
-    }
 
     /**
      * @return Sample[]
@@ -53,7 +33,7 @@ class Counter
     }
 
     /**
-     * @param array $labels e.g. ['controller' => 'status', 'action' => 'opcode']
+     * @param array $labels e.g. ['status', 'opcode']
      */
     public function increase(array $labels = array())
     {
@@ -62,13 +42,12 @@ class Counter
 
     /**
      * @param int $count e.g. 2
-     * @param array $labels e.g. ['controller' => 'status', 'action' => 'opcode']
+     * @param array $labels e.g. ['status', 'opcode']
      */
     public function increaseBy($count, array $labels = array())
     {
-        if (array_keys($labels) != $this->labels) {
-            throw new \InvalidArgumentException(sprintf('Label %s is not defined.', $labels));
-        }
+        $this->assertLabelsAreDefinedCorrectly($labels);
+
         if (!isset($this->values[serialize($labels)])) {
             $this->values[serialize($labels)] = 0;
         }

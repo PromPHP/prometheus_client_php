@@ -3,15 +3,10 @@
 namespace Prometheus;
 
 
-class Histogram
+class Histogram extends Metric
 {
     const TYPE = 'histogram';
 
-    private $namespace;
-    private $name;
-    private $help;
-    private $values = array();
-    private $labels;
     private $buckets;
 
     /**
@@ -23,10 +18,7 @@ class Histogram
      */
     public function __construct($namespace, $name, $help, $labels = array(), $buckets = array())
     {
-        $this->namespace = $namespace;
-        $this->name = $name;
-        $this->help = $help;
-        $this->labels = $labels;
+        parent::__construct($namespace, $name, $help, $labels);
 
         if (0 == count($buckets)) {
             throw new \InvalidArgumentException("Histogram must have at least one bucket.");
@@ -49,13 +41,12 @@ class Histogram
 
     /**
      * @param double $value e.g. 123
-     * @param array $labels e.g. ['controller' => 'status', 'action' => 'opcode']
+     * @param array $labels e.g. ['status', 'opcode']
      */
     public function observe($value, $labels = array())
     {
-        if (array_keys($labels) != $this->labels) {
-            throw new \InvalidArgumentException(sprintf('Label %s is not defined.', $labels));
-        }
+        $this->assertLabelsAreDefinedCorrectly($labels);
+
         if (!isset($this->values[serialize($labels)])) {
             $this->values[serialize($labels)] = array(
                 'sum' => 0,
@@ -83,8 +74,7 @@ class Histogram
     {
         $samples = array();
         foreach ($this->values as $serializedLabels => $value) {
-            $labels = unserialize($serializedLabels);
-            $labelValues = array_values($labels);
+            $labelValues = unserialize($serializedLabels);
             foreach ($value['buckets'] as $bucket => $bucketCounter) {
                 $samples[] = new Sample(
                     array(

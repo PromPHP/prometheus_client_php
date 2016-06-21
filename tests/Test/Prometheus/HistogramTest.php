@@ -18,8 +18,8 @@ class HistogramTest extends PHPUnit_Framework_TestCase
     public function itShouldObserveWithLabels()
     {
         $gauge = new Histogram('test', 'some_metric', 'this is for testing', array('foo', 'bar'), array(100, 200, 300));
-        $gauge->observe(123, array('foo' => 'lalal', 'bar' => 'lululu'));
-        $gauge->observe(245, array('foo' => 'lalal', 'bar' => 'lululu'));
+        $gauge->observe(123, array('lalal', 'lululu'));
+        $gauge->observe(245, array('lalal', 'lululu'));
         $this->assertThat(
             $gauge->getSamples(),
             $this->equalTo(

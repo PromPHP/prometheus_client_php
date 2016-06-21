@@ -18,7 +18,7 @@ class GaugeTest extends PHPUnit_Framework_TestCase
     public function itShouldAllowSetWithLabels()
     {
         $gauge = new Gauge('test', 'some_metric', 'this is for testing', array('foo', 'bar'));
-        $gauge->set(123, array('foo' => 'lalal', 'bar' => 'lululu'));
+        $gauge->set(123, array('lalal', 'lululu'));
         $this->assertThat(
             $gauge->getSamples(),
             $this->equalTo(

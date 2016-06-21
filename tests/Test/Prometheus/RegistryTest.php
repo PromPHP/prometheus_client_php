@@ -22,12 +22,12 @@ class RegistryTest extends PHPUnit_Framework_TestCase
     {
         $client = new Registry($this->newRedisAdapter());
         $metric = $client->registerGauge('test', 'some_metric', 'this is for testing', array('foo', 'bar'));
-        $metric->set(14, array('foo' => 'lalal', 'bar' => 'lululu'));
-        $client->getGauge('test', 'some_metric', array('foo', 'bar'))->set(34, array('foo' => 'lalal', 'bar' => 'lululu'));
+        $metric->set(14, array('lalal', 'lululu'));
+        $client->getGauge('test', 'some_metric', array('foo', 'bar'))->set(34, array('lalal', 'lululu'));
 
         $g = $client->registerGauge('test', 'some_metric', 'this is for testing', array('foo'));
-        $g->set(32, array('foo' => 'lalal'));
-        $g->set(35, array('foo' => 'lalab'));
+        $g->set(32, array('lalal'));
+        $g->set(35, array('lalab'));
 
         $client->flush();
 
@@ -79,9 +79,9 @@ EOF
     {
         $client = new Registry($this->newRedisAdapter());
         $metric = $client->registerHistogram('test', 'some_metric', 'this is for testing', array('foo', 'bar'), array(0.1, 1, 5, 10));
-        $metric->observe(2, array('foo' => 'lalal', 'bar' => 'lululu'));
-        $client->getHistogram('test', 'some_metric', array('foo', 'bar'))->observe(13, array('foo' => 'lalal', 'bar' => 'lululu'));
-        $client->getHistogram('test', 'some_metric', array('foo', 'bar'))->observe(7.1, array('foo' => 'lalal', 'bar' => 'lululu'));
+        $metric->observe(2, array('lalal', 'lululu'));
+        $client->getHistogram('test', 'some_metric', array('foo', 'bar'))->observe(13, array('lalal', 'lululu'));
+        $client->getHistogram('test', 'some_metric', array('foo', 'bar'))->observe(7.1, array('lalal', 'lululu'));
         $client->flush();
 
         $client = new Registry($this->newRedisAdapter());

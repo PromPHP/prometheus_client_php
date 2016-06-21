@@ -18,9 +18,9 @@ class CounterTest extends PHPUnit_Framework_TestCase
     public function itShouldIncreaseWithLabels()
     {
         $gauge = new Counter('test', 'some_metric', 'this is for testing', array('foo', 'bar'));
-        $gauge->increase(array('foo' => 'lalal', 'bar' => 'lululu'));
-        $gauge->increase(array('foo' => 'lalal', 'bar' => 'lululu'));
-        $gauge->increase(array('foo' => 'lalal', 'bar' => 'lululu'));
+        $gauge->increase(array('lalal', 'lululu'));
+        $gauge->increase(array('lalal', 'lululu'));
+        $gauge->increase(array('lalal', 'lululu'));
         $this->assertThat(
             $gauge->getSamples(),
             $this->equalTo(
@@ -68,8 +68,8 @@ class CounterTest extends PHPUnit_Framework_TestCase
     public function itShouldIncreaseTheCounterByAnArbitraryInteger()
     {
         $gauge = new Counter('test', 'some_metric', 'this is for testing', array('foo', 'bar'));
-        $gauge->increase(array('foo' => 'lalal', 'bar' => 'lululu'));
-        $gauge->increaseBy(123, array('foo' => 'lalal', 'bar' => 'lululu'));
+        $gauge->increase(array('lalal', 'lululu'));
+        $gauge->increaseBy(123, array('lalal', 'lululu'));
         $this->assertThat(
             $gauge->getSamples(),
             $this->equalTo(
