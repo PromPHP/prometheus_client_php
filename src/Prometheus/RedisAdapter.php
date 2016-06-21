@@ -34,26 +34,26 @@ class RedisAdapter
         $key = sha1($gauge->getFullName() . '_' . implode('_', $gauge->getLabelNames()));
         $sampleKeys = array();
         foreach ($gauge->getSamples() as $sample) {
-            $sampleKey = $sample['name'] . serialize($sample['labelValues']);
+            $sampleKey = $sample->getKey();
             $this->redis->hSet(
                 self::PROMETHEUS_GAUGES . $key . self::PROMETHEUS_SAMPLE_VALUE_SUFFIX,
                 $sampleKey,
-                $sample['value']
+                $sample->getValue()
             );
             $this->redis->hSet(
                 self::PROMETHEUS_GAUGES . $key . self::PROMETHEUS_SAMPLE_LABEL_VALUES_SUFFIX,
                 $sampleKey,
-                serialize($sample['labelValues'])
+                serialize($sample->getLabelValues())
             );
             $this->redis->hSet(
                 self::PROMETHEUS_GAUGES . $key . self::PROMETHEUS_SAMPLE_LABEL_NAMES_SUFFIX,
                 $sampleKey,
-                serialize($sample['labelNames'])
+                serialize($sample->getLabelNames())
             );
             $this->redis->hSet(
                 self::PROMETHEUS_GAUGES . $key . self::PROMETHEUS_SAMPLE_NAME_SUFFIX,
                 $sampleKey,
-                $sample['name']
+                $sample->getName()
             );
             $sampleKeys[] = $sampleKey;
         }

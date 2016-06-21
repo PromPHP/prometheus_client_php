@@ -2,8 +2,10 @@
 
 
 namespace Test\Prometheus;
+
 use PHPUnit_Framework_TestCase;
 use Prometheus\Gauge;
+use Prometheus\Sample;
 
 /**
  * See https://prometheus.io/docs/instrumenting/exposition_formats/
@@ -21,11 +23,13 @@ class GaugeTest extends PHPUnit_Framework_TestCase
             $gauge->getSamples(),
             $this->equalTo(
                 array(
-                    array(
-                        'name' => 'test_some_metric',
-                        'labelNames' => array('foo', 'bar'),
-                        'labelValues' => array('lalal', 'lululu'),
-                        'value' => 123,
+                    new Sample(
+                        array(
+                            'name' => 'test_some_metric',
+                            'labelNames' => array('foo', 'bar'),
+                            'labelValues' => array('lalal', 'lululu'),
+                            'value' => 123,
+                        )
                     )
                 )
             )
@@ -45,11 +49,13 @@ class GaugeTest extends PHPUnit_Framework_TestCase
             $gauge->getSamples(),
             $this->equalTo(
                 array(
-                    array(
-                        'name' => 'test_some_metric',
-                        'labelNames' => array(),
-                        'labelValues' => array(),
-                        'value' => 123,
+                    new Sample(
+                        array(
+                            'name' => 'test_some_metric',
+                            'labelNames' => array(),
+                            'labelValues' => array(),
+                            'value' => 123,
+                        )
                     )
                 )
             )

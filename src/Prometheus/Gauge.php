@@ -4,9 +4,6 @@
 namespace Prometheus;
 
 
-use RecursiveArrayIterator;
-use RecursiveIteratorIterator;
-
 class Gauge
 {
     const TYPE = 'gauge';
@@ -44,18 +41,20 @@ class Gauge
     }
 
     /**
-     * @return array [['name' => 'foo_bar', 'labelNames' => ['foo'], 'labelValues' => ['bar'], 'value' => '23']]
+     * @return Sample[]
      */
     public function getSamples()
     {
         $metrics = array();
         foreach ($this->values as $serializedLabels => $value) {
             $labels = unserialize($serializedLabels);
-            $metrics[] = array(
-                'name' => $this->getFullName(),
-                'labelNames' => $this->getLabelNames(),
-                'labelValues' => array_values($labels),
-                'value' => $value
+            $metrics[] = new Sample(
+                array(
+                    'name' => $this->getFullName(),
+                    'labelNames' => $this->getLabelNames(),
+                    'labelValues' => array_values($labels),
+                    'value' => $value
+                )
             );
         }
         return $metrics;
