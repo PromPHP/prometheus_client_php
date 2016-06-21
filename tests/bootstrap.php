@@ -11,3 +11,5 @@ if (!file_exists($autoload)) {
 }
 $loader = require $autoload;
 $loader->add('Test\\Prometheus', __DIR__);
+
+define('REDIS_HOST', isset($_SERVER['REDIS_HOST']) ? $_SERVER['REDIS_HOST'] : '127.0.0.1');

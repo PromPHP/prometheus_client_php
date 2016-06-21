@@ -21,5 +21,7 @@ Run the tests:
 ```
 composer install
 
+# when redis is not listening on localhost:
+# export REDIS_HOST=192.168.59.100
 ./vendor/bin/phpunit
 ```

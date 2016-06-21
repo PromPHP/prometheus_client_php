@@ -105,6 +105,6 @@ EOF
 
     private function newRedisAdapter()
     {
-        return new RedisAdapter('192.168.59.100');
+        return new RedisAdapter(REDIS_HOST);
     }
 }
