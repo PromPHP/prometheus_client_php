@@ -37,11 +37,11 @@ class RegistryTest extends PHPUnit_Framework_TestCase
             $this->equalTo(<<<EOF
 # HELP test_some_metric this is for testing
 # TYPE test_some_metric gauge
-test_some_metric{foo="lalal",bar="lululu"} 34
+test_some_metric{foo="lalab"} 35
+test_some_metric{foo="lalal"} 32
 # HELP test_some_metric this is for testing
 # TYPE test_some_metric gauge
-test_some_metric{foo="lalal"} 32
-test_some_metric{foo="lalab"} 35
+test_some_metric{foo="lalal",bar="lululu"} 34
 
 EOF
             )
