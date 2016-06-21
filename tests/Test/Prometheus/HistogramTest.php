@@ -175,15 +175,24 @@ class HistogramTest extends PHPUnit_Framework_TestCase
      */
     public function itShouldThrowAnExceptionWhenTheBucketSizesAreNotIncreasing()
     {
-
+        new Histogram('test', 'some_metric', 'this is for testing', array(), array(1, 1));
     }
 
     /**
      * @test
      * @expectedException \InvalidArgumentException
      */
-    public function itShouldThrowAnExceptionWhenTheBucketsAreNotNumeric()
+    public function itShouldThrowAnExceptionWhenThereIsLessThanOnBucket()
     {
+        new Histogram('test', 'some_metric', 'this is for testing', array(), array());
+    }
 
+    /**
+     * @test
+     * @expectedException \InvalidArgumentException
+     */
+    public function itShouldThrowAnExceptionWhenThereIsALabelNamedLe()
+    {
+        new Histogram('test', 'some_metric', 'this is for testing', array('le'), array());
     }
 }

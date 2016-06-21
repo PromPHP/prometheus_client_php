@@ -27,6 +27,23 @@ class Histogram
         $this->name = $name;
         $this->help = $help;
         $this->labels = $labels;
+
+        if (0 == count($buckets)) {
+            throw new \InvalidArgumentException("Histogram must have at least one bucket.");
+        }
+        for($i = 0; $i < count($buckets) - 1; $i++) {
+            if ($buckets[$i] >= $buckets[$i + 1]) {
+                throw new \InvalidArgumentException(
+                    "Histogram buckets must be in increasing order: " .
+                    $buckets[$i] . " >= " . $buckets[$i + 1]
+                );
+            }
+        }
+        foreach ($buckets as $bucket) {
+            if ($bucket == 'le') {
+                throw new \InvalidArgumentException("Histogram cannot have a label named 'le'.");
+            }
+        }
         $this->buckets = $buckets;
     }
 
