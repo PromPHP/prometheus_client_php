@@ -31,7 +31,7 @@ class Histogram
         if (0 == count($buckets)) {
             throw new \InvalidArgumentException("Histogram must have at least one bucket.");
         }
-        for($i = 0; $i < count($buckets) - 1; $i++) {
+        for ($i = 0; $i < count($buckets) - 1; $i++) {
             if ($buckets[$i] >= $buckets[$i + 1]) {
                 throw new \InvalidArgumentException(
                     "Histogram buckets must be in increasing order: " .
@@ -77,7 +77,7 @@ class Histogram
     }
 
     /**
-     * @return array [['name' => 'foo_bar', labels => ['name' => 'foo', value='bar'], value => '23']]
+     * @return Sample[]
      */
     public function getSamples()
     {
@@ -86,24 +86,30 @@ class Histogram
             $labels = unserialize($serializedLabels);
             $labelValues = array_values($labels);
             foreach ($value['buckets'] as $bucket => $bucketCounter) {
-                $samples[] = array(
-                    'name' => $this->getFullName() . '_bucket',
-                    'labelNames' => array_merge($this->getLabelNames(), array('le')),
-                    'labelValues' => array_merge($labelValues, array($bucket)),
-                    'value' => $bucketCounter
+                $samples[] = new Sample(
+                    array(
+                        'name' => $this->getFullName() . '_bucket',
+                        'labelNames' => array_merge($this->getLabelNames(), array('le')),
+                        'labelValues' => array_merge($labelValues, array($bucket)),
+                        'value' => $bucketCounter
+                    )
                 );
             }
-            $samples[] = array(
-                'name' => $this->getFullName() . '_count',
-                'labelNames' => $this->getLabelNames(),
-                'labelValues' => $labelValues,
-                'value' => $value['count']
+            $samples[] = new Sample(
+                array(
+                    'name' => $this->getFullName() . '_count',
+                    'labelNames' => $this->getLabelNames(),
+                    'labelValues' => $labelValues,
+                    'value' => $value['count']
+                )
             );
-            $samples[] = array(
-                'name' => $this->getFullName() . '_sum',
-                'labelNames' => $this->getLabelNames(),
-                'labelValues' => $labelValues,
-                'value' => $value['sum']
+            $samples[] = new Sample(
+                array(
+                    'name' => $this->getFullName() . '_sum',
+                    'labelNames' => $this->getLabelNames(),
+                    'labelValues' => $labelValues,
+                    'value' => $value['sum']
+                )
             );
         }
         return $samples;
