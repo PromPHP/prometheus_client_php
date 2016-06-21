@@ -42,19 +42,4 @@ class Gauge extends Metric
     {
         return self::TYPE;
     }
-
-    public function getHelp()
-    {
-        return $this->help;
-    }
-
-    public function getFullName()
-    {
-        return Metric::metricName($this->namespace, $this->name);
-    }
-
-    public function getLabelNames()
-    {
-        return $this->labels;
-    }
 }

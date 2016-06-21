@@ -109,19 +109,4 @@ class Histogram extends Metric
     {
         return self::TYPE;
     }
-
-    public function getFullName()
-    {
-        return Metric::metricName($this->namespace, $this->name);
-    }
-
-    public function getLabelNames()
-    {
-        return $this->labels;
-    }
-
-    public function getHelp()
-    {
-        return $this->help;
-    }
 }

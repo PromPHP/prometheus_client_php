@@ -3,7 +3,7 @@
 namespace Prometheus;
 
 
-class Metric
+abstract class Metric
 {
     protected $labels;
     protected $namespace;
@@ -36,6 +36,23 @@ class Metric
             return self::metricName($namespace, $name);
         }
         return self::metricName($namespace, $name) . '_' . implode('_', $labels);
+    }
+
+    public abstract function getType();
+
+    public function getFullName()
+    {
+        return Metric::metricName($this->namespace, $this->name);
+    }
+
+    public function getLabelNames()
+    {
+        return $this->labels;
+    }
+
+    public function getHelp()
+    {
+        return $this->help;
     }
 
     /**

@@ -53,19 +53,4 @@ class Counter extends Metric
         }
         $this->values[serialize($labels)] += $count;
     }
-
-    public function getFullName()
-    {
-        return Metric::metricName($this->namespace, $this->name);
-    }
-
-    public function getLabelNames()
-    {
-        return $this->labels;
-    }
-
-    public function getHelp()
-    {
-        return $this->help;
-    }
 }
