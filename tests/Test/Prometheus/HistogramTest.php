@@ -121,7 +121,52 @@ class HistogramTest extends PHPUnit_Framework_TestCase
      */
     public function itShouldObserveValuesOfTypeDouble()
     {
-
+        $gauge = new Histogram('test', 'some_metric', 'this is for testing', array(), array(0.1, 0.2, 0.3));
+        $gauge->observe(0.11);
+        $gauge->observe(0.3);
+        $this->assertThat(
+            $gauge->getSamples(),
+            $this->equalTo(
+                array(
+                    array(
+                        'name' => 'test_some_metric_bucket',
+                        'labelNames' => array('le'),
+                        'labelValues' => array(0.1),
+                        'value' => 0,
+                    ),
+                    array(
+                        'name' => 'test_some_metric_bucket',
+                        'labelNames' => array('le'),
+                        'labelValues' => array(0.2),
+                        'value' => 1,
+                    ),
+                    array(
+                        'name' => 'test_some_metric_bucket',
+                        'labelNames' => array('le'),
+                        'labelValues' => array(0.3),
+                        'value' => 2,
+                    ),
+                    array(
+                        'name' => 'test_some_metric_bucket',
+                        'labelNames' => array('le'),
+                        'labelValues' => array('+Inf'),
+                        'value' => 2,
+                    ),
+                    array(
+                        'name' => 'test_some_metric_count',
+                        'labelNames' => array(),
+                        'labelValues' => array(),
+                        'value' => 2,
+                    ),
+                    array(
+                        'name' => 'test_some_metric_sum',
+                        'labelNames' => array(),
+                        'labelValues' => array(),
+                        'value' => 0.41,
+                    )
+                )
+            )
+        );
     }
 
     /**
