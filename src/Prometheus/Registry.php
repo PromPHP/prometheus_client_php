@@ -61,9 +61,7 @@ class Registry
             $this->counters,
             $this->histograms
         );
-        foreach ($metrics as $metric) {
-            $this->redisAdapter->storeMetric($metric);
-        }
+        $this->redisAdapter->storeMetrics($metrics);
     }
 
     /**
@@ -72,12 +70,7 @@ class Registry
     public function toText()
     {
         $renderer = new RenderTextFormat();
-        $metrics = array_merge(
-            $this->redisAdapter->fetchMetrics(Gauge::TYPE),
-            $this->redisAdapter->fetchMetrics(Counter::TYPE),
-            $this->redisAdapter->fetchMetrics(Histogram::TYPE)
-        );
-        return $renderer->render($metrics);
+        return $renderer->render($this->redisAdapter->fetchMetrics());
     }
 
     /**

@@ -18,6 +18,12 @@ class RedisAdapter
     const PROMETHEUS_SAMPLE_LABEL_VALUES_SUFFIX = '_LABEL_VALUES';
     const PROMETHEUS_SAMPLE_NAME_SUFFIX = '_NAME';
 
+    const METRIC_TYPES = [
+        Gauge::TYPE,
+        Counter::TYPE,
+        Histogram::TYPE,
+    ];
+
     private $hostname;
     private $redis;
 
@@ -31,6 +37,25 @@ class RedisAdapter
     {
         $this->openConnection();
         $this->redis->flushAll();
+    }
+
+    /**
+     * @param Metric[] $metrics
+     */
+    public function storeMetrics($metrics)
+    {
+        foreach ($metrics as $metric) {
+            $this->storeMetric($metric);
+        }
+    }
+
+    public function fetchMetrics()
+    {
+        $metrics = array();
+        foreach (self::METRIC_TYPES as $metricType) {
+            $metrics = array_merge($metrics, $this->fetchMetricsByType($metricType));
+        }
+        return $metrics;
     }
 
     /**
@@ -89,7 +114,7 @@ class RedisAdapter
      * @param string $metricType
      * @return MetricResponse[]
      */
-    public function fetchMetrics($metricType)
+    public function fetchMetricsByType($metricType)
     {
         $this->openConnection();
         $keys = $this->redis->zRange(
