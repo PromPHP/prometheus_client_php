@@ -34,30 +34,6 @@ class RedisAdapter
     }
 
     /**
-     * @return MetricResponse[]
-     */
-    public function fetchGauges()
-    {
-        return $this->fetchMetricsByType(Gauge::TYPE);
-    }
-
-    /**
-     * @return MetricResponse[]
-     */
-    public function fetchCounters()
-    {
-        return $this->fetchMetricsByType(Counter::TYPE);
-    }
-
-    /**
-     * @return MetricResponse[]
-     */
-    public function fetchHistograms()
-    {
-        return $this->fetchMetricsByType(Histogram::TYPE);
-    }
-
-    /**
      * @param Metric $metric
      */
     public function storeMetric(Metric $metric)
@@ -113,7 +89,7 @@ class RedisAdapter
      * @param string $metricType
      * @return MetricResponse[]
      */
-    private function fetchMetricsByType($metricType)
+    public function fetchMetrics($metricType)
     {
         $this->openConnection();
         $keys = $this->redis->zRange(

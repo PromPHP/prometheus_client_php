@@ -73,9 +73,9 @@ class Registry
     {
         $renderer = new RenderTextFormat();
         $metrics = array_merge(
-            $this->redisAdapter->fetchGauges(),
-            $this->redisAdapter->fetchCounters(),
-            $this->redisAdapter->fetchHistograms()
+            $this->redisAdapter->fetchMetrics(Gauge::TYPE),
+            $this->redisAdapter->fetchMetrics(Counter::TYPE),
+            $this->redisAdapter->fetchMetrics(Histogram::TYPE)
         );
         return $renderer->render($metrics);
     }
