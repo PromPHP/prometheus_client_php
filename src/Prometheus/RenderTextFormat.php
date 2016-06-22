@@ -5,13 +5,17 @@ namespace Prometheus;
 
 class RenderTextFormat
 {
-    public function render($metrics)
+    /**
+     * @param MetricResponse[] $metrics
+     * @return string
+     */
+    public function render(array $metrics)
     {
         $lines = array();
         foreach ($metrics as $metric) {
-            $lines[] = "# HELP " . $metric['name'] . " {$metric['help']}";
-            $lines[] = "# TYPE " . $metric['name'] . " {$metric['type']}";
-            foreach ($metric['samples'] as $sample) {
+            $lines[] = "# HELP " . $metric->getName() . " {$metric->getHelp()}";
+            $lines[] = "# TYPE " . $metric->getName() . " {$metric->getType()}";
+            foreach ($metric->getSamples() as $sample) {
                 $lines[] = $this->renderSample($sample);
             }
         }
@@ -20,19 +24,19 @@ class RenderTextFormat
 
 
     /**
-     * @param array $sample
+     * @param Sample $sample
      * @return string
      */
-    private function renderSample(array $sample)
+    private function renderSample(Sample $sample)
     {
         $escapedLabels = array();
-        if (!empty($sample['labels'])) {
-            foreach ($sample['labels'] as $labelName => $labelValue) {
+        if (!empty($sample->getLabels())) {
+            foreach ($sample->getLabels() as $labelName => $labelValue) {
                 $escapedLabels[] = $labelName . '="' . $this->escapeLabelValue($labelValue) . '"';
             }
-            return $sample['name'] . '{' . implode(',', $escapedLabels) . '} ' . $sample['value'];
+            return $sample->getName() . '{' . implode(',', $escapedLabels) . '} ' . $sample->getValue();
         }
-        return $sample['name'] . ' ' . $sample['value'];
+        return $sample->getName() . ' ' . $sample->getValue();
     }
 
     private function escapeLabelValue($v)
