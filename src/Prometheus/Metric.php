@@ -5,10 +5,9 @@ namespace Prometheus;
 
 abstract class Metric
 {
-    protected $labels;
-    protected $namespace;
     protected $name;
     protected $help;
+    protected $labels;
     protected $values = array();
 
     /**
@@ -19,8 +18,7 @@ abstract class Metric
      */
     public function __construct($namespace, $name, $help, $labels = array())
     {
-        $this->namespace = $namespace;
-        $this->name = $name;
+        $this->name = Metric::metricName($namespace, $name);
         $this->help = $help;
         $this->labels = $labels;
     }
@@ -48,9 +46,9 @@ abstract class Metric
      */
     public abstract function getSamples();
 
-    public function getFullName()
+    public function getName()
     {
-        return Metric::metricName($this->namespace, $this->name);
+        return $this->name;
     }
 
     public function getLabelNames()
@@ -65,7 +63,7 @@ abstract class Metric
 
     public function getKey()
     {
-        return sha1($this->getFullName() . serialize($this->getLabelNames()));
+        return sha1($this->getName() . serialize($this->getLabelNames()));
     }
 
     /**

@@ -17,7 +17,7 @@ class Counter extends Metric
             $labels = unserialize($serializedLabels);
             $metrics[] = new Sample(
                 array(
-                    'name' => $this->getFullName(),
+                    'name' => $this->getName(),
                     'labelNames' => $this->getLabelNames(),
                     'labelValues' => array_values($labels),
                     'value' => $value

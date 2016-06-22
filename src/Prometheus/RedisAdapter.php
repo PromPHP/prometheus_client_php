@@ -139,7 +139,7 @@ class RedisAdapter
             );
             $this->storeNewMetricSampleKey($typePrefix, $key, $sampleKey);
         }
-        $this->redis->hSet($typePrefix . $key, 'name', $metric->getFullName());
+        $this->redis->hSet($typePrefix . $key, 'name', $metric->getName());
         $this->redis->hSet($typePrefix . $key, 'help', $metric->getHelp());
         $this->redis->hSet($typePrefix . $key, 'type', $metric->getType());
         $this->redis->hSet($typePrefix . $key, 'labelNames', serialize($metric->getLabelNames()));

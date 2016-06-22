@@ -28,7 +28,7 @@ class Gauge extends Metric
             $labelValues = unserialize($serializedLabels);
             $metrics[] = new Sample(
                 array(
-                    'name' => $this->getFullName(),
+                    'name' => $this->getName(),
                     'labelNames' => $this->getLabelNames(),
                     'labelValues' => $labelValues,
                     'value' => $value

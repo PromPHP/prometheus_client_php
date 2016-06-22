@@ -78,7 +78,7 @@ class Histogram extends Metric
             foreach ($value['buckets'] as $bucket => $bucketCounter) {
                 $samples[] = new Sample(
                     array(
-                        'name' => $this->getFullName() . '_bucket',
+                        'name' => $this->getName() . '_bucket',
                         'labelNames' => array_merge($this->getLabelNames(), array('le')),
                         'labelValues' => array_merge($labelValues, array($bucket)),
                         'value' => $bucketCounter
@@ -87,7 +87,7 @@ class Histogram extends Metric
             }
             $samples[] = new Sample(
                 array(
-                    'name' => $this->getFullName() . '_count',
+                    'name' => $this->getName() . '_count',
                     'labelNames' => $this->getLabelNames(),
                     'labelValues' => $labelValues,
                     'value' => $value['count']
@@ -95,7 +95,7 @@ class Histogram extends Metric
             );
             $samples[] = new Sample(
                 array(
-                    'name' => $this->getFullName() . '_sum',
+                    'name' => $this->getName() . '_sum',
                     'labelNames' => $this->getLabelNames(),
                     'labelValues' => $labelValues,
                     'value' => $value['sum']
