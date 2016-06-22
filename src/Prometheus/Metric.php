@@ -63,6 +63,11 @@ abstract class Metric
         return $this->help;
     }
 
+    public function getKey()
+    {
+        return sha1($this->getFullName() . serialize($this->getLabelNames()));
+    }
+
     /**
      * @param $labels
      */

@@ -114,7 +114,7 @@ class RedisAdapter
     private function storeMetricByType(Metric $metric, $storeValueCommand, $typeKeysPrefix, $typePrefix)
     {
         $this->openConnection();
-        $key = sha1($metric->getFullName() . '_' . implode('_', $metric->getLabelNames()));
+        $key = $metric->getKey();
         foreach ($metric->getSamples() as $sample) {
             $sampleKey = $sample->getKey();
             $this->redis->$storeValueCommand(
