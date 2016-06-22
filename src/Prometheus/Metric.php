@@ -40,6 +40,11 @@ abstract class Metric
 
     public abstract function getType();
 
+    /**
+     * @return Sample[]
+     */
+    public abstract function getSamples();
+
     public function getFullName()
     {
         return Metric::metricName($this->namespace, $this->name);
