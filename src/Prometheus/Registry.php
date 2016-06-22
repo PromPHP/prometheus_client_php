@@ -56,15 +56,14 @@ class Registry
 
     public function flush()
     {
-        foreach ($this->gauges as $g) {
-            $this->redisAdapter->storeGauge($g);
-        };
-        foreach ($this->counters as $c) {
-            $this->redisAdapter->storeCounter($c);
-        };
-        foreach ($this->histograms as $h) {
-            $this->redisAdapter->storeHistogram($h);
-        };
+        $metrics = array_merge(
+            $this->gauges,
+            $this->counters,
+            $this->histograms
+        );
+        foreach ($metrics as $metric) {
+            $this->redisAdapter->storeMetric($metric);
+        }
     }
 
     /**
