@@ -55,8 +55,8 @@ EOF
     {
         $client = new Registry($this->newRedisAdapter());
         $metric = $client->registerCounter('test', 'some_metric', 'this is for testing', array('foo', 'bar'));
-        $metric->increaseBy(2, array('foo' => 'lalal', 'bar' => 'lululu'));
-        $client->getCounter('test', 'some_metric', array('foo', 'bar'))->increase(array('foo' => 'lalal', 'bar' => 'lululu'));
+        $metric->increaseBy(2, array('lalal', 'lululu'));
+        $client->getCounter('test', 'some_metric', array('foo', 'bar'))->increase(array('lalal', 'lululu'));
         $client->flush();
 
         $client = new Registry($this->newRedisAdapter());
