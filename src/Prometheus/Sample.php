@@ -55,6 +55,6 @@ class Sample
      */
     public function getKey()
     {
-        return $this->getName() . serialize($this->getLabelValues());
+        return sha1($this->getName() . serialize($this->getLabelValues()));
     }
 }
