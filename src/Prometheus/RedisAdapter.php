@@ -35,7 +35,7 @@ class RedisAdapter
 
     public function storeGauge(Gauge $gauge)
     {
-        $this->storeMetricByType($gauge, 'hSet', Gauge::TYPE);
+        $this->storeMetricByType($gauge, 'hSet');
     }
 
     /**
@@ -48,7 +48,7 @@ class RedisAdapter
 
     public function storeCounter(Counter $counter)
     {
-        $this->storeMetricByType($counter, 'hIncrBy', Counter::TYPE);
+        $this->storeMetricByType($counter, 'hIncrBy');
     }
 
     /**
@@ -61,7 +61,7 @@ class RedisAdapter
 
     public function storeHistogram(Histogram $histogram)
     {
-        $this->storeMetricByType($histogram, 'hIncrByFloat', Histogram::TYPE);
+        $this->storeMetricByType($histogram, 'hIncrByFloat');
     }
 
     /**
@@ -116,41 +116,41 @@ class RedisAdapter
     /**
      * @param Metric $metric
      * @param string $storeValueCommand
-     * @param string $metricType
      */
-    private function storeMetricByType(Metric $metric, $storeValueCommand, $metricType)
+    private function storeMetricByType(Metric $metric, $storeValueCommand)
     {
         $this->openConnection();
+        $type = $metric->getType();
         $key = $metric->getKey();
         foreach ($metric->getSamples() as $sample) {
             $sampleKey = $sample->getKey();
             $this->redis->$storeValueCommand(
-                self::PROMETHEUS_PREFIX . $metricType . $key . self::PROMETHEUS_SAMPLE_VALUE_SUFFIX,
+                self::PROMETHEUS_PREFIX . $type . $key . self::PROMETHEUS_SAMPLE_VALUE_SUFFIX,
                 $sampleKey,
                 $sample->getValue()
             );
             $this->redis->hSet(
-                self::PROMETHEUS_PREFIX . $metricType . $key . self::PROMETHEUS_SAMPLE_LABEL_VALUES_SUFFIX,
+                self::PROMETHEUS_PREFIX . $type . $key . self::PROMETHEUS_SAMPLE_LABEL_VALUES_SUFFIX,
                 $sampleKey,
                 serialize($sample->getLabelValues())
             );
             $this->redis->hSet(
-                self::PROMETHEUS_PREFIX . $metricType . $key . self::PROMETHEUS_SAMPLE_LABEL_NAMES_SUFFIX,
+                self::PROMETHEUS_PREFIX . $type . $key . self::PROMETHEUS_SAMPLE_LABEL_NAMES_SUFFIX,
                 $sampleKey,
                 serialize($sample->getLabelNames())
             );
             $this->redis->hSet(
-                self::PROMETHEUS_PREFIX . $metricType . $key . self::PROMETHEUS_SAMPLE_NAME_SUFFIX,
+                self::PROMETHEUS_PREFIX . $type . $key . self::PROMETHEUS_SAMPLE_NAME_SUFFIX,
                 $sampleKey,
                 $sample->getName()
             );
-            $this->storeNewMetricSampleKey($metricType, $key, $sampleKey);
+            $this->storeNewMetricSampleKey($type, $key, $sampleKey);
         }
-        $this->redis->hSet(self::PROMETHEUS_PREFIX . $metricType . $key, 'name', $metric->getName());
-        $this->redis->hSet(self::PROMETHEUS_PREFIX . $metricType . $key, 'help', $metric->getHelp());
-        $this->redis->hSet(self::PROMETHEUS_PREFIX . $metricType . $key, 'type', $metric->getType());
-        $this->redis->hSet(self::PROMETHEUS_PREFIX . $metricType . $key, 'labelNames', serialize($metric->getLabelNames()));
-        $this->storeNewMetricKey($metricType, $key);
+        $this->redis->hSet(self::PROMETHEUS_PREFIX . $type . $key, 'name', $metric->getName());
+        $this->redis->hSet(self::PROMETHEUS_PREFIX . $type . $key, 'help', $metric->getHelp());
+        $this->redis->hSet(self::PROMETHEUS_PREFIX . $type . $key, 'type', $metric->getType());
+        $this->redis->hSet(self::PROMETHEUS_PREFIX . $type . $key, 'labelNames', serialize($metric->getLabelNames()));
+        $this->storeNewMetricKey($type, $key);
     }
 
     /**
