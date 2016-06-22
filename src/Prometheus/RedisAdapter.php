@@ -14,14 +14,14 @@ class RedisAdapter
     const PROMETHEUS_METRICS_COUNTER = 'PROMETHEUS_METRICS_COUNTER';
     const PROMETHEUS_METRICS_SAMPLE_COUNTER = 'PROMETHEUS_METRICS_SAMPLE_COUNTER';
 
-    private $hostname;
-    private $redis;
-
     const PROMETHEUS_SAMPLE_VALUE_SUFFIX = '_value';
     const PROMETHEUS_SAMPLE_LABEL_NAMES_SUFFIX = '_labelNames';
     const PROMETHEUS_SAMPLE_LABEL_VALUES_SUFFIX = '_labelValues';
     const PROMETHEUS_SAMPLE_NAME_SUFFIX = '_name';
     const PROMETHEUS_SAMPLE_KEYS_SUFFIX = '_sampleKeys';
+
+    private $hostname;
+    private $redis;
 
     public function __construct($hostname)
     {
@@ -66,6 +66,8 @@ class RedisAdapter
     }
 
     /**
+     * @param string $typeKeysPrefix
+     * @param string $typePrefix
      * @return array
      */
     private function fetchMetricsByType($typeKeysPrefix, $typePrefix)
