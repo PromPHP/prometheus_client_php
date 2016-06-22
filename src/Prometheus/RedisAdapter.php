@@ -100,26 +100,26 @@ class RedisAdapter
             $values = $this->redis->hGetAll(self::PROMETHEUS_PREFIX . $metricType . $key . self::PROMETHEUS_SAMPLE_VALUE_SUFFIX);
             $labelValuesList = $this->redis->hGetAll(self::PROMETHEUS_PREFIX . $metricType . $key . self::PROMETHEUS_SAMPLE_LABEL_VALUES_SUFFIX);
             $sampleKeys = $this->redis->zRange(self::PROMETHEUS_PREFIX . $metricType . $key . self::PROMETHEUS_SAMPLE_KEYS_SUFFIX, 0, -1);
-            $samples = array();
+            $sampleResponses = array();
             foreach ($sampleKeys as $sampleKey) {
                 $labelNames = unserialize(
                     $this->redis->hGet(self::PROMETHEUS_PREFIX . $metricType . $key . self::PROMETHEUS_SAMPLE_LABEL_NAMES_SUFFIX, $sampleKey)
                 );
                 $name = $this->redis->hGet(self::PROMETHEUS_PREFIX . $metricType . $key . self::PROMETHEUS_SAMPLE_NAME_SUFFIX, $sampleKey);
-                $samples[] = array(
+                $sampleResponses[] = array(
                     'name' => $name,
                     'labelNames' => $labelNames,
                     'labelValues' => unserialize($labelValuesList[$sampleKey]),
                     'value' => $values[$sampleKey]
                 );
             }
-            $redisGauge = $this->redis->hGetAll(self::PROMETHEUS_PREFIX . $metricType . $key);
+            $metricResponse = $this->redis->hGetAll(self::PROMETHEUS_PREFIX . $metricType . $key);
             $metrics[] = new MetricResponse(
                 array(
-                    'name' => $redisGauge['name'],
-                    'help' => $redisGauge['help'],
-                    'type' => $redisGauge['type'],
-                    'samples' => $samples
+                    'name' => $metricResponse['name'],
+                    'help' => $metricResponse['help'],
+                    'type' => $metricResponse['type'],
+                    'samples' => $sampleResponses
                 )
             );
         }
