@@ -27,6 +27,9 @@ class Counter extends Metric
         return $metrics;
     }
 
+    /**
+     * @return string
+     */
     public function getType()
     {
         return self::TYPE;

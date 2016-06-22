@@ -105,6 +105,9 @@ class Histogram extends Metric
         return $samples;
     }
 
+    /**
+     * @return string
+     */
     public function getType()
     {
         return self::TYPE;

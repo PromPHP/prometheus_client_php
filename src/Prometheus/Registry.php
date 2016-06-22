@@ -67,6 +67,9 @@ class Registry
         };
     }
 
+    /**
+     * @return string
+     */
     public function toText()
     {
         $renderer = new RenderTextFormat();

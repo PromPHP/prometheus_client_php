@@ -38,6 +38,9 @@ abstract class Metric
         return self::metricName($namespace, $name) . '_' . implode('_', $labels);
     }
 
+    /**
+     * @return string
+     */
     public abstract function getType();
 
     /**
