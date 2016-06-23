@@ -20,7 +20,7 @@ see [example.php](example.php)
 
 Start a redis instance:
 ```
-docker run -d --name redis -p 6379:6379 redis
+docker-compose up redis
 ```
 
 Run the tests:
