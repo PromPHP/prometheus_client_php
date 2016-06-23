@@ -1,9 +1,20 @@
-client_php:
+nginx:
+  build: nginx/
+  links:
+    - php-fpm
+  ports:
+    - 8080:80
+
+php-fpm:
   build: .
   volumes:
-    - .:/prometheus_client_php
+    - .:/var/www/html
   links:
     - redis
+  environment:
+    - REDIS_HOST=redis
 
 redis:
   image: redis
+  ports:
+      - 6379:6379

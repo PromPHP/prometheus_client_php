@@ -31,3 +31,11 @@ composer install
 # export REDIS_HOST=192.168.59.100
 ./vendor/bin/phpunit
 ```
+
+## Black box testing
+
+Just start the nginx, fpm & redis setup with docker-compose:
+```
+docker-compose up
+vendor/bin/phpunit tests/Test/BlackBoxTest.php
+```

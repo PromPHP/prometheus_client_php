@@ -17,16 +17,16 @@ class BlackBoxTest extends PHPUnit_Framework_TestCase
 
         $start = microtime(true);
         $promises = [
-            $client->getAsync('/examples/some_request_uri.php?0'),
-            $client->getAsync('/examples/some_request_uri.php?1'),
-            $client->getAsync('/examples/some_request_uri.php?2'),
-            $client->getAsync('/examples/some_request_uri.php?3'),
-            $client->getAsync('/examples/some_request_uri.php?4'),
-            $client->getAsync('/examples/some_request_uri.php?5'),
-            $client->getAsync('/examples/some_request_uri.php?6'),
-            $client->getAsync('/examples/some_request_uri.php?7'),
-            $client->getAsync('/examples/some_request_uri.php?8'),
-            $client->getAsync('/examples/some_request_uri.php?9'),
+            $client->getAsync('/examples/some_request_uri.php?c=0'),
+            $client->getAsync('/examples/some_request_uri.php?c=1'),
+            $client->getAsync('/examples/some_request_uri.php?c=2'),
+            $client->getAsync('/examples/some_request_uri.php?c=3'),
+            $client->getAsync('/examples/some_request_uri.php?c=4'),
+            $client->getAsync('/examples/some_request_uri.php?c=5'),
+            $client->getAsync('/examples/some_request_uri.php?c=6'),
+            $client->getAsync('/examples/some_request_uri.php?c=7'),
+            $client->getAsync('/examples/some_request_uri.php?c=8'),
+            $client->getAsync('/examples/some_request_uri.php?c=9'),
         ];
 
         Promise\settle($promises)->wait();
