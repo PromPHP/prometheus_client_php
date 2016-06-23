@@ -7,7 +7,7 @@ We recommend to run a local redis instance next to your PHP workers.
 
 ## Usage
 
-see [example.php](example.php)
+see [examples](examples)
 
 ## Development
 
