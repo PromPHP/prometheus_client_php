@@ -11,8 +11,10 @@
         "ext-redis": "*"
     },
     "require-dev": {
-        "phpunit/phpunit": "5.4.6",
-        "guzzlehttp/guzzle": "~6.0"
+        "phpunit/phpunit": "5.4.6"
+    },
+    "suggest": {
+        "guzzlehttp/guzzle": "~6.0 for running the blackbox tests."
     },
     "autoload": {
         "psr-0": {
