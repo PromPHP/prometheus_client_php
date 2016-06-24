@@ -6,7 +6,7 @@ nginx:
     - 8080:80
 
 php-fpm:
-  build: .
+  build: php-fpm/
   volumes:
     - .:/var/www/html
   links:
