@@ -44,6 +44,7 @@ class RedisAdapter
      */
     public function storeMetrics($metrics)
     {
+        $this->openConnection();
         foreach ($metrics as $metric) {
             $this->storeMetric($metric);
         }
@@ -51,6 +52,7 @@ class RedisAdapter
 
     public function fetchMetrics()
     {
+        $this->openConnection();
         $metrics = array();
         foreach (self::METRIC_TYPES as $metricType) {
             $metrics = array_merge($metrics, $this->fetchMetricsByType($metricType));
@@ -61,9 +63,8 @@ class RedisAdapter
     /**
      * @param Metric $metric
      */
-    public function storeMetric(Metric $metric)
+    private function storeMetric(Metric $metric)
     {
-        $this->openConnection();
         $type = $metric->getType();
         $key = $metric->getKey();
         foreach ($metric->getSamples() as $sample) {
@@ -114,9 +115,8 @@ class RedisAdapter
      * @param string $metricType
      * @return MetricResponse[]
      */
-    public function fetchMetricsByType($metricType)
+    private function fetchMetricsByType($metricType)
     {
-        $this->openConnection();
         $keys = $this->redis->zRange(
             self::PROMETHEUS_PREFIX . $metricType . self::PROMETHEUS_METRIC_KEYS_SUFFIX, 0, -1
         );
