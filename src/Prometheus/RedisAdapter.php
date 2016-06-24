@@ -18,19 +18,19 @@ class RedisAdapter
     const PROMETHEUS_SAMPLE_LABEL_VALUES_SUFFIX = '_LABEL_VALUES';
     const PROMETHEUS_SAMPLE_NAME_SUFFIX = '_NAME';
 
-    const METRIC_TYPES = [
-        Gauge::TYPE,
-        Counter::TYPE,
-        Histogram::TYPE,
-    ];
-
     private $hostname;
     private $redis;
+    private $metricTypes;
 
     public function __construct($hostname)
     {
         $this->hostname = $hostname;
         $this->redis = new \Redis();
+        $this->metricTypes = array(
+            Gauge::TYPE,
+            Counter::TYPE,
+            Histogram::TYPE,
+        );
     }
 
     public function flushRedis()
@@ -54,7 +54,7 @@ class RedisAdapter
     {
         $this->openConnection();
         $metrics = array();
-        foreach (self::METRIC_TYPES as $metricType) {
+        foreach ($this->metricTypes as $metricType) {
             $metrics = array_merge($metrics, $this->fetchMetricsByType($metricType));
         }
         return $metrics;

@@ -30,7 +30,8 @@ class RenderTextFormat
     private function renderSample(Sample $sample)
     {
         $escapedLabels = array();
-        if (!empty($sample->getLabels())) {
+        $labels = $sample->getLabels();
+        if (!empty($labels)) {
             foreach ($sample->getLabels() as $labelName => $labelValue) {
                 $escapedLabels[] = $labelName . '="' . $this->escapeLabelValue($labelValue) . '"';
             }
