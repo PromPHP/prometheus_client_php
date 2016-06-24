@@ -56,7 +56,7 @@ class BlackBoxTest extends PHPUnit_Framework_TestCase
         $start = microtime(true);
         $promises = [];
         $sum = 0;
-        for ($i = 0; $i < 1000; $i++) {
+        for ($i = 0; $i < 1100; $i++) {
             $promises[] =  $this->client->getAsync('/examples/some_counter.php?c=' . $i);
             $sum += $i;
         }
