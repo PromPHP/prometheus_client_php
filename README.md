@@ -13,7 +13,7 @@ see [examples](examples)
 
 ### Dependencies
 
-* PHP 5.6
+* PHP 5.3/5.6 (at least these versions are tested at the moment)
 * PHP redis extension
 * [Composer](https://getcomposer.org/doc/00-intro.md#installation-linux-unix-osx)
 * Redis
@@ -36,6 +36,7 @@ composer install
 
 Just start the nginx, fpm & redis setup with docker-compose:
 ```
+composer require guzzlehttp/guzzle=~6.0
 docker-compose up
 vendor/bin/phpunit tests/Test/BlackBoxTest.php
 ```
