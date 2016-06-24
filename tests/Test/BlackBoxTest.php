@@ -21,7 +21,7 @@ class BlackBoxTest extends PHPUnit_Framework_TestCase
     /**
      * @test
      */
-    public function gaugShouldBeOverwritten()
+    public function gaugesShouldBeOverwritten()
     {
         $start = microtime(true);
         $promises = [
