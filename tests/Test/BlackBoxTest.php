@@ -54,18 +54,12 @@ class BlackBoxTest extends PHPUnit_Framework_TestCase
     public function countersShouldIncrementAtomically()
     {
         $start = microtime(true);
-        $promises = [
-            $this->client->getAsync('/examples/some_counter.php?c=0'),
-            $this->client->getAsync('/examples/some_counter.php?c=1'),
-            $this->client->getAsync('/examples/some_counter.php?c=2'),
-            $this->client->getAsync('/examples/some_counter.php?c=3'),
-            $this->client->getAsync('/examples/some_counter.php?c=4'),
-            $this->client->getAsync('/examples/some_counter.php?c=5'),
-            $this->client->getAsync('/examples/some_counter.php?c=6'),
-            $this->client->getAsync('/examples/some_counter.php?c=7'),
-            $this->client->getAsync('/examples/some_counter.php?c=8'),
-            $this->client->getAsync('/examples/some_counter.php?c=9'),
-        ];
+        $promises = [];
+        $sum = 0;
+        for ($i = 0; $i < 1000; $i++) {
+            $promises[] =  $this->client->getAsync('/examples/some_counter.php?c=' . $i);
+            $sum += $i;
+        }
 
         Promise\settle($promises)->wait();
         $end = microtime(true);
@@ -74,7 +68,7 @@ class BlackBoxTest extends PHPUnit_Framework_TestCase
         $metricsResult = $this->client->get('/examples/metrics.php');
         $body = (string)$metricsResult->getBody();
 
-        $this->assertThat($body, $this->stringContains('test_some_counter{type="blue"} 45'));
+        $this->assertThat($body, $this->stringContains('test_some_counter{type="blue"} ' . $sum));
     }
 
     /**
