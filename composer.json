@@ -11,7 +11,8 @@
         "ext-redis": "*"
     },
     "require-dev": {
-        "phpunit/phpunit": "5.4.6"
+        "phpunit/phpunit": "5.4.6",
+        "guzzlehttp/guzzle": "~6.0"
     },
     "autoload": {
         "psr-0": {

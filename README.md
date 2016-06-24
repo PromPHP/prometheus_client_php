@@ -7,7 +7,7 @@ We recommend to run a local redis instance next to your PHP workers.
 
 ## Usage
 
-see [example.php](example.php)
+see [examples](examples)
 
 ## Development
 
@@ -20,7 +20,7 @@ see [example.php](example.php)
 
 Start a redis instance:
 ```
-docker run -d --name redis -p 6379:6379 redis
+docker-compose up redis
 ```
 
 Run the tests:
@@ -30,4 +30,12 @@ composer install
 # when redis is not listening on localhost:
 # export REDIS_HOST=192.168.59.100
 ./vendor/bin/phpunit
+```
+
+## Black box testing
+
+Just start the nginx, fpm & redis setup with docker-compose:
+```
+docker-compose up
+vendor/bin/phpunit tests/Test/BlackBoxTest.php
 ```
