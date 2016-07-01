@@ -232,4 +232,14 @@ class HistogramTest extends PHPUnit_Framework_TestCase
     {
         new Histogram('test', 'some_metric', 'this is for testing', array('le'), array());
     }
+
+    /**
+     * @test
+     * @expectedException \InvalidArgumentException
+     */
+    public function itShouldRejectInvalidMetricsNames()
+    {
+        new Histogram('test', 'some invalid metric', 'help', array(), array(1));
+    }
+
 }

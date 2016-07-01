@@ -86,4 +86,13 @@ class CounterTest extends PHPUnit_Framework_TestCase
             )
         );
     }
+
+    /**
+     * @test
+     * @expectedException \InvalidArgumentException
+     */
+    public function itShouldRejectInvalidMetricsNames()
+    {
+        new Counter('test', 'some metric invalid metric', 'help');
+    }
 }
