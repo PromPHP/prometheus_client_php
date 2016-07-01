@@ -5,6 +5,7 @@ namespace Prometheus;
 
 abstract class Metric
 {
+    const RE_METRIC_NAME = '/^[a-zA-Z_:][a-zA-Z0-9_:]*$/';
     protected $name;
     protected $help;
     protected $labels;
@@ -18,7 +19,11 @@ abstract class Metric
      */
     public function __construct($namespace, $name, $help, $labels = array())
     {
-        $this->name = Metric::metricName($namespace, $name);
+        $metricName = Metric::metricName($namespace, $name);
+        if (!preg_match(self::RE_METRIC_NAME, $metricName)) {
+            throw new \InvalidArgumentException("Invalid metric name: '" . $metricName . "'");
+        }
+        $this->name = $metricName;
         $this->help = $help;
         $this->labels = $labels;
     }

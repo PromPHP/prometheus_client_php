@@ -63,4 +63,13 @@ class GaugeTest extends PHPUnit_Framework_TestCase
         $this->assertThat($gauge->getHelp(), $this->equalTo('this is for testing'));
         $this->assertThat($gauge->getType(), $this->equalTo(Gauge::TYPE));
     }
+
+    /**
+     * @test
+     * @expectedException \InvalidArgumentException
+     */
+    public function itShouldRejectInvalidMetricsNames()
+    {
+        new Gauge('test', 'some metric invalid metric', 'help');
+    }
 }
