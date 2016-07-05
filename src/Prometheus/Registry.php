@@ -97,6 +97,7 @@ class Registry
     public function registerCounter($namespace, $name, $help, $labels)
     {
         $this->counters[Metric::metricIdentifier($namespace, $name, $labels)] = new Counter(
+            $this->storageAdapter,
             $namespace,
             $name,
             $help,

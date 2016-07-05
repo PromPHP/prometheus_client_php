@@ -6,6 +6,7 @@ namespace Test\Prometheus;
 use PHPUnit_Framework_TestCase;
 use Prometheus\Counter;
 use Prometheus\Sample;
+use Prometheus\Storage\InMemory;
 
 /**
  * See https://prometheus.io/docs/instrumenting/exposition_formats/
@@ -17,7 +18,7 @@ class CounterTest extends PHPUnit_Framework_TestCase
      */
     public function itShouldIncreaseWithLabels()
     {
-        $gauge = new Counter('test', 'some_metric', 'this is for testing', array('foo', 'bar'));
+        $gauge = new Counter(new InMemory(), 'test', 'some_metric', 'this is for testing', array('foo', 'bar'));
         $gauge->inc(array('lalal', 'lululu'));
         $gauge->inc(array('lalal', 'lululu'));
         $gauge->inc(array('lalal', 'lululu'));
@@ -43,7 +44,7 @@ class CounterTest extends PHPUnit_Framework_TestCase
      */
     public function itShouldIncreaseWithoutLabelWhenNoLabelsAreDefined()
     {
-        $gauge = new Counter('test', 'some_metric', 'this is for testing');
+        $gauge = new Counter(new InMemory(), 'test', 'some_metric', 'this is for testing');
         $gauge->inc();
         $this->assertThat(
             $gauge->getSamples(),
@@ -67,7 +68,7 @@ class CounterTest extends PHPUnit_Framework_TestCase
      */
     public function itShouldIncreaseTheCounterByAnArbitraryInteger()
     {
-        $gauge = new Counter('test', 'some_metric', 'this is for testing', array('foo', 'bar'));
+        $gauge = new Counter(new InMemory(), 'test', 'some_metric', 'this is for testing', array('foo', 'bar'));
         $gauge->inc(array('lalal', 'lululu'));
         $gauge->incBy(123, array('lalal', 'lululu'));
         $this->assertThat(
@@ -93,6 +94,6 @@ class CounterTest extends PHPUnit_Framework_TestCase
      */
     public function itShouldRejectInvalidMetricsNames()
     {
-        new Counter('test', 'some metric invalid metric', 'help');
+        new Counter(new InMemory(), 'test', 'some metric invalid metric', 'help');
     }
 }
