@@ -29,8 +29,6 @@ class RegistryTest extends PHPUnit_Framework_TestCase
         $g->set(32, array('lalal'));
         $g->set(35, array('lalab'));
 
-        $client->flush();
-
         $client = new Registry($this->newRedisAdapter());
         $this->assertThat(
             $client->toText(),

@@ -4,9 +4,11 @@
 namespace Prometheus;
 
 
+use Prometheus\Storage\Adapter;
+
 class Registry
 {
-    private $redisAdapter;
+    private $storageAdapter;
     /**
      * @var Gauge[]
      */
@@ -20,9 +22,9 @@ class Registry
      */
     private $histograms = array();
 
-    public function __construct(RedisAdapter $redisAdapter)
+    public function __construct(Adapter $redisAdapter)
     {
-        $this->redisAdapter = $redisAdapter;
+        $this->storageAdapter = $redisAdapter;
     }
 
     /**
@@ -35,6 +37,7 @@ class Registry
     public function registerGauge($namespace, $name, $help, $labels)
     {
         $this->gauges[Metric::metricIdentifier($namespace, $name, $labels)] = new Gauge(
+            $this->storageAdapter,
             $namespace,
             $name,
             $help,
@@ -61,7 +64,7 @@ class Registry
             $this->counters,
             $this->histograms
         );
-        $this->redisAdapter->storeMetrics($metrics);
+        $this->storageAdapter->storeMetrics($metrics);
     }
 
     /**
@@ -70,7 +73,7 @@ class Registry
     public function toText()
     {
         $renderer = new RenderTextFormat();
-        return $renderer->render($this->redisAdapter->fetchMetrics());
+        return $renderer->render($this->storageAdapter->fetchMetrics());
     }
 
     /**

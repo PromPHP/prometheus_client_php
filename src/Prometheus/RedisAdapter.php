@@ -3,7 +3,9 @@
 namespace Prometheus;
 
 
-class RedisAdapter
+use Prometheus\Storage\Adapter;
+
+class RedisAdapter implements Adapter
 {
     const PROMETHEUS_PREFIX = 'PROMETHEUS_';
 
@@ -47,9 +49,29 @@ class RedisAdapter
         $this->openConnection();
         foreach ($metrics as $metric) {
             $this->storeMetric($metric);
+            foreach ($metric->getSamples() as $sample) {
+                switch ($metric->getType()) {
+                    case Counter::TYPE:
+                        $storeValueCommand = 'hIncrBy';
+                        break;
+                    case Gauge::TYPE:
+                        $storeValueCommand = 'hSet';
+                        break;
+                    case Histogram::TYPE:
+                        $storeValueCommand = 'hIncrByFloat';
+                        break;
+                    default:
+                        throw new \RuntimeException('Invalid metric type!');
+                }
+
+                $this->storeSample($storeValueCommand, $metric, $sample);
+            }
         }
     }
 
+    /**
+     * @return MetricResponse[]
+     */
     public function fetchMetrics()
     {
         $this->openConnection();
@@ -66,47 +88,40 @@ class RedisAdapter
     private function storeMetric(Metric $metric)
     {
         $metricKey = self::PROMETHEUS_PREFIX . $metric->getType() . $metric->getKey();
-        foreach ($metric->getSamples() as $sample) {
-            switch ($metric->getType()) {
-                case Counter::TYPE:
-                    $storeValueCommand = 'hIncrBy';
-                    break;
-                case Gauge::TYPE:
-                    $storeValueCommand = 'hSet';
-                    break;
-                case Histogram::TYPE:
-                    $storeValueCommand = 'hIncrByFloat';
-                    break;
-                default:
-                    throw new \RuntimeException('Invalid metric type!');
-            }
-            $this->redis->$storeValueCommand(
-                $metricKey . self::PROMETHEUS_SAMPLE_VALUE_SUFFIX,
-                $sample->getKey(),
-                $sample->getValue()
-            );
-            $this->redis->hSet(
-                $metricKey . self::PROMETHEUS_SAMPLE_LABEL_VALUES_SUFFIX,
-                $sample->getKey(),
-                serialize($sample->getLabelValues())
-            );
-            $this->redis->hSet(
-                $metricKey . self::PROMETHEUS_SAMPLE_LABEL_NAMES_SUFFIX,
-                $sample->getKey(),
-                serialize($sample->getLabelNames())
-            );
-            $this->redis->hSet(
-                $metricKey . self::PROMETHEUS_SAMPLE_NAME_SUFFIX,
-                $sample->getKey(),
-                $sample->getName()
-            );
-            $this->storeNewMetricSampleKey($metric->getType(), $metric->getKey(), $sample->getKey());
-        }
         $this->redis->hSet($metricKey, 'name', $metric->getName());
         $this->redis->hSet($metricKey, 'help', $metric->getHelp());
         $this->redis->hSet($metricKey, 'type', $metric->getType());
         $this->redis->hSet($metricKey, 'labelNames', serialize($metric->getLabelNames()));
         $this->storeNewMetricKey($metric->getType(), $metric->getKey());
+    }
+
+    public function storeSample($command, Metric $metric, Sample $sample)
+    {
+        $this->openConnection();
+        $metricKey = self::PROMETHEUS_PREFIX . $metric->getType() . $metric->getKey();
+        $this->redis->$command(
+            $metricKey . self::PROMETHEUS_SAMPLE_VALUE_SUFFIX,
+            $sample->getKey(),
+            $sample->getValue()
+        );
+        $this->redis->hSet(
+            $metricKey . self::PROMETHEUS_SAMPLE_LABEL_VALUES_SUFFIX,
+            $sample->getKey(),
+            serialize($sample->getLabelValues())
+        );
+        $this->redis->hSet(
+            $metricKey . self::PROMETHEUS_SAMPLE_LABEL_NAMES_SUFFIX,
+            $sample->getKey(),
+            serialize($sample->getLabelNames())
+        );
+        $this->redis->hSet(
+            $metricKey . self::PROMETHEUS_SAMPLE_NAME_SUFFIX,
+            $sample->getKey(),
+            $sample->getName()
+        );
+        $this->storeNewMetricSampleKey($metric->getType(), $metric->getKey(), $sample->getKey());
+
+        $this->storeMetric($metric);
     }
 
     /**
