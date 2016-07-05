@@ -5,8 +5,8 @@ namespace Test\Prometheus;
 
 
 use PHPUnit_Framework_TestCase;
+use Prometheus\Storage\Redis;
 use Prometheus\Registry;
-use Prometheus\RedisAdapter;
 
 class RegistryTest extends PHPUnit_Framework_TestCase
 {
@@ -28,8 +28,6 @@ class RegistryTest extends PHPUnit_Framework_TestCase
         $g = $client->registerGauge('test', 'some_metric', 'this is for testing', array('foo'));
         $g->set(32, array('lalal'));
         $g->set(35, array('lalab'));
-
-        $client->flush();
 
         $client = new Registry($this->newRedisAdapter());
         $this->assertThat(
@@ -57,7 +55,6 @@ EOF
         $metric = $client->registerCounter('test', 'some_metric', 'this is for testing', array('foo', 'bar'));
         $metric->incBy(2, array('lalal', 'lululu'));
         $client->getCounter('test', 'some_metric', array('foo', 'bar'))->inc(array('lalal', 'lululu'));
-        $client->flush();
 
         $client = new Registry($this->newRedisAdapter());
         $this->assertThat(
@@ -82,7 +79,6 @@ EOF
         $metric->observe(2, array('lalal', 'lululu'));
         $client->getHistogram('test', 'some_metric', array('foo', 'bar'))->observe(13, array('lalal', 'lululu'));
         $client->getHistogram('test', 'some_metric', array('foo', 'bar'))->observe(7.1, array('lalal', 'lululu'));
-        $client->flush();
 
         $client = new Registry($this->newRedisAdapter());
         $this->assertThat(
@@ -96,7 +92,7 @@ test_some_metric_bucket{foo="lalal",bar="lululu",le="5"} 1
 test_some_metric_bucket{foo="lalal",bar="lululu",le="10"} 2
 test_some_metric_bucket{foo="lalal",bar="lululu",le="+Inf"} 3
 test_some_metric_count{foo="lalal",bar="lululu"} 3
-test_some_metric_sum{foo="lalal",bar="lululu"} 22.1000000000000014
+test_some_metric_sum{foo="lalal",bar="lululu"} 22.0999999999999996
 
 EOF
             )
@@ -105,6 +101,6 @@ EOF
 
     private function newRedisAdapter()
     {
-        return new RedisAdapter(REDIS_HOST);
+        return new Redis(REDIS_HOST);
     }
 }

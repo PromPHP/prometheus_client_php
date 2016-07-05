@@ -4,6 +4,8 @@
 namespace Prometheus;
 
 
+use Prometheus\Storage\Adapter;
+
 class Gauge extends Metric
 {
     const TYPE = 'gauge';
@@ -15,27 +17,19 @@ class Gauge extends Metric
     public function set($value, $labels = array())
     {
         $this->assertLabelsAreDefinedCorrectly($labels);
-        $this->values[serialize($labels)] = $value;
-    }
 
-    /**
-     * @return Sample[]
-     */
-    public function getSamples()
-    {
-        $metrics = array();
-        foreach ($this->values as $serializedLabels => $value) {
-            $labelValues = unserialize($serializedLabels);
-            $metrics[] = new Sample(
+        $this->storageAdapter->storeSample(
+            Adapter::COMMAND_SET,
+            $this,
+            new Sample(
                 array(
                     'name' => $this->getName(),
                     'labelNames' => $this->getLabelNames(),
-                    'labelValues' => $labelValues,
+                    'labelValues' => $labels,
                     'value' => $value
                 )
-            );
-        }
-        return $metrics;
+            )
+        );
     }
 
     /**

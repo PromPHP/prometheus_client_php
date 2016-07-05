@@ -4,9 +4,11 @@
 namespace Prometheus;
 
 
+use Prometheus\Storage\Adapter;
+
 class Registry
 {
-    private $redisAdapter;
+    private $storageAdapter;
     /**
      * @var Gauge[]
      */
@@ -20,9 +22,9 @@ class Registry
      */
     private $histograms = array();
 
-    public function __construct(RedisAdapter $redisAdapter)
+    public function __construct(Adapter $redisAdapter)
     {
-        $this->redisAdapter = $redisAdapter;
+        $this->storageAdapter = $redisAdapter;
     }
 
     /**
@@ -34,13 +36,14 @@ class Registry
      */
     public function registerGauge($namespace, $name, $help, $labels)
     {
-        $this->gauges[Metric::metricIdentifier($namespace, $name, $labels)] = new Gauge(
+        $this->gauges[self::metricIdentifier($namespace, $name, $labels)] = new Gauge(
+            $this->storageAdapter,
             $namespace,
             $name,
             $help,
             $labels
         );
-        return $this->gauges[Metric::metricIdentifier($namespace, $name, $labels)];
+        return $this->gauges[self::metricIdentifier($namespace, $name, $labels)];
     }
 
     /**
@@ -51,17 +54,7 @@ class Registry
      */
     public function getGauge($namespace, $name, $labels)
     {
-        return $this->gauges[Metric::metricIdentifier($namespace, $name, $labels)];
-    }
-
-    public function flush()
-    {
-        $metrics = array_merge(
-            $this->gauges,
-            $this->counters,
-            $this->histograms
-        );
-        $this->redisAdapter->storeMetrics($metrics);
+        return $this->gauges[self::metricIdentifier($namespace, $name, $labels)];
     }
 
     /**
@@ -70,7 +63,7 @@ class Registry
     public function toText()
     {
         $renderer = new RenderTextFormat();
-        return $renderer->render($this->redisAdapter->fetchMetrics());
+        return $renderer->render($this->storageAdapter->fetchMetrics());
     }
 
     /**
@@ -81,7 +74,7 @@ class Registry
      */
     public function getCounter($namespace, $name, $labels)
     {
-        return $this->counters[Metric::metricIdentifier($namespace, $name, $labels)];
+        return $this->counters[self::metricIdentifier($namespace, $name, $labels)];
     }
 
     /**
@@ -93,13 +86,14 @@ class Registry
      */
     public function registerCounter($namespace, $name, $help, $labels)
     {
-        $this->counters[Metric::metricIdentifier($namespace, $name, $labels)] = new Counter(
+        $this->counters[self::metricIdentifier($namespace, $name, $labels)] = new Counter(
+            $this->storageAdapter,
             $namespace,
             $name,
             $help,
             $labels
         );
-        return $this->counters[Metric::metricIdentifier($namespace, $name, $labels)];
+        return $this->counters[self::metricIdentifier($namespace, $name, $labels)];
     }
 
     /**
@@ -112,14 +106,15 @@ class Registry
      */
     public function registerHistogram($namespace, $name, $help, $labels, $buckets)
     {
-        $this->histograms[Metric::metricIdentifier($namespace, $name, $labels)] = new Histogram(
+        $this->histograms[self::metricIdentifier($namespace, $name, $labels)] = new Histogram(
+            $this->storageAdapter,
             $namespace,
             $name,
             $help,
             $labels,
             $buckets
         );
-        return $this->histograms[Metric::metricIdentifier($namespace, $name, $labels)];
+        return $this->histograms[self::metricIdentifier($namespace, $name, $labels)];
     }
 
     /**
@@ -130,6 +125,11 @@ class Registry
      */
     public function getHistogram($namespace, $name, $labels)
     {
-        return $this->histograms[Metric::metricIdentifier($namespace, $name, $labels)];
+        return $this->histograms[self::metricIdentifier($namespace, $name, $labels)];
+    }
+
+    private static function metricIdentifier($namespace, $name, $labels)
+    {
+        return $namespace . $name . implode('_', $labels);
     }
 }

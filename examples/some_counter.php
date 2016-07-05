@@ -5,12 +5,10 @@ define('REDIS_HOST', isset($_SERVER['REDIS_HOST']) ? $_SERVER['REDIS_HOST'] : '1
 
 error_log('c='. $_GET['c']);
 
-$redisAdapter = new \Prometheus\RedisAdapter(REDIS_HOST);
+$redisAdapter = new \Prometheus\Storage\Redis(REDIS_HOST);
 $registry = new \Prometheus\Registry($redisAdapter);
 
 $counter = $registry->registerCounter('test', 'some_counter', 'it increases', ['type']);
 $counter->incBy($_GET['c'], ['blue']);
-
-$registry->flush();
 
 echo "OK\n";
