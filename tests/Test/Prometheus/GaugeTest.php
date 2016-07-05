@@ -83,4 +83,13 @@ class GaugeTest extends PHPUnit_Framework_TestCase
     {
         new Gauge($this->storage, 'test', 'some metric invalid metric', 'help');
     }
+
+    /**
+     * @test
+     * @expectedException \InvalidArgumentException
+     */
+    public function itShouldRejectInvalidLabelNames()
+    {
+        new Gauge($this->storage, 'test', 'some_metric', 'help', array('invalid label'));
+    }
 }
