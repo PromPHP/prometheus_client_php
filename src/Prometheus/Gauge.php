@@ -6,7 +6,7 @@ namespace Prometheus;
 
 use Prometheus\Storage\Adapter;
 
-class Gauge extends Metric
+class Gauge extends Collector
 {
     const TYPE = 'gauge';
 
@@ -18,7 +18,7 @@ class Gauge extends Metric
     {
         $this->assertLabelsAreDefinedCorrectly($labels);
 
-        $this->storageAdapter->storeSample(
+        $this->storageAdapter->store(
             Adapter::COMMAND_SET,
             $this,
             new Sample(
@@ -44,7 +44,7 @@ class Gauge extends Metric
     {
         $this->assertLabelsAreDefinedCorrectly($labels);
 
-        $this->storageAdapter->storeSample(
+        $this->storageAdapter->store(
             Adapter::COMMAND_INCREMENT_FLOAT,
             $this,
             new Sample(
@@ -62,7 +62,7 @@ class Gauge extends Metric
     {
         $this->assertLabelsAreDefinedCorrectly($labels);
 
-        $this->storageAdapter->storeSample(
+        $this->storageAdapter->store(
             Adapter::COMMAND_INCREMENT_FLOAT,
             $this,
             new Sample(
@@ -80,7 +80,7 @@ class Gauge extends Metric
     {
         $this->assertLabelsAreDefinedCorrectly($labels);
 
-        $this->storageAdapter->storeSample(
+        $this->storageAdapter->store(
             Adapter::COMMAND_INCREMENT_FLOAT,
             $this,
             new Sample(
@@ -98,7 +98,7 @@ class Gauge extends Metric
     {
         $this->assertLabelsAreDefinedCorrectly($labels);
 
-        $this->storageAdapter->storeSample(
+        $this->storageAdapter->store(
             Adapter::COMMAND_INCREMENT_FLOAT,
             $this,
             new Sample(

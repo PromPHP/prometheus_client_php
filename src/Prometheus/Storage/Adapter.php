@@ -1,8 +1,8 @@
 <?php
 namespace Prometheus\Storage;
 
-use Prometheus\Metric;
-use Prometheus\MetricResponse;
+use Prometheus\Collector;
+use Prometheus\MetricFamilySamples;
 use Prometheus\Sample;
 
 interface Adapter
@@ -12,9 +12,9 @@ interface Adapter
     const COMMAND_SET = 3;
 
     /**
-     * @return MetricResponse[]
+     * @return MetricFamilySamples[]
      */
-    public function fetchMetrics();
+    public function collect();
 
-    public function storeSample($command, Metric $metric, Sample $sample);
+    public function store($command, Collector $metric, Sample $sample);
 }

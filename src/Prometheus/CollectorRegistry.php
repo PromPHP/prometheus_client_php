@@ -7,10 +7,10 @@ namespace Prometheus;
 use Prometheus\Storage\Adapter;
 use Prometheus\Storage\Redis;
 
-class Registry
+class CollectorRegistry
 {
     /**
-     * @var Registry
+     * @var CollectorRegistry
      */
     private static $defaultRegistry;
 
@@ -50,7 +50,7 @@ class Registry
     }
 
     /**
-     * @return Registry
+     * @return CollectorRegistry
      */
     public static function getDefaultRegistry()
     {
@@ -96,7 +96,7 @@ class Registry
     public function toText()
     {
         $renderer = new RenderTextFormat();
-        return $renderer->render($this->storageAdapter->fetchMetrics());
+        return $renderer->render($this->storageAdapter->collect());
     }
 
     /**

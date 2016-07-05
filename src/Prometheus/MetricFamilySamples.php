@@ -2,7 +2,7 @@
 
 namespace Prometheus;
 
-class MetricResponse
+class MetricFamilySamples
 {
     protected $name;
     protected $type;

@@ -6,7 +6,7 @@ namespace Test\Prometheus;
 
 use PHPUnit_Framework_TestCase;
 use Prometheus\Storage\Redis;
-use Prometheus\Registry;
+use Prometheus\CollectorRegistry;
 
 class RegistryTest extends PHPUnit_Framework_TestCase
 {
@@ -20,7 +20,7 @@ class RegistryTest extends PHPUnit_Framework_TestCase
      */
     public function itShouldSaveGaugesInRedis()
     {
-        $client = new Registry($this->newRedisAdapter());
+        $client = new CollectorRegistry($this->newRedisAdapter());
         $metric = $client->registerGauge('test', 'some_metric', 'this is for testing', array('foo', 'bar'));
         $metric->set(14, array('lalal', 'lululu'));
         $client->getGauge('test', 'some_metric', array('foo', 'bar'))->set(34, array('lalal', 'lululu'));
@@ -32,7 +32,7 @@ class RegistryTest extends PHPUnit_Framework_TestCase
         $g = $client->registerGauge('test', 'some_metric', 'this is for testing');
         $g->dec();
 
-        $client = new Registry($this->newRedisAdapter());
+        $client = new CollectorRegistry($this->newRedisAdapter());
         $this->assertThat(
             $client->toText(),
             $this->equalTo(<<<EOF
@@ -57,12 +57,12 @@ EOF
      */
     public function itShouldSaveCountersInRedis()
     {
-        $client = new Registry($this->newRedisAdapter());
+        $client = new CollectorRegistry($this->newRedisAdapter());
         $metric = $client->registerCounter('test', 'some_metric', 'this is for testing', array('foo', 'bar'));
         $metric->incBy(2, array('lalal', 'lululu'));
         $client->getCounter('test', 'some_metric', array('foo', 'bar'))->inc(array('lalal', 'lululu'));
 
-        $client = new Registry($this->newRedisAdapter());
+        $client = new CollectorRegistry($this->newRedisAdapter());
         $this->assertThat(
             $client->toText(),
             $this->equalTo(<<<EOF
@@ -80,13 +80,13 @@ EOF
      */
     public function itShouldSaveHistogramsInRedis()
     {
-        $client = new Registry($this->newRedisAdapter());
+        $client = new CollectorRegistry($this->newRedisAdapter());
         $metric = $client->registerHistogram('test', 'some_metric', 'this is for testing', array('foo', 'bar'), array(0.1, 1, 5, 10));
         $metric->observe(2, array('lalal', 'lululu'));
         $client->getHistogram('test', 'some_metric', array('foo', 'bar'))->observe(13, array('lalal', 'lululu'));
         $client->getHistogram('test', 'some_metric', array('foo', 'bar'))->observe(7.1, array('lalal', 'lululu'));
 
-        $client = new Registry($this->newRedisAdapter());
+        $client = new CollectorRegistry($this->newRedisAdapter());
         $this->assertThat(
             $client->toText(),
             $this->equalTo(<<<EOF

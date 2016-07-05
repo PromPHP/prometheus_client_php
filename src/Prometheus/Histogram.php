@@ -5,7 +5,7 @@ namespace Prometheus;
 
 use Prometheus\Storage\Adapter;
 
-class Histogram extends Metric
+class Histogram extends Collector
 {
     const TYPE = 'histogram';
 
@@ -52,7 +52,7 @@ class Histogram extends Metric
 
         foreach ($this->buckets as $bucket) {
             if ($value <= $bucket) {
-                $this->storageAdapter->storeSample(
+                $this->storageAdapter->store(
                     Adapter::COMMAND_INCREMENT_INTEGER,
                     $this,
                     new Sample(
@@ -65,7 +65,7 @@ class Histogram extends Metric
                     )
                 );
             } else {
-                $this->storageAdapter->storeSample(
+                $this->storageAdapter->store(
                     Adapter::COMMAND_INCREMENT_INTEGER,
                     $this,
                     new Sample(
@@ -79,7 +79,7 @@ class Histogram extends Metric
                 );
             }
         }
-        $this->storageAdapter->storeSample(
+        $this->storageAdapter->store(
             Adapter::COMMAND_INCREMENT_INTEGER,
             $this,
             new Sample(
@@ -91,7 +91,7 @@ class Histogram extends Metric
                 )
             )
         );
-        $this->storageAdapter->storeSample(
+        $this->storageAdapter->store(
             Adapter::COMMAND_INCREMENT_INTEGER,
             $this,
             new Sample(
@@ -103,7 +103,7 @@ class Histogram extends Metric
                 )
             )
         );
-        $this->storageAdapter->storeSample(
+        $this->storageAdapter->store(
             Adapter::COMMAND_INCREMENT_FLOAT,
             $this,
             new Sample(

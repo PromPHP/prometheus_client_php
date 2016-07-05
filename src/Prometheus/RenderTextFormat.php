@@ -6,7 +6,7 @@ namespace Prometheus;
 class RenderTextFormat
 {
     /**
-     * @param MetricResponse[] $metrics
+     * @param MetricFamilySamples[] $metrics
      * @return string
      */
     public function render(array $metrics)

@@ -5,7 +5,7 @@ namespace Prometheus;
 
 use Prometheus\Storage\Adapter;
 
-class Counter extends Metric
+class Counter extends Collector
 {
     const TYPE = 'counter';
 
@@ -33,7 +33,7 @@ class Counter extends Metric
     {
         $this->assertLabelsAreDefinedCorrectly($labels);
 
-        $this->storageAdapter->storeSample(
+        $this->storageAdapter->store(
             Adapter::COMMAND_INCREMENT_INTEGER,
             $this,
             new Sample(

@@ -6,8 +6,8 @@ namespace Prometheus\Storage;
 use Prometheus\Counter;
 use Prometheus\Gauge;
 use Prometheus\Histogram;
-use Prometheus\Metric;
-use Prometheus\MetricResponse;
+use Prometheus\Collector;
+use Prometheus\MetricFamilySamples;
 use Prometheus\Sample;
 
 class Redis implements Adapter
@@ -59,9 +59,9 @@ class Redis implements Adapter
     }
 
     /**
-     * @return MetricResponse[]
+     * @return MetricFamilySamples[]
      */
-    public function fetchMetrics()
+    public function collect()
     {
         $this->openConnection();
         $metrics = array();
@@ -72,9 +72,9 @@ class Redis implements Adapter
     }
 
     /**
-     * @param Metric $metric
+     * @param Collector $metric
      */
-    private function storeMetric(Metric $metric)
+    private function storeMetric(Collector $metric)
     {
         $metricKey = self::PROMETHEUS_PREFIX . $metric->getType() . $metric->getKey();
         $this->redis->hSet($metricKey, 'name', $metric->getName());
@@ -84,7 +84,7 @@ class Redis implements Adapter
         $this->storeNewMetricKey($metric->getType(), $metric->getKey());
     }
 
-    public function storeSample($command, Metric $metric, Sample $sample)
+    public function store($command, Collector $metric, Sample $sample)
     {
         $this->openConnection();
         $metricKey = self::PROMETHEUS_PREFIX . $metric->getType() . $metric->getKey();
@@ -135,7 +135,7 @@ class Redis implements Adapter
 
     /**
      * @param string $metricType
-     * @return MetricResponse[]
+     * @return MetricFamilySamples[]
      */
     private function fetchMetricsByType($metricType)
     {
@@ -162,7 +162,7 @@ class Redis implements Adapter
                 );
             }
             $metricResponse = $this->redis->hGetAll($metricKey);
-            $metrics[] = new MetricResponse(
+            $metrics[] = new MetricFamilySamples(
                 array(
                     'name' => $metricResponse['name'],
                     'help' => $metricResponse['help'],

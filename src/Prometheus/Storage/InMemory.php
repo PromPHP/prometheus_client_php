@@ -3,8 +3,8 @@
 namespace Prometheus\Storage;
 
 
-use Prometheus\Metric;
-use Prometheus\MetricResponse;
+use Prometheus\Collector;
+use Prometheus\MetricFamilySamples;
 use Prometheus\Sample;
 
 class InMemory implements Adapter
@@ -19,13 +19,13 @@ class InMemory implements Adapter
     private $samples = array();
 
     /**
-     * @return MetricResponse[]
+     * @return MetricFamilySamples[]
      */
-    public function fetchMetrics()
+    public function collect()
     {
         $responses = array();
         foreach ($this->metrics as $metric) {
-            $responses[] = new MetricResponse(
+            $responses[] = new MetricFamilySamples(
                 array(
                     'name' => $metric->getName(),
                     'type' => $metric->getType(),
@@ -37,7 +37,7 @@ class InMemory implements Adapter
         return $responses;
     }
 
-    public function storeSample($command, Metric $metric, Sample $sample)
+    public function store($command, Collector $metric, Sample $sample)
     {
         if (isset($this->samples[$metric->getKey()][$sample->getKey()])) {
             switch ($command) {
