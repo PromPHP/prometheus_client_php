@@ -77,6 +77,56 @@ class GaugeTest extends PHPUnit_Framework_TestCase
 
     /**
      * @test
+     */
+    public function itShouldIncrementAValue()
+    {
+        $gauge = new Gauge($this->storage, 'test', 'some_metric', 'this is for testing', array('foo', 'bar'));
+        $gauge->inc(array('lalal', 'lululu'));
+        $gauge->incBy(123, array('lalal', 'lululu'));
+        $this->assertThat(
+            $this->storage->fetchSamples(),
+            $this->equalTo(
+                array(
+                    new Sample(
+                        array(
+                            'name' => 'test_some_metric',
+                            'labelNames' => array('foo', 'bar'),
+                            'labelValues' => array('lalal', 'lululu'),
+                            'value' => 124,
+                        )
+                    )
+                )
+            )
+        );
+    }
+
+    /**
+     * @test
+     */
+    public function itShouldDecrementAValue()
+    {
+        $gauge = new Gauge($this->storage, 'test', 'some_metric', 'this is for testing', array('foo', 'bar'));
+        $gauge->dec(array('lalal', 'lululu'));
+        $gauge->decBy(123, array('lalal', 'lululu'));
+        $this->assertThat(
+            $this->storage->fetchSamples(),
+            $this->equalTo(
+                array(
+                    new Sample(
+                        array(
+                            'name' => 'test_some_metric',
+                            'labelNames' => array('foo', 'bar'),
+                            'labelValues' => array('lalal', 'lululu'),
+                            'value' => -124,
+                        )
+                    )
+                )
+            )
+        );
+    }
+
+    /**
+     * @test
      * @expectedException \InvalidArgumentException
      */
     public function itShouldRejectInvalidMetricsNames()

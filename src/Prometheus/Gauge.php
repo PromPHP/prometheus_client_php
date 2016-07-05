@@ -39,4 +39,76 @@ class Gauge extends Metric
     {
         return self::TYPE;
     }
+
+    public function inc($labels = array())
+    {
+        $this->assertLabelsAreDefinedCorrectly($labels);
+
+        $this->storageAdapter->storeSample(
+            Adapter::COMMAND_INCREMENT_FLOAT,
+            $this,
+            new Sample(
+                array(
+                    'name' => $this->getName(),
+                    'labelNames' => $this->getLabelNames(),
+                    'labelValues' => $labels,
+                    'value' => 1
+                )
+            )
+        );
+    }
+
+    public function incBy($value, $labels = array())
+    {
+        $this->assertLabelsAreDefinedCorrectly($labels);
+
+        $this->storageAdapter->storeSample(
+            Adapter::COMMAND_INCREMENT_FLOAT,
+            $this,
+            new Sample(
+                array(
+                    'name' => $this->getName(),
+                    'labelNames' => $this->getLabelNames(),
+                    'labelValues' => $labels,
+                    'value' => $value
+                )
+            )
+        );
+    }
+
+    public function dec($labels = array())
+    {
+        $this->assertLabelsAreDefinedCorrectly($labels);
+
+        $this->storageAdapter->storeSample(
+            Adapter::COMMAND_INCREMENT_FLOAT,
+            $this,
+            new Sample(
+                array(
+                    'name' => $this->getName(),
+                    'labelNames' => $this->getLabelNames(),
+                    'labelValues' => $labels,
+                    'value' => -1
+                )
+            )
+        );
+    }
+
+    public function decBy($value, $labels = array())
+    {
+        $this->assertLabelsAreDefinedCorrectly($labels);
+
+        $this->storageAdapter->storeSample(
+            Adapter::COMMAND_INCREMENT_FLOAT,
+            $this,
+            new Sample(
+                array(
+                    'name' => $this->getName(),
+                    'labelNames' => $this->getLabelNames(),
+                    'labelValues' => $labels,
+                    'value' => -$value
+                )
+            )
+        );
+    }
 }
