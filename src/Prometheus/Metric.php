@@ -24,26 +24,13 @@ abstract class Metric
     public function __construct(Adapter $storageAdapter, $namespace, $name, $help, $labels = array())
     {
         $this->storageAdapter = $storageAdapter;
-        $metricName = Metric::metricName($namespace, $name);
+        $metricName = ($namespace ? $namespace . '_' : '') . $name;
         if (!preg_match(self::RE_METRIC_NAME, $metricName)) {
             throw new \InvalidArgumentException("Invalid metric name: '" . $metricName . "'");
         }
         $this->name = $metricName;
         $this->help = $help;
         $this->labels = $labels;
-    }
-
-    public static function metricName($namespace, $name)
-    {
-        return ($namespace ? $namespace . '_' : '') . $name;
-    }
-
-    public static function metricIdentifier($namespace, $name, $labels)
-    {
-        if (empty($labels)) {
-            return self::metricName($namespace, $name);
-        }
-        return self::metricName($namespace, $name) . '_' . implode('_', $labels);
     }
 
     /**

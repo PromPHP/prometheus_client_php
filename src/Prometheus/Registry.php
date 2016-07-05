@@ -36,14 +36,14 @@ class Registry
      */
     public function registerGauge($namespace, $name, $help, $labels)
     {
-        $this->gauges[Metric::metricIdentifier($namespace, $name, $labels)] = new Gauge(
+        $this->gauges[self::metricIdentifier($namespace, $name, $labels)] = new Gauge(
             $this->storageAdapter,
             $namespace,
             $name,
             $help,
             $labels
         );
-        return $this->gauges[Metric::metricIdentifier($namespace, $name, $labels)];
+        return $this->gauges[self::metricIdentifier($namespace, $name, $labels)];
     }
 
     /**
@@ -54,7 +54,7 @@ class Registry
      */
     public function getGauge($namespace, $name, $labels)
     {
-        return $this->gauges[Metric::metricIdentifier($namespace, $name, $labels)];
+        return $this->gauges[self::metricIdentifier($namespace, $name, $labels)];
     }
 
     /**
@@ -74,7 +74,7 @@ class Registry
      */
     public function getCounter($namespace, $name, $labels)
     {
-        return $this->counters[Metric::metricIdentifier($namespace, $name, $labels)];
+        return $this->counters[self::metricIdentifier($namespace, $name, $labels)];
     }
 
     /**
@@ -86,14 +86,14 @@ class Registry
      */
     public function registerCounter($namespace, $name, $help, $labels)
     {
-        $this->counters[Metric::metricIdentifier($namespace, $name, $labels)] = new Counter(
+        $this->counters[self::metricIdentifier($namespace, $name, $labels)] = new Counter(
             $this->storageAdapter,
             $namespace,
             $name,
             $help,
             $labels
         );
-        return $this->counters[Metric::metricIdentifier($namespace, $name, $labels)];
+        return $this->counters[self::metricIdentifier($namespace, $name, $labels)];
     }
 
     /**
@@ -106,7 +106,7 @@ class Registry
      */
     public function registerHistogram($namespace, $name, $help, $labels, $buckets)
     {
-        $this->histograms[Metric::metricIdentifier($namespace, $name, $labels)] = new Histogram(
+        $this->histograms[self::metricIdentifier($namespace, $name, $labels)] = new Histogram(
             $this->storageAdapter,
             $namespace,
             $name,
@@ -114,7 +114,7 @@ class Registry
             $labels,
             $buckets
         );
-        return $this->histograms[Metric::metricIdentifier($namespace, $name, $labels)];
+        return $this->histograms[self::metricIdentifier($namespace, $name, $labels)];
     }
 
     /**
@@ -125,6 +125,11 @@ class Registry
      */
     public function getHistogram($namespace, $name, $labels)
     {
-        return $this->histograms[Metric::metricIdentifier($namespace, $name, $labels)];
+        return $this->histograms[self::metricIdentifier($namespace, $name, $labels)];
+    }
+
+    private static function metricIdentifier($namespace, $name, $labels)
+    {
+        return $namespace . $name . implode('_', $labels);
     }
 }
