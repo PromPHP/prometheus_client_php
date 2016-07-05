@@ -7,7 +7,40 @@ We recommend to run a local redis instance next to your PHP workers.
 
 ## Usage
 
-see [examples](examples)
+Write some metrics:
+```php
+$registry = \Prometheus\Registry::getDefaultRegistry();
+
+$counter = $registry->registerCounter('test', 'some_counter', 'it increases', ['type']);
+$counter->incBy(3, ['blue']);
+
+$gauge = $registry->registerGauge('test', 'some_gauge', 'it sets', ['type']);
+$gauge->set(2.5, ['blue']);
+
+$histogram = $registry->registerHistogram('test', 'some_histogram', 'it observes', ['type'], [0.1, 1, 2, 3.5, 4, 5, 6, 7, 8, 9]);
+$histogram->observe(3.5, ['blue']);
+```
+
+Expose the metrics:
+```php
+$registry = \Prometheus\Registry::getDefaultRegistry();
+$result = $registry->toText();
+
+header('Content-type: text/plain; version=0.0.4');
+```
+
+Change the redis options (the example shows the defaults):
+```php
+Registry::setDefaultRedisOptions(
+    [
+        'host' => '127.0.0.1',
+        'port' => 6379,
+        'connect_timeout' => 0.1 // in seconds
+    ]
+);
+```
+
+Also look at the [examples](examples).
 
 ## Development
 
