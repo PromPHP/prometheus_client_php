@@ -11,6 +11,4 @@ $registry = new \Prometheus\Registry($redisAdapter);
 $gauge = $registry->registerGauge('test', 'some_gauge', 'it sets', ['type']);
 $gauge->set($_GET['c'], ['blue']);
 
-$registry->flush();
-
 echo "OK\n";

@@ -11,6 +11,4 @@ $registry = new \Prometheus\Registry($redisAdapter);
 $counter = $registry->registerCounter('test', 'some_counter', 'it increases', ['type']);
 $counter->incBy($_GET['c'], ['blue']);
 
-$registry->flush();
-
 echo "OK\n";

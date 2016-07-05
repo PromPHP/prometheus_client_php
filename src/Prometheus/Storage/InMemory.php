@@ -16,16 +16,6 @@ class InMemory implements Adapter
     private $samples = array();
 
     /**
-     * @param \Prometheus\Metric[] $metrics
-     */
-    public function storeMetrics($metrics)
-    {
-        foreach ($metrics as $metric) {
-            $this->metrics[$metric->getKey()] = $metric;
-        }
-    }
-
-    /**
      * @return MetricResponse[]
      */
     public function fetchMetrics()

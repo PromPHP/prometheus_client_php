@@ -57,16 +57,6 @@ class Registry
         return $this->gauges[Metric::metricIdentifier($namespace, $name, $labels)];
     }
 
-    public function flush()
-    {
-        $metrics = array_merge(
-            $this->gauges,
-            $this->counters,
-            $this->histograms
-        );
-        $this->storageAdapter->storeMetrics($metrics);
-    }
-
     /**
      * @return string
      */

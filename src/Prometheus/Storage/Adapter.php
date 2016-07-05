@@ -8,11 +8,6 @@ use Prometheus\Sample;
 interface Adapter
 {
     /**
-     * @param Metric[] $metrics
-     */
-    public function storeMetrics($metrics);
-
-    /**
      * @return MetricResponse[]
      */
     public function fetchMetrics();

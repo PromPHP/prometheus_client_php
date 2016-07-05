@@ -42,34 +42,6 @@ class RedisAdapter implements Adapter
     }
 
     /**
-     * @param Metric[] $metrics
-     */
-    public function storeMetrics($metrics)
-    {
-        $this->openConnection();
-        foreach ($metrics as $metric) {
-            $this->storeMetric($metric);
-            foreach ($metric->getSamples() as $sample) {
-                switch ($metric->getType()) {
-                    case Counter::TYPE:
-                        $storeValueCommand = 'hIncrBy';
-                        break;
-                    case Gauge::TYPE:
-                        $storeValueCommand = 'hSet';
-                        break;
-                    case Histogram::TYPE:
-                        $storeValueCommand = 'hIncrByFloat';
-                        break;
-                    default:
-                        throw new \RuntimeException('Invalid metric type!');
-                }
-
-                $this->storeSample($storeValueCommand, $metric, $sample);
-            }
-        }
-    }
-
-    /**
      * @return MetricResponse[]
      */
     public function fetchMetrics()
