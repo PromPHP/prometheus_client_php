@@ -25,13 +25,25 @@ class Redis implements Adapter
     const PROMETHEUS_SAMPLE_LABEL_VALUES_SUFFIX = '_LABEL_VALUES';
     const PROMETHEUS_SAMPLE_NAME_SUFFIX = '_NAME';
 
-    private $hostname;
+    private $options;
     private $redis;
     private $metricTypes;
 
-    public function __construct($hostname)
+    public function __construct(array $options)
     {
-        $this->hostname = $hostname;
+        if (!isset($options['host'])) {
+            $options['host'] = '127.0.0.1';
+        }
+        if (!isset($options['port'])) {
+            $options['port'] = 6379;
+        }
+        if (!isset($options['connect_timeout'])) {
+            $options['connect_timeout'] = 0.1; // in seconds
+        }
+        if (!isset($options['persistent_connections'])) {
+            $options['persistent_connections'] = false;
+        }
+        $this->options = $options;
         $this->redis = new \Redis();
         $this->metricTypes = array(
             Gauge::TYPE,
@@ -193,6 +205,10 @@ class Redis implements Adapter
 
     private function openConnection()
     {
-        $this->redis->connect($this->hostname);
+        if ($this->options['persistent_connections']) {
+            $this->redis->pconnect($this->options['host'], $this->options['port'], $this->options['connect_timeout']);
+        } else {
+            $this->redis->connect($this->options['host'], $this->options['port'], $this->options['connect_timeout']);
+        }
     }
 }
