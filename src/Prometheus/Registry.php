@@ -34,7 +34,7 @@ class Registry
      * @param array $labels e.g. ['controller', 'action']
      * @return Gauge
      */
-    public function registerGauge($namespace, $name, $help, $labels)
+    public function registerGauge($namespace, $name, $help, $labels = array())
     {
         $this->gauges[self::metricIdentifier($namespace, $name, $labels)] = new Gauge(
             $this->storageAdapter,
@@ -52,7 +52,7 @@ class Registry
      * @param array $labels e.g. ['controller', 'action']
      * @return Gauge
      */
-    public function getGauge($namespace, $name, $labels)
+    public function getGauge($namespace, $name, $labels = array())
     {
         return $this->gauges[self::metricIdentifier($namespace, $name, $labels)];
     }
@@ -72,7 +72,7 @@ class Registry
      * @param array $labels e.g. ['controller', 'action']
      * @return Counter
      */
-    public function getCounter($namespace, $name, $labels)
+    public function getCounter($namespace, $name, $labels = array())
     {
         return $this->counters[self::metricIdentifier($namespace, $name, $labels)];
     }
@@ -84,7 +84,7 @@ class Registry
      * @param array $labels e.g. ['controller', 'action']
      * @return Counter
      */
-    public function registerCounter($namespace, $name, $help, $labels)
+    public function registerCounter($namespace, $name, $help, $labels = array())
     {
         $this->counters[self::metricIdentifier($namespace, $name, $labels)] = new Counter(
             $this->storageAdapter,
@@ -104,7 +104,7 @@ class Registry
      * @param array $buckets e.g. [100, 200, 300]
      * @return Histogram
      */
-    public function registerHistogram($namespace, $name, $help, $labels, $buckets)
+    public function registerHistogram($namespace, $name, $help, $labels = array(), $buckets = array())
     {
         $this->histograms[self::metricIdentifier($namespace, $name, $labels)] = new Histogram(
             $this->storageAdapter,
@@ -123,7 +123,7 @@ class Registry
      * @param array $labels e.g. ['controller', 'action']
      * @return Histogram
      */
-    public function getHistogram($namespace, $name, $labels)
+    public function getHistogram($namespace, $name, $labels = array())
     {
         return $this->histograms[self::metricIdentifier($namespace, $name, $labels)];
     }
