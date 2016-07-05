@@ -274,4 +274,12 @@ class HistogramTest extends PHPUnit_Framework_TestCase
         new Histogram($this->storage, 'test', 'some invalid metric', 'help', array(), array(1));
     }
 
+    /**
+     * @test
+     * @expectedException \InvalidArgumentException
+     */
+    public function itShouldRejectInvalidLabelNames()
+    {
+        new Histogram($this->storage, 'test', 'some_metric', 'help', array('invalid label'), array(1));
+    }
 }

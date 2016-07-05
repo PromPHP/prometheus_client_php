@@ -7,7 +7,7 @@ use Prometheus\Storage\Adapter;
 
 abstract class Metric
 {
-    const RE_METRIC_NAME = '/^[a-zA-Z_:][a-zA-Z0-9_:]*$/';
+    const RE_METRIC_LABEL_NAME = '/^[a-zA-Z_:][a-zA-Z0-9_:]*$/';
 
     protected $storageAdapter;
     protected $name;
@@ -25,11 +25,16 @@ abstract class Metric
     {
         $this->storageAdapter = $storageAdapter;
         $metricName = ($namespace ? $namespace . '_' : '') . $name;
-        if (!preg_match(self::RE_METRIC_NAME, $metricName)) {
+        if (!preg_match(self::RE_METRIC_LABEL_NAME, $metricName)) {
             throw new \InvalidArgumentException("Invalid metric name: '" . $metricName . "'");
         }
         $this->name = $metricName;
         $this->help = $help;
+        foreach ($labels as $label) {
+            if (!preg_match(self::RE_METRIC_LABEL_NAME, $label)) {
+                throw new \InvalidArgumentException("Invalid label name: '" . $metricName . "'");
+            }
+        }
         $this->labels = $labels;
     }
 

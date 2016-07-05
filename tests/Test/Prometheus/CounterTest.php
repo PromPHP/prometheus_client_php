@@ -106,4 +106,13 @@ class CounterTest extends PHPUnit_Framework_TestCase
     {
         new Counter($this->storage, 'test', 'some metric invalid metric', 'help');
     }
+
+    /**
+     * @test
+     * @expectedException \InvalidArgumentException
+     */
+    public function itShouldRejectInvalidLabelNames()
+    {
+        new Counter($this->storage, 'test', 'some_metric', 'help', array('invalid label'));
+    }
 }
