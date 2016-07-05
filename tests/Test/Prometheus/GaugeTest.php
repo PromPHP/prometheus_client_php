@@ -14,14 +14,24 @@ use Prometheus\Storage\InMemory;
 class GaugeTest extends PHPUnit_Framework_TestCase
 {
     /**
+     * @var InMemory
+     */
+    private $storage;
+
+    public function setUp()
+    {
+        $this->storage = new InMemory();
+    }
+
+    /**
      * @test
      */
     public function itShouldAllowSetWithLabels()
     {
-        $gauge = new Gauge(new InMemory(), 'test', 'some_metric', 'this is for testing', array('foo', 'bar'));
+        $gauge = new Gauge($this->storage, 'test', 'some_metric', 'this is for testing', array('foo', 'bar'));
         $gauge->set(123, array('lalal', 'lululu'));
         $this->assertThat(
-            $gauge->getSamples(),
+            $this->storage->fetchSamples(),
             $this->equalTo(
                 array(
                     new Sample(
@@ -44,10 +54,10 @@ class GaugeTest extends PHPUnit_Framework_TestCase
      */
     public function itShouldAllowSetWithoutLabelWhenNoLabelsAreDefined()
     {
-        $gauge = new Gauge(new InMemory(), 'test', 'some_metric', 'this is for testing');
+        $gauge = new Gauge($this->storage, 'test', 'some_metric', 'this is for testing');
         $gauge->set(123);
         $this->assertThat(
-            $gauge->getSamples(),
+            $this->storage->fetchSamples(),
             $this->equalTo(
                 array(
                     new Sample(
@@ -71,6 +81,6 @@ class GaugeTest extends PHPUnit_Framework_TestCase
      */
     public function itShouldRejectInvalidMetricsNames()
     {
-        new Gauge(new InMemory(), 'test', 'some metric invalid metric', 'help');
+        new Gauge($this->storage, 'test', 'some metric invalid metric', 'help');
     }
 }

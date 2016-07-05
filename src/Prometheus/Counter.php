@@ -3,31 +3,9 @@
 namespace Prometheus;
 
 
-use Prometheus\Storage\Adapter;
-
 class Counter extends Metric
 {
     const TYPE = 'counter';
-
-    /**
-     * @return Sample[]
-     */
-    public function getSamples()
-    {
-        $metrics = array();
-        foreach ($this->values as $serializedLabels => $value) {
-            $labels = unserialize($serializedLabels);
-            $metrics[] = new Sample(
-                array(
-                    'name' => $this->getName(),
-                    'labelNames' => $this->getLabelNames(),
-                    'labelValues' => array_values($labels),
-                    'value' => $value
-                )
-            );
-        }
-        return $metrics;
-    }
 
     /**
      * @return string
@@ -65,10 +43,5 @@ class Counter extends Metric
                 )
             )
         );
-
-        if (!isset($this->values[serialize($labels)])) {
-            $this->values[serialize($labels)] = 0;
-        }
-        $this->values[serialize($labels)] += $count;
     }
 }

@@ -10,9 +10,12 @@ use Prometheus\Sample;
 class InMemory implements Adapter
 {
     /**
-     * @var \Prometheus\Metric[]
+     * @var array
      */
     private $metrics = array();
+    /**
+     * @var array
+     */
     private $samples = array();
 
     /**
@@ -27,7 +30,7 @@ class InMemory implements Adapter
                     'name' => $metric->getName(),
                     'type' => $metric->getType(),
                     'help' => $metric->getHelp(),
-                    'samples' => $metric->getSamples()
+                    'samples' => $this->samples[$metric->getKey()]
                 )
             );
         }
@@ -36,6 +39,37 @@ class InMemory implements Adapter
 
     public function storeSample($command, Metric $metric, Sample $sample)
     {
-        $this->samples[$sample->getKey()] = $sample;
+        if (isset($this->samples[$metric->getKey()][$sample->getKey()])) {
+            switch ($command) {
+                case 'hIncrBy':
+                case 'hIncrByFloat':
+                    $this->samples[$metric->getKey()][$sample->getKey()]['value'] += $sample->getValue();
+                    break;
+                case 'hSet':
+                    $this->samples[$metric->getKey()][$sample->getKey()]['value'] = $sample->getValue();
+                    break;
+                default:
+                    throw new \RuntimeException('Unknown command.');
+            }
+        } else {
+            $this->samples[$metric->getKey()][$sample->getKey()] = array(
+                'name' => $sample->getName(),
+                'labelNames' => $sample->getLabelNames(),
+                'labelValues' => $sample->getLabelValues(),
+                'value' => $sample->getValue(),
+            );
+            $this->metrics[$metric->getKey()] = $metric;
+        }
+    }
+
+    /**
+     * @return Sample[]
+     */
+    public function fetchSamples()
+    {
+        return array_map(
+            function ($data) { return new Sample($data); },
+            array_values(array_reduce(array_values($this->samples), 'array_merge', array()))
+        );
     }
 }

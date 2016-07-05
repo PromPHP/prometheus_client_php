@@ -14,16 +14,26 @@ use Prometheus\Storage\InMemory;
 class CounterTest extends PHPUnit_Framework_TestCase
 {
     /**
+     * @var InMemory
+     */
+    private $storage;
+
+    public function setUp()
+    {
+        $this->storage = new InMemory();
+    }
+
+    /**
      * @test
      */
     public function itShouldIncreaseWithLabels()
     {
-        $gauge = new Counter(new InMemory(), 'test', 'some_metric', 'this is for testing', array('foo', 'bar'));
+        $gauge = new Counter($this->storage, 'test', 'some_metric', 'this is for testing', array('foo', 'bar'));
         $gauge->inc(array('lalal', 'lululu'));
         $gauge->inc(array('lalal', 'lululu'));
         $gauge->inc(array('lalal', 'lululu'));
         $this->assertThat(
-            $gauge->getSamples(),
+            $this->storage->fetchSamples(),
             $this->equalTo(
                 array(
                     new Sample(
@@ -44,10 +54,10 @@ class CounterTest extends PHPUnit_Framework_TestCase
      */
     public function itShouldIncreaseWithoutLabelWhenNoLabelsAreDefined()
     {
-        $gauge = new Counter(new InMemory(), 'test', 'some_metric', 'this is for testing');
+        $gauge = new Counter($this->storage, 'test', 'some_metric', 'this is for testing');
         $gauge->inc();
         $this->assertThat(
-            $gauge->getSamples(),
+            $this->storage->fetchSamples(),
             $this->equalTo(
                 array(
                     new Sample(
@@ -68,11 +78,11 @@ class CounterTest extends PHPUnit_Framework_TestCase
      */
     public function itShouldIncreaseTheCounterByAnArbitraryInteger()
     {
-        $gauge = new Counter(new InMemory(), 'test', 'some_metric', 'this is for testing', array('foo', 'bar'));
+        $gauge = new Counter($this->storage, 'test', 'some_metric', 'this is for testing', array('foo', 'bar'));
         $gauge->inc(array('lalal', 'lululu'));
         $gauge->incBy(123, array('lalal', 'lululu'));
         $this->assertThat(
-            $gauge->getSamples(),
+            $this->storage->fetchSamples(),
             $this->equalTo(
                 array(
                     new Sample(
@@ -94,6 +104,6 @@ class CounterTest extends PHPUnit_Framework_TestCase
      */
     public function itShouldRejectInvalidMetricsNames()
     {
-        new Counter(new InMemory(), 'test', 'some metric invalid metric', 'help');
+        new Counter($this->storage, 'test', 'some metric invalid metric', 'help');
     }
 }

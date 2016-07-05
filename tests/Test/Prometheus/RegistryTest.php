@@ -55,7 +55,6 @@ EOF
         $metric = $client->registerCounter('test', 'some_metric', 'this is for testing', array('foo', 'bar'));
         $metric->incBy(2, array('lalal', 'lululu'));
         $client->getCounter('test', 'some_metric', array('foo', 'bar'))->inc(array('lalal', 'lululu'));
-        $client->flush();
 
         $client = new Registry($this->newRedisAdapter());
         $this->assertThat(

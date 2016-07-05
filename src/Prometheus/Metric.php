@@ -8,11 +8,11 @@ use Prometheus\Storage\Adapter;
 abstract class Metric
 {
     const RE_METRIC_NAME = '/^[a-zA-Z_:][a-zA-Z0-9_:]*$/';
+
     protected $storageAdapter;
     protected $name;
     protected $help;
     protected $labels;
-    protected $values = array();
 
     /**
      * @param Adapter $storageAdapter
@@ -50,11 +50,6 @@ abstract class Metric
      * @return string
      */
     public abstract function getType();
-
-    /**
-     * @return Sample[]
-     */
-    public abstract function getSamples();
 
     public function getName()
     {
