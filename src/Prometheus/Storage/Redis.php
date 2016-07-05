@@ -1,11 +1,16 @@
 <?php
 
-namespace Prometheus;
+namespace Prometheus\Storage;
 
 
-use Prometheus\Storage\Adapter;
+use Prometheus\Counter;
+use Prometheus\Gauge;
+use Prometheus\Histogram;
+use Prometheus\Metric;
+use Prometheus\MetricResponse;
+use Prometheus\Sample;
 
-class RedisAdapter implements Adapter
+class Redis implements Adapter
 {
     const PROMETHEUS_PREFIX = 'PROMETHEUS_';
 

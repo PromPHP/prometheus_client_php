@@ -5,8 +5,8 @@ namespace Test\Prometheus;
 
 
 use PHPUnit_Framework_TestCase;
+use Prometheus\Storage\Redis;
 use Prometheus\Registry;
-use Prometheus\RedisAdapter;
 
 class RegistryTest extends PHPUnit_Framework_TestCase
 {
@@ -101,6 +101,6 @@ EOF
 
     private function newRedisAdapter()
     {
-        return new RedisAdapter(REDIS_HOST);
+        return new Redis(REDIS_HOST);
     }
 }
