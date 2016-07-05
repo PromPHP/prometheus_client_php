@@ -5,9 +5,23 @@ namespace Prometheus;
 
 
 use Prometheus\Storage\Adapter;
+use Prometheus\Storage\Redis;
 
 class Registry
 {
+    /**
+     * @var Registry
+     */
+    private static $defaultRegistry;
+
+    /**
+     * @var string
+     */
+    private static $defaultRedisOptions;
+
+    /**
+     * @var Adapter
+     */
     private $storageAdapter;
     /**
      * @var Gauge[]
@@ -25,6 +39,25 @@ class Registry
     public function __construct(Adapter $redisAdapter)
     {
         $this->storageAdapter = $redisAdapter;
+    }
+
+    /**
+     * @param array $options
+     */
+    public static function setDefaultRedisOptions(array $options)
+    {
+        self::$defaultRedisOptions = $options;
+    }
+
+    /**
+     * @return Registry
+     */
+    public static function getDefaultRegistry()
+    {
+        if (!self::$defaultRegistry) {
+            return self::$defaultRegistry = new static(new Redis(self::$defaultRedisOptions));
+        }
+        return self::$defaultRegistry;
     }
 
     /**

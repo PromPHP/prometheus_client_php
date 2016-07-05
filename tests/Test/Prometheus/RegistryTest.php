@@ -101,6 +101,6 @@ EOF
 
     private function newRedisAdapter()
     {
-        return new Redis(REDIS_HOST);
+        return new Redis(array('host' => REDIS_HOST));
     }
 }
