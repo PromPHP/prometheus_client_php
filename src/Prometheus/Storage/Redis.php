@@ -35,10 +35,10 @@ class Redis implements Adapter
             $options['host'] = '127.0.0.1';
         }
         if (!isset($options['port'])) {
-            $options['port'] = '6379';
+            $options['port'] = 6379;
         }
         if (!isset($options['connect_timeout'])) {
-            $options['connect_timeout'] = '0.0'; // in seconds
+            $options['connect_timeout'] = 0.1; // in seconds
         }
         $this->options = $options;
         $this->redis = new \Redis();
