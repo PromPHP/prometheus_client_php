@@ -4,6 +4,8 @@
 namespace Prometheus;
 
 
+use Prometheus\Storage\Adapter;
+
 class Gauge extends Metric
 {
     const TYPE = 'gauge';
@@ -17,7 +19,7 @@ class Gauge extends Metric
         $this->assertLabelsAreDefinedCorrectly($labels);
 
         $this->storageAdapter->storeSample(
-            'hSet',
+            Adapter::COMMAND_SET,
             $this,
             new Sample(
                 array(

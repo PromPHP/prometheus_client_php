@@ -3,6 +3,8 @@
 namespace Prometheus;
 
 
+use Prometheus\Storage\Adapter;
+
 class Counter extends Metric
 {
     const TYPE = 'counter';
@@ -32,7 +34,7 @@ class Counter extends Metric
         $this->assertLabelsAreDefinedCorrectly($labels);
 
         $this->storageAdapter->storeSample(
-            'hIncrBy',
+            Adapter::COMMAND_INCREMENT_INTEGER,
             $this,
             new Sample(
                 array(

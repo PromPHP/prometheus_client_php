@@ -53,7 +53,7 @@ class Histogram extends Metric
         foreach ($this->buckets as $bucket) {
             if ($value <= $bucket) {
                 $this->storageAdapter->storeSample(
-                    'hIncrBy',
+                    Adapter::COMMAND_INCREMENT_INTEGER,
                     $this,
                     new Sample(
                         array(
@@ -66,7 +66,7 @@ class Histogram extends Metric
                 );
             } else {
                 $this->storageAdapter->storeSample(
-                    'hIncrBy',
+                    Adapter::COMMAND_INCREMENT_INTEGER,
                     $this,
                     new Sample(
                         array(
@@ -80,7 +80,7 @@ class Histogram extends Metric
             }
         }
         $this->storageAdapter->storeSample(
-            'hIncrBy',
+            Adapter::COMMAND_INCREMENT_INTEGER,
             $this,
             new Sample(
                 array(
@@ -92,7 +92,7 @@ class Histogram extends Metric
             )
         );
         $this->storageAdapter->storeSample(
-            'hIncrBy',
+            Adapter::COMMAND_INCREMENT_INTEGER,
             $this,
             new Sample(
                 array(
@@ -104,7 +104,7 @@ class Histogram extends Metric
             )
         );
         $this->storageAdapter->storeSample(
-            'hIncrByFloat',
+            Adapter::COMMAND_INCREMENT_FLOAT,
             $this,
             new Sample(
                 array(

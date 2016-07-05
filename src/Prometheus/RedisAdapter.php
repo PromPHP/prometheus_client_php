@@ -71,11 +71,31 @@ class RedisAdapter implements Adapter
     {
         $this->openConnection();
         $metricKey = self::PROMETHEUS_PREFIX . $metric->getType() . $metric->getKey();
-        $this->redis->$command(
-            $metricKey . self::PROMETHEUS_SAMPLE_VALUE_SUFFIX,
-            $sample->getKey(),
-            $sample->getValue()
-        );
+        switch ($command) {
+            case self::COMMAND_INCREMENT_INTEGER:
+                $this->redis->hIncrBy(
+                    $metricKey . self::PROMETHEUS_SAMPLE_VALUE_SUFFIX,
+                    $sample->getKey(),
+                    $sample->getValue()
+                );
+                break;
+            case self::COMMAND_INCREMENT_FLOAT:
+                $this->redis->hIncrByFloat(
+                    $metricKey . self::PROMETHEUS_SAMPLE_VALUE_SUFFIX,
+                    $sample->getKey(),
+                    $sample->getValue()
+                );
+                break;
+            case self::COMMAND_SET:
+                $this->redis->hSet(
+                    $metricKey . self::PROMETHEUS_SAMPLE_VALUE_SUFFIX,
+                    $sample->getKey(),
+                    $sample->getValue()
+                );
+                break;
+            default:
+                throw new \RuntimeException('Unknown command.');
+        }
         $this->redis->hSet(
             $metricKey . self::PROMETHEUS_SAMPLE_LABEL_VALUES_SUFFIX,
             $sample->getKey(),

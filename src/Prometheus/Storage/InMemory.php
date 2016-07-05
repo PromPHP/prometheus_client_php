@@ -41,11 +41,11 @@ class InMemory implements Adapter
     {
         if (isset($this->samples[$metric->getKey()][$sample->getKey()])) {
             switch ($command) {
-                case 'hIncrBy':
-                case 'hIncrByFloat':
+                case Adapter::COMMAND_INCREMENT_INTEGER:
+                case Adapter::COMMAND_INCREMENT_FLOAT:
                     $this->samples[$metric->getKey()][$sample->getKey()]['value'] += $sample->getValue();
                     break;
-                case 'hSet':
+                case Adapter::COMMAND_SET:
                     $this->samples[$metric->getKey()][$sample->getKey()]['value'] = $sample->getValue();
                     break;
                 default:
