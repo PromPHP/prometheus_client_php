@@ -6,6 +6,7 @@ namespace Test\Prometheus;
 use PHPUnit_Framework_TestCase;
 use Prometheus\Histogram;
 use Prometheus\Sample;
+use Prometheus\Storage\InMemory;
 
 /**
  * See https://prometheus.io/docs/instrumenting/exposition_formats/
@@ -17,7 +18,14 @@ class HistogramTest extends PHPUnit_Framework_TestCase
      */
     public function itShouldObserveWithLabels()
     {
-        $gauge = new Histogram('test', 'some_metric', 'this is for testing', array('foo', 'bar'), array(100, 200, 300));
+        $gauge = new Histogram(
+            new InMemory(),
+            'test',
+            'some_metric',
+            'this is for testing',
+            array('foo', 'bar'),
+            array(100, 200, 300)
+        );
         $gauge->observe(123, array('lalal', 'lululu'));
         $gauge->observe(245, array('lalal', 'lululu'));
         $this->assertThat(
@@ -82,7 +90,14 @@ class HistogramTest extends PHPUnit_Framework_TestCase
      */
     public function itShouldObserveWithoutLabelWhenNoLabelsAreDefined()
     {
-        $gauge = new Histogram('test', 'some_metric', 'this is for testing', array(), array(100, 200, 300));
+        $gauge = new Histogram(
+            new InMemory(),
+            'test',
+            'some_metric',
+            'this is for testing',
+            array(),
+            array(100, 200, 300)
+        );
         $gauge->observe(245);
         $this->assertThat(
             $gauge->getSamples(),
@@ -146,7 +161,14 @@ class HistogramTest extends PHPUnit_Framework_TestCase
      */
     public function itShouldObserveValuesOfTypeDouble()
     {
-        $gauge = new Histogram('test', 'some_metric', 'this is for testing', array(), array(0.1, 0.2, 0.3));
+        $gauge = new Histogram(
+            new InMemory(),
+            'test',
+            'some_metric',
+            'this is for testing',
+            array(),
+            array(0.1, 0.2, 0.3)
+        );
         $gauge->observe(0.11);
         $gauge->observe(0.3);
         $this->assertThat(
@@ -212,7 +234,7 @@ class HistogramTest extends PHPUnit_Framework_TestCase
      */
     public function itShouldThrowAnExceptionWhenTheBucketSizesAreNotIncreasing()
     {
-        new Histogram('test', 'some_metric', 'this is for testing', array(), array(1, 1));
+        new Histogram(new InMemory(), 'test', 'some_metric', 'this is for testing', array(), array(1, 1));
     }
 
     /**
@@ -221,7 +243,7 @@ class HistogramTest extends PHPUnit_Framework_TestCase
      */
     public function itShouldThrowAnExceptionWhenThereIsLessThanOnBucket()
     {
-        new Histogram('test', 'some_metric', 'this is for testing', array(), array());
+        new Histogram(new InMemory(), 'test', 'some_metric', 'this is for testing', array(), array());
     }
 
     /**
@@ -230,7 +252,7 @@ class HistogramTest extends PHPUnit_Framework_TestCase
      */
     public function itShouldThrowAnExceptionWhenThereIsALabelNamedLe()
     {
-        new Histogram('test', 'some_metric', 'this is for testing', array('le'), array());
+        new Histogram(new InMemory(), 'test', 'some_metric', 'this is for testing', array('le'), array());
     }
 
     /**
@@ -239,7 +261,7 @@ class HistogramTest extends PHPUnit_Framework_TestCase
      */
     public function itShouldRejectInvalidMetricsNames()
     {
-        new Histogram('test', 'some invalid metric', 'help', array(), array(1));
+        new Histogram(new InMemory(), 'test', 'some invalid metric', 'help', array(), array(1));
     }
 
 }

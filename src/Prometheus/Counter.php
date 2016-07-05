@@ -9,14 +9,6 @@ class Counter extends Metric
 {
     const TYPE = 'counter';
 
-    private $storageAdapter;
-
-    public function __construct(Adapter $storageAdapter, $namespace, $name, $help, array $labels = array())
-    {
-        $this->storageAdapter = $storageAdapter;
-        parent::__construct($namespace, $name, $help, $labels);
-    }
-
     /**
      * @return Sample[]
      */

@@ -117,6 +117,7 @@ class Registry
     public function registerHistogram($namespace, $name, $help, $labels, $buckets)
     {
         $this->histograms[Metric::metricIdentifier($namespace, $name, $labels)] = new Histogram(
+            $this->storageAdapter,
             $namespace,
             $name,
             $help,

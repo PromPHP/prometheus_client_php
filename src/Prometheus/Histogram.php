@@ -3,6 +3,8 @@
 namespace Prometheus;
 
 
+use Prometheus\Storage\Adapter;
+
 class Histogram extends Metric
 {
     const TYPE = 'histogram';
@@ -10,15 +12,16 @@ class Histogram extends Metric
     private $buckets;
 
     /**
+     * @param Adapter $adapter
      * @param string $namespace
      * @param string $name
      * @param string $help
      * @param array $labels
      * @param array $buckets
      */
-    public function __construct($namespace, $name, $help, $labels = array(), $buckets = array())
+    public function __construct(Adapter $adapter, $namespace, $name, $help, $labels = array(), $buckets = array())
     {
-        parent::__construct($namespace, $name, $help, $labels);
+        parent::__construct($adapter, $namespace, $name, $help, $labels);
 
         if (0 == count($buckets)) {
             throw new \InvalidArgumentException("Histogram must have at least one bucket.");
@@ -46,6 +49,72 @@ class Histogram extends Metric
     public function observe($value, $labels = array())
     {
         $this->assertLabelsAreDefinedCorrectly($labels);
+
+        foreach ($this->buckets as $bucket) {
+            if ($value <= $bucket) {
+                $this->storageAdapter->storeSample(
+                    'hIncrBy',
+                    $this,
+                    new Sample(
+                        array(
+                            'name' => $this->getName() . '_bucket',
+                            'labelNames' => array_merge($this->getLabelNames(), array('le')),
+                            'labelValues' => array_merge($labels, array($bucket)),
+                            'value' => 1
+                        )
+                    )
+                );
+            } else {
+                $this->storageAdapter->storeSample(
+                    'hIncrBy',
+                    $this,
+                    new Sample(
+                        array(
+                            'name' => $this->getName() . '_bucket',
+                            'labelNames' => array_merge($this->getLabelNames(), array('le')),
+                            'labelValues' => array_merge($labels, array($bucket)),
+                            'value' => 0
+                        )
+                    )
+                );
+            }
+        }
+        $this->storageAdapter->storeSample(
+            'hIncrBy',
+            $this,
+            new Sample(
+                array(
+                    'name' => $this->getName() . '_bucket',
+                    'labelNames' => array_merge($this->getLabelNames(), array('le')),
+                    'labelValues' => array_merge($labels, array('+Inf')),
+                    'value' => 1
+                )
+            )
+        );
+        $this->storageAdapter->storeSample(
+            'hIncrBy',
+            $this,
+            new Sample(
+                array(
+                    'name' => $this->getName() . '_count',
+                    'labelNames' => $this->getLabelNames(),
+                    'labelValues' => $labels,
+                    'value' => 1
+                )
+            )
+        );
+        $this->storageAdapter->storeSample(
+            'hIncrByFloat',
+            $this,
+            new Sample(
+                array(
+                    'name' => $this->getName() . '_sum',
+                    'labelNames' => $this->getLabelNames(),
+                    'labelValues' => $labels,
+                    'value' => $value
+                )
+            )
+        );
 
         if (!isset($this->values[serialize($labels)])) {
             $this->values[serialize($labels)] = array(

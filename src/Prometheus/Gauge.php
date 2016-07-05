@@ -10,14 +10,6 @@ class Gauge extends Metric
 {
     const TYPE = 'gauge';
 
-    private $storageAdapter;
-
-    public function __construct(Adapter $storageAdapter, $namespace, $name, $help, array $labels = array())
-    {
-        $this->storageAdapter = $storageAdapter;
-        parent::__construct($namespace, $name, $help, $labels);
-    }
-
     /**
      * @param double $value e.g. 123
      * @param array $labels e.g. ['status', 'opcode']

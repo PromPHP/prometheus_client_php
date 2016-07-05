@@ -3,22 +3,27 @@
 namespace Prometheus;
 
 
+use Prometheus\Storage\Adapter;
+
 abstract class Metric
 {
     const RE_METRIC_NAME = '/^[a-zA-Z_:][a-zA-Z0-9_:]*$/';
+    protected $storageAdapter;
     protected $name;
     protected $help;
     protected $labels;
     protected $values = array();
 
     /**
+     * @param Adapter $storageAdapter
      * @param string $namespace
      * @param string $name
      * @param string $help
      * @param array $labels
      */
-    public function __construct($namespace, $name, $help, $labels = array())
+    public function __construct(Adapter $storageAdapter, $namespace, $name, $help, $labels = array())
     {
+        $this->storageAdapter = $storageAdapter;
         $metricName = Metric::metricName($namespace, $name);
         if (!preg_match(self::RE_METRIC_NAME, $metricName)) {
             throw new \InvalidArgumentException("Invalid metric name: '" . $metricName . "'");
