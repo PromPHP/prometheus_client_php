@@ -7,7 +7,14 @@ We recommend to run a local redis instance next to your PHP workers.
 
 ## Usage
 
-Write some metrics:
+A simple counter:
+```php
+\Prometheus\Registry::getDefaultRegistry()
+    ->registerCounter('test', 'some_counter', 'just a quick measurement')
+    ->incBy(3);
+```
+
+Write some enhanced metrics:
 ```php
 $registry = \Prometheus\Registry::getDefaultRegistry();
 
