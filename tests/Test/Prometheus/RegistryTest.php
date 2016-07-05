@@ -29,10 +29,16 @@ class RegistryTest extends PHPUnit_Framework_TestCase
         $g->set(32, array('lalal'));
         $g->set(35, array('lalab'));
 
+        $g = $client->registerGauge('test', 'some_metric', 'this is for testing');
+        $g->dec();
+
         $client = new Registry($this->newRedisAdapter());
         $this->assertThat(
             $client->toText(),
             $this->equalTo(<<<EOF
+# HELP test_some_metric this is for testing
+# TYPE test_some_metric gauge
+test_some_metric -1
 # HELP test_some_metric this is for testing
 # TYPE test_some_metric gauge
 test_some_metric{foo="lalal"} 32
