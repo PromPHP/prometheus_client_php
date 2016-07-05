@@ -38,16 +38,16 @@ class Counter extends Metric
     /**
      * @param array $labels e.g. ['status', 'opcode']
      */
-    public function increase(array $labels = array())
+    public function inc(array $labels = array())
     {
-        $this->increaseBy(1, $labels);
+        $this->incBy(1, $labels);
     }
 
     /**
      * @param int $count e.g. 2
      * @param array $labels e.g. ['status', 'opcode']
      */
-    public function increaseBy($count, array $labels = array())
+    public function incBy($count, array $labels = array())
     {
         $this->assertLabelsAreDefinedCorrectly($labels);
 
