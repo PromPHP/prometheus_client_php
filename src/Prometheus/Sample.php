@@ -63,6 +63,10 @@ class Sample
      */
     public function getLabels()
     {
-        return array_combine($this->getLabelNames(), $this->getLabelValues());
+        $labelNames = $this->getLabelNames();
+        if (empty($labelNames)) {
+            return array();
+        }
+        return array_combine($labelNames, $this->getLabelValues());
     }
 }
