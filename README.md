@@ -42,7 +42,8 @@ Registry::setDefaultRedisOptions(
     [
         'host' => '127.0.0.1',
         'port' => 6379,
-        'connect_timeout' => 0.1 // in seconds
+        'connect_timeout' => 0.1, // in seconds
+        'persistent_connections' => false
     ]
 );
 ```

@@ -40,6 +40,9 @@ class Redis implements Adapter
         if (!isset($options['connect_timeout'])) {
             $options['connect_timeout'] = 0.1; // in seconds
         }
+        if (!isset($options['persistent_connections'])) {
+            $options['persistent_connections'] = false;
+        }
         $this->options = $options;
         $this->redis = new \Redis();
         $this->metricTypes = array(
@@ -202,6 +205,10 @@ class Redis implements Adapter
 
     private function openConnection()
     {
-        $this->redis->connect($this->options['host'], $this->options['port'], $this->options['connect_timeout']);
+        if ($this->options['persistent_connections']) {
+            $this->redis->pconnect($this->options['host'], $this->options['port'], $this->options['connect_timeout']);
+        } else {
+            $this->redis->connect($this->options['host'], $this->options['port'], $this->options['connect_timeout']);
+        }
     }
 }
