@@ -71,66 +71,11 @@ class Redis implements Adapter
         return $metrics;
     }
 
-    /**
-     * @param Collector $metric
-     */
-    private function storeMetric(Collector $metric)
-    {
-        $metricKey = self::PROMETHEUS_PREFIX . $metric->getType() . $metric->getKey();
-        $this->redis->hSet($metricKey, 'name', $metric->getName());
-        $this->redis->hSet($metricKey, 'help', $metric->getHelp());
-        $this->redis->hSet($metricKey, 'type', $metric->getType());
-        $this->redis->hSet($metricKey, 'labelNames', serialize($metric->getLabelNames()));
-        $this->storeNewMetricKey($metric->getType(), $metric->getKey());
-    }
-
     public function store($command, Collector $metric, Sample $sample)
     {
         $this->openConnection();
-        $metricKey = self::PROMETHEUS_PREFIX . $metric->getType() . $metric->getKey();
-        switch ($command) {
-            case self::COMMAND_INCREMENT_INTEGER:
-                $this->redis->hIncrBy(
-                    $metricKey . self::PROMETHEUS_SAMPLE_VALUE_SUFFIX,
-                    $sample->getKey(),
-                    $sample->getValue()
-                );
-                break;
-            case self::COMMAND_INCREMENT_FLOAT:
-                $this->redis->hIncrByFloat(
-                    $metricKey . self::PROMETHEUS_SAMPLE_VALUE_SUFFIX,
-                    $sample->getKey(),
-                    $sample->getValue()
-                );
-                break;
-            case self::COMMAND_SET:
-                $this->redis->hSet(
-                    $metricKey . self::PROMETHEUS_SAMPLE_VALUE_SUFFIX,
-                    $sample->getKey(),
-                    $sample->getValue()
-                );
-                break;
-            default:
-                throw new \RuntimeException('Unknown command.');
-        }
-        $this->redis->hSet(
-            $metricKey . self::PROMETHEUS_SAMPLE_LABEL_VALUES_SUFFIX,
-            $sample->getKey(),
-            serialize($sample->getLabelValues())
-        );
-        $this->redis->hSet(
-            $metricKey . self::PROMETHEUS_SAMPLE_LABEL_NAMES_SUFFIX,
-            $sample->getKey(),
-            serialize($sample->getLabelNames())
-        );
-        $this->redis->hSet(
-            $metricKey . self::PROMETHEUS_SAMPLE_NAME_SUFFIX,
-            $sample->getKey(),
-            $sample->getName()
-        );
-        $this->storeNewMetricSampleKey($metric->getType(), $metric->getKey(), $sample->getKey());
-
-        $this->storeMetric($metric);
+        $this->storeMetricFamilySample($command, $metric, $sample);
+        $this->storeMetricFamilyMetadata($metric);
     }
 
     /**
@@ -174,35 +119,6 @@ class Redis implements Adapter
         return array_reverse($metrics);
     }
 
-    /**
-     * @param string $metricType
-     * @param string $key
-     * @param string $sampleKey
-     */
-    private function storeNewMetricSampleKey($metricType, $key, $sampleKey)
-    {
-        $currentMetricCounter = $this->redis->incr(self::PROMETHEUS_PREFIX . self::PROMETHEUS_METRICS_SAMPLE_COUNTER);
-        $this->redis->zAdd(
-            self::PROMETHEUS_PREFIX . $metricType . $key . self::PROMETHEUS_SAMPLE_KEYS_SUFFIX,
-            $currentMetricCounter,
-            $sampleKey
-        );
-    }
-
-    /**
-     * @param string $metricType
-     * @param string $key
-     */
-    private function storeNewMetricKey($metricType, $key)
-    {
-        $currentMetricCounter = $this->redis->incr(self::PROMETHEUS_PREFIX . self::PROMETHEUS_METRICS_COUNTER);
-        $this->redis->zAdd(
-            self::PROMETHEUS_PREFIX . $metricType . self::PROMETHEUS_METRIC_KEYS_SUFFIX,
-            $currentMetricCounter,
-            $key
-        );
-    }
-
     private function openConnection()
     {
         if ($this->options['persistent_connections']) {
@@ -210,5 +126,91 @@ class Redis implements Adapter
         } else {
             $this->redis->connect($this->options['host'], $this->options['port'], $this->options['connect_timeout']);
         }
+    }
+
+    /**
+     * @param $command
+     * @param Collector $metric
+     * @param Sample $sample
+     */
+    private function storeMetricFamilySample($command, Collector $metric, Sample $sample)
+    {
+        $metricKey = self::PROMETHEUS_PREFIX . $metric->getType() . $metric->getKey();
+        switch ($command) {
+            case self::COMMAND_INCREMENT_INTEGER:
+                $this->redis->hIncrBy(
+                    $metricKey . self::PROMETHEUS_SAMPLE_VALUE_SUFFIX,
+                    $sample->getKey(),
+                    $sample->getValue()
+                );
+                break;
+            case self::COMMAND_INCREMENT_FLOAT:
+                $this->redis->hIncrByFloat(
+                    $metricKey . self::PROMETHEUS_SAMPLE_VALUE_SUFFIX,
+                    $sample->getKey(),
+                    $sample->getValue()
+                );
+                break;
+            case self::COMMAND_SET:
+                $this->redis->hSet(
+                    $metricKey . self::PROMETHEUS_SAMPLE_VALUE_SUFFIX,
+                    $sample->getKey(),
+                    $sample->getValue()
+                );
+                break;
+            default:
+                throw new \RuntimeException('Unknown command.');
+        }
+        $this->redis->hSet(
+            $metricKey . self::PROMETHEUS_SAMPLE_LABEL_VALUES_SUFFIX,
+            $sample->getKey(),
+            serialize($sample->getLabelValues())
+        );
+        $this->redis->hSet(
+            $metricKey . self::PROMETHEUS_SAMPLE_LABEL_NAMES_SUFFIX,
+            $sample->getKey(),
+            serialize($sample->getLabelNames())
+        );
+        $this->redis->hSet(
+            $metricKey . self::PROMETHEUS_SAMPLE_NAME_SUFFIX,
+            $sample->getKey(),
+            $sample->getName()
+        );
+
+        /**
+         * Store new metric family sample keys in order of occurence.
+         * This guarantees that the keys can be retrieved in the same order
+         * and don't need to be sorted again.
+         */
+        $currentMetricCounter = $this->redis->incr(self::PROMETHEUS_PREFIX . self::PROMETHEUS_METRICS_SAMPLE_COUNTER);
+        $this->redis->zAdd(
+            $metricKey . self::PROMETHEUS_SAMPLE_KEYS_SUFFIX,
+            $currentMetricCounter,
+            $sample->getKey()
+        );
+    }
+
+    /**
+     * @param Collector $metric
+     */
+    private function storeMetricFamilyMetadata(Collector $metric)
+    {
+        $metricKey = self::PROMETHEUS_PREFIX . $metric->getType() . $metric->getKey();
+        $this->redis->hSet($metricKey, 'name', $metric->getName());
+        $this->redis->hSet($metricKey, 'help', $metric->getHelp());
+        $this->redis->hSet($metricKey, 'type', $metric->getType());
+        $this->redis->hSet($metricKey, 'labelNames', serialize($metric->getLabelNames()));
+
+        /**
+         * Store new metric family keys in order of occurence.
+         * This guarantees that the keys can be retrieved in the same order
+         * and don't need to be sorted again.
+         */
+        $currentMetricCounter = $this->redis->incr(self::PROMETHEUS_PREFIX . self::PROMETHEUS_METRICS_COUNTER);
+        $this->redis->zAdd(
+            self::PROMETHEUS_PREFIX . $metric->getType() . self::PROMETHEUS_METRIC_KEYS_SUFFIX,
+            $currentMetricCounter,
+            $metric->getKey()
+        );
     }
 }
