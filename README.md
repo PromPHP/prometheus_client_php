@@ -9,14 +9,14 @@ We recommend to run a local redis instance next to your PHP workers.
 
 A simple counter:
 ```php
-\Prometheus\Registry::getDefaultRegistry()
+\Prometheus\CollectorRegistry::getDefault()
     ->registerCounter('', 'some_quick_counter', 'just a quick measurement')
     ->inc();
 ```
 
 Write some enhanced metrics:
 ```php
-$registry = \Prometheus\Registry::getDefaultRegistry();
+$registry = \Prometheus\CollectorRegistry::getDefault();
 
 $counter = $registry->registerCounter('test', 'some_counter', 'it increases', ['type']);
 $counter->incBy(3, ['blue']);
@@ -30,7 +30,7 @@ $histogram->observe(3.5, ['blue']);
 
 Expose the metrics:
 ```php
-$registry = \Prometheus\Registry::getDefaultRegistry();
+$registry = \Prometheus\CollectorRegistry::getDefault();
 $result = $registry->toText();
 
 header('Content-type: text/plain; version=0.0.4');
@@ -38,7 +38,7 @@ header('Content-type: text/plain; version=0.0.4');
 
 Change the redis options (the example shows the defaults):
 ```php
-Registry::setDefaultRedisOptions(
+CollectorRegistry::setDefaultRedisOptions(
     [
         'host' => '127.0.0.1',
         'port' => 6379,
