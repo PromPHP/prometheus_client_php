@@ -34,6 +34,7 @@ $registry = \Prometheus\CollectorRegistry::getDefault();
 $result = $registry->toText();
 
 header('Content-type: text/plain; version=0.0.4');
+echo $result;
 ```
 
 Change the redis options (the example shows the defaults):
