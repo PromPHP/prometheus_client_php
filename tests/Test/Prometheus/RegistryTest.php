@@ -5,8 +5,8 @@ namespace Test\Prometheus;
 
 
 use PHPUnit_Framework_TestCase;
-use Prometheus\Storage\Redis;
 use Prometheus\CollectorRegistry;
+use Prometheus\Storage\Redis;
 
 class RegistryTest extends PHPUnit_Framework_TestCase
 {
@@ -99,6 +99,28 @@ test_some_metric_bucket{foo="lalal",bar="lululu",le="10"} 2
 test_some_metric_bucket{foo="lalal",bar="lululu",le="+Inf"} 3
 test_some_metric_count{foo="lalal",bar="lululu"} 3
 test_some_metric_sum{foo="lalal",bar="lululu"} 22.0999999999999996
+
+EOF
+            )
+        );
+    }
+
+    /**
+     * @test
+     */
+    public function itShouldIncreaseACounterWithoutNamespace()
+    {
+        $collectorRegistry = new CollectorRegistry($this->newRedisAdapter());
+        $collectorRegistry
+            ->registerCounter('', 'some_quick_counter', 'just a quick measurement')
+            ->inc();
+
+        $this->assertThat(
+            $collectorRegistry->toText(),
+            $this->equalTo(<<<EOF
+# HELP some_quick_counter just a quick measurement
+# TYPE some_quick_counter counter
+some_quick_counter 1
 
 EOF
             )
