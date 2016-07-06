@@ -10,8 +10,8 @@ We recommend to run a local redis instance next to your PHP workers.
 A simple counter:
 ```php
 \Prometheus\Registry::getDefaultRegistry()
-    ->registerCounter('test', 'some_counter', 'just a quick measurement')
-    ->incBy(3);
+    ->registerCounter('', 'some_quick_counter', 'just a quick measurement')
+    ->inc();
 ```
 
 Write some enhanced metrics:
