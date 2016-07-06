@@ -5,6 +5,18 @@
 This uses redis to do the client side aggregation.
 We recommend to run a local redis instance next to your PHP workers.
 
+## Why redis?
+
+Usually PHP worker processes don't share any state.
+
+We decided to use redis because:
+ * It is easy to deploy as a sidecar to the PHP worker processes (see [docker-compose.yml](docker-compose.yml)).
+ * It provides us with easy to use concurrency mechanisms we need for the metric aggregation (e.g. `incrByFloat`).
+
+We think this could be implemented with APCu as well and we will not exclude to do so in the future.
+Of course we would also appreciate a pull-request.
+
+
 ## Usage
 
 A simple counter:
