@@ -41,8 +41,8 @@ class Redis implements Adapter
         if (!isset(self::$defaultOptions['port'])) {
             self::$defaultOptions['port'] = 6379;
         }
-        if (!isset(self::$defaultOptions['connect_timeout'])) {
-            self::$defaultOptions['connect_timeout'] = 0.1; // in seconds
+        if (!isset(self::$defaultOptions['timeout'])) {
+            self::$defaultOptions['timeout'] = 0.1; // in seconds
         }
         if (!isset(self::$defaultOptions['persistent_connections'])) {
             self::$defaultOptions['persistent_connections'] = false;
@@ -135,9 +135,9 @@ class Redis implements Adapter
     private function openConnection()
     {
         if ($this->options['persistent_connections']) {
-            $this->redis->pconnect($this->options['host'], $this->options['port'], $this->options['connect_timeout']);
+            $this->redis->pconnect($this->options['host'], $this->options['port'], $this->options['timeout']);
         } else {
-            $this->redis->connect($this->options['host'], $this->options['port'], $this->options['connect_timeout']);
+            $this->redis->connect($this->options['host'], $this->options['port'], $this->options['timeout']);
         }
     }
 
