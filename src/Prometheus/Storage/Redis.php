@@ -25,31 +25,44 @@ class Redis implements Adapter
     const PROMETHEUS_SAMPLE_LABEL_VALUES_SUFFIX = '_LABEL_VALUES';
     const PROMETHEUS_SAMPLE_NAME_SUFFIX = '_NAME';
 
+    private static $defaultOptions = array();
+
     private $options;
     private $redis;
     private $metricTypes;
 
-    public function __construct(array $options)
+    public function __construct(array $options = array())
     {
-        if (!isset($options['host'])) {
-            $options['host'] = '127.0.0.1';
+        // with php 5.3 we cannot initialize the options directly on the field definition
+        // so we initialize them here for now
+        if (!isset(self::$defaultOptions['host'])) {
+            self::$defaultOptions['host'] = '127.0.0.1';
         }
-        if (!isset($options['port'])) {
-            $options['port'] = 6379;
+        if (!isset(self::$defaultOptions['port'])) {
+            self::$defaultOptions['port'] = 6379;
         }
-        if (!isset($options['connect_timeout'])) {
-            $options['connect_timeout'] = 0.1; // in seconds
+        if (!isset(self::$defaultOptions['connect_timeout'])) {
+            self::$defaultOptions['connect_timeout'] = 0.1; // in seconds
         }
-        if (!isset($options['persistent_connections'])) {
-            $options['persistent_connections'] = false;
+        if (!isset(self::$defaultOptions['persistent_connections'])) {
+            self::$defaultOptions['persistent_connections'] = false;
         }
-        $this->options = $options;
+
+        $this->options = array_merge(self::$defaultOptions, $options);
         $this->redis = new \Redis();
         $this->metricTypes = array(
             Gauge::TYPE,
             Counter::TYPE,
             Histogram::TYPE,
         );
+    }
+
+    /**
+     * @param array $options
+     */
+    public static function setDefaultOptions(array $options)
+    {
+        self::$defaultOptions = array_merge(self::$defaultOptions, $options);
     }
 
     public function flushRedis()

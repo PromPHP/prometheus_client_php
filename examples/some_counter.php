@@ -3,10 +3,11 @@
 require __DIR__ . '/../vendor/autoload.php';
 
 use Prometheus\CollectorRegistry;
+use Prometheus\Storage\Redis;
 
 error_log('c='. $_GET['c']);
 
-CollectorRegistry::setDefaultRedisOptions(array('host' => isset($_SERVER['REDIS_HOST']) ? $_SERVER['REDIS_HOST'] : '127.0.0.1'));
+Redis::setDefaultOptions(array('host' => isset($_SERVER['REDIS_HOST']) ? $_SERVER['REDIS_HOST'] : '127.0.0.1'));
 $registry = CollectorRegistry::getDefault();
 
 $counter = $registry->registerCounter('test', 'some_counter', 'it increases', ['type']);

@@ -42,7 +42,7 @@ echo $result;
 
 Change the redis options (the example shows the defaults):
 ```php
-CollectorRegistry::setDefaultRedisOptions(
+\Prometheus\Storage\Redis::setDefaultOptions(
     [
         'host' => '127.0.0.1',
         'port' => 6379,
