@@ -31,9 +31,12 @@ $histogram->observe(3.5, ['blue']);
 Expose the metrics:
 ```php
 $registry = \Prometheus\CollectorRegistry::getDefault();
-$result = $registry->toText();
+$registry = CollectorRegistry::getDefault();
 
-header('Content-type: text/plain; version=0.0.4');
+$renderer = new RenderTextFormat();
+$result = $renderer->render($registry->getMetricFamilySamples());
+
+header(RenderTextFormat::HTTP_CONTENT_TYPE);
 echo $result;
 ```
 

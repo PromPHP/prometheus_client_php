@@ -6,13 +6,20 @@ namespace Test\Prometheus;
 
 use PHPUnit_Framework_TestCase;
 use Prometheus\CollectorRegistry;
+use Prometheus\RenderTextFormat;
 use Prometheus\Storage\Redis;
 
 class RegistryTest extends PHPUnit_Framework_TestCase
 {
+    /**
+     * @var RenderTextFormat
+     */
+    private $renderer;
+
     public function setUp()
     {
         $this->newRedisAdapter()->flushRedis();
+        $this->renderer = new RenderTextFormat();
     }
 
     /**
@@ -20,21 +27,21 @@ class RegistryTest extends PHPUnit_Framework_TestCase
      */
     public function itShouldSaveGaugesInRedis()
     {
-        $client = new CollectorRegistry($this->newRedisAdapter());
-        $metric = $client->registerGauge('test', 'some_metric', 'this is for testing', array('foo', 'bar'));
+        $registry = new CollectorRegistry($this->newRedisAdapter());
+        $metric = $registry->registerGauge('test', 'some_metric', 'this is for testing', array('foo', 'bar'));
         $metric->set(14, array('lalal', 'lululu'));
-        $client->getGauge('test', 'some_metric', array('foo', 'bar'))->set(34, array('lalal', 'lululu'));
+        $registry->getGauge('test', 'some_metric', array('foo', 'bar'))->set(34, array('lalal', 'lululu'));
 
-        $g = $client->registerGauge('test', 'some_metric', 'this is for testing', array('foo'));
+        $g = $registry->registerGauge('test', 'some_metric', 'this is for testing', array('foo'));
         $g->set(32, array('lalal'));
         $g->set(35, array('lalab'));
 
-        $g = $client->registerGauge('test', 'some_metric', 'this is for testing');
+        $g = $registry->registerGauge('test', 'some_metric', 'this is for testing');
         $g->dec();
 
-        $client = new CollectorRegistry($this->newRedisAdapter());
+        $registry = new CollectorRegistry($this->newRedisAdapter());
         $this->assertThat(
-            $client->toText(),
+            $this->renderer->render($registry->getMetricFamilySamples()),
             $this->equalTo(<<<EOF
 # HELP test_some_metric this is for testing
 # TYPE test_some_metric gauge
@@ -57,14 +64,14 @@ EOF
      */
     public function itShouldSaveCountersInRedis()
     {
-        $client = new CollectorRegistry($this->newRedisAdapter());
-        $metric = $client->registerCounter('test', 'some_metric', 'this is for testing', array('foo', 'bar'));
+        $registry = new CollectorRegistry($this->newRedisAdapter());
+        $metric = $registry->registerCounter('test', 'some_metric', 'this is for testing', array('foo', 'bar'));
         $metric->incBy(2, array('lalal', 'lululu'));
-        $client->getCounter('test', 'some_metric', array('foo', 'bar'))->inc(array('lalal', 'lululu'));
+        $registry->getCounter('test', 'some_metric', array('foo', 'bar'))->inc(array('lalal', 'lululu'));
 
-        $client = new CollectorRegistry($this->newRedisAdapter());
+        $registry = new CollectorRegistry($this->newRedisAdapter());
         $this->assertThat(
-            $client->toText(),
+            $this->renderer->render($registry->getMetricFamilySamples()),
             $this->equalTo(<<<EOF
 # HELP test_some_metric this is for testing
 # TYPE test_some_metric counter
@@ -80,15 +87,15 @@ EOF
      */
     public function itShouldSaveHistogramsInRedis()
     {
-        $client = new CollectorRegistry($this->newRedisAdapter());
-        $metric = $client->registerHistogram('test', 'some_metric', 'this is for testing', array('foo', 'bar'), array(0.1, 1, 5, 10));
+        $registry = new CollectorRegistry($this->newRedisAdapter());
+        $metric = $registry->registerHistogram('test', 'some_metric', 'this is for testing', array('foo', 'bar'), array(0.1, 1, 5, 10));
         $metric->observe(2, array('lalal', 'lululu'));
-        $client->getHistogram('test', 'some_metric', array('foo', 'bar'))->observe(13, array('lalal', 'lululu'));
-        $client->getHistogram('test', 'some_metric', array('foo', 'bar'))->observe(7.1, array('lalal', 'lululu'));
+        $registry->getHistogram('test', 'some_metric', array('foo', 'bar'))->observe(13, array('lalal', 'lululu'));
+        $registry->getHistogram('test', 'some_metric', array('foo', 'bar'))->observe(7.1, array('lalal', 'lululu'));
 
-        $client = new CollectorRegistry($this->newRedisAdapter());
+        $registry = new CollectorRegistry($this->newRedisAdapter());
         $this->assertThat(
-            $client->toText(),
+            $this->renderer->render($registry->getMetricFamilySamples()),
             $this->equalTo(<<<EOF
 # HELP test_some_metric this is for testing
 # TYPE test_some_metric histogram
@@ -110,13 +117,13 @@ EOF
      */
     public function itShouldIncreaseACounterWithoutNamespace()
     {
-        $collectorRegistry = new CollectorRegistry($this->newRedisAdapter());
-        $collectorRegistry
+        $registry = new CollectorRegistry($this->newRedisAdapter());
+        $registry
             ->registerCounter('', 'some_quick_counter', 'just a quick measurement')
             ->inc();
 
         $this->assertThat(
-            $collectorRegistry->toText(),
+            $this->renderer->render($registry->getMetricFamilySamples()),
             $this->equalTo(<<<EOF
 # HELP some_quick_counter just a quick measurement
 # TYPE some_quick_counter counter

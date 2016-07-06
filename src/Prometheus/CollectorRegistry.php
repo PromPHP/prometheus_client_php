@@ -91,12 +91,11 @@ class CollectorRegistry
     }
 
     /**
-     * @return string
+     * @return MetricFamilySamples[]
      */
-    public function toText()
+    public function getMetricFamilySamples()
     {
-        $renderer = new RenderTextFormat();
-        return $renderer->render($this->storageAdapter->collect());
+        return $this->storageAdapter->collect();
     }
 
     /**
