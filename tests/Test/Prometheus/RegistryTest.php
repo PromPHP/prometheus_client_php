@@ -48,11 +48,11 @@ class RegistryTest extends PHPUnit_Framework_TestCase
 test_some_metric -1
 # HELP test_some_metric this is for testing
 # TYPE test_some_metric gauge
-test_some_metric{foo="lalal"} 32
-test_some_metric{foo="lalab"} 35
+test_some_metric{foo="lalal",bar="lululu"} 34
 # HELP test_some_metric this is for testing
 # TYPE test_some_metric gauge
-test_some_metric{foo="lalal",bar="lululu"} 34
+test_some_metric{foo="lalab"} 35
+test_some_metric{foo="lalal"} 32
 
 EOF
             )
@@ -99,11 +99,11 @@ EOF
             $this->equalTo(<<<EOF
 # HELP test_some_metric this is for testing
 # TYPE test_some_metric histogram
+test_some_metric_bucket{foo="lalal",bar="lululu",le="+Inf"} 3
 test_some_metric_bucket{foo="lalal",bar="lululu",le="0.1"} 0
 test_some_metric_bucket{foo="lalal",bar="lululu",le="1"} 0
 test_some_metric_bucket{foo="lalal",bar="lululu",le="5"} 1
 test_some_metric_bucket{foo="lalal",bar="lululu",le="10"} 2
-test_some_metric_bucket{foo="lalal",bar="lululu",le="+Inf"} 3
 test_some_metric_count{foo="lalal",bar="lululu"} 3
 test_some_metric_sum{foo="lalal",bar="lululu"} 22.0999999999999996
 

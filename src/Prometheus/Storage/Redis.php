@@ -3,10 +3,10 @@
 namespace Prometheus\Storage;
 
 
+use Prometheus\Collector;
 use Prometheus\Counter;
 use Prometheus\Gauge;
 use Prometheus\Histogram;
-use Prometheus\Collector;
 use Prometheus\MetricFamilySamples;
 use Prometheus\Sample;
 
@@ -84,7 +84,8 @@ class Redis implements Adapter
         foreach ($this->metricTypes as $metricType) {
             $metrics = array_merge($metrics, $this->fetchMetricsByType($metricType));
         }
-        return $metrics;
+        array_multisort($metrics);
+        return array_map(function (array $metric) { return new MetricFamilySamples($metric); }, $metrics);
     }
 
     public function store($command, Collector $metric, Sample $sample)
@@ -100,15 +101,13 @@ class Redis implements Adapter
      */
     private function fetchMetricsByType($metricType)
     {
-        $keys = $this->redis->zRange(
-            self::PROMETHEUS_PREFIX . $metricType . self::PROMETHEUS_METRIC_KEYS_SUFFIX, 0, -1
-        );
+        $keys = $this->redis->sMembers(self::PROMETHEUS_PREFIX . $metricType . self::PROMETHEUS_METRIC_KEYS_SUFFIX);
         $metrics = array();
         foreach ($keys as $key) {
             $metricKey = self::PROMETHEUS_PREFIX . $metricType . $key;
             $values = $this->redis->hGetAll($metricKey . self::PROMETHEUS_SAMPLE_VALUE_SUFFIX);
             $labelValuesList = $this->redis->hGetAll($metricKey . self::PROMETHEUS_SAMPLE_LABEL_VALUES_SUFFIX);
-            $sampleKeys = $this->redis->zRange($metricKey . self::PROMETHEUS_SAMPLE_KEYS_SUFFIX, 0, -1);
+            $sampleKeys = $this->redis->sMembers($metricKey . self::PROMETHEUS_SAMPLE_KEYS_SUFFIX);
             $sampleResponses = array();
             foreach ($sampleKeys as $sampleKey) {
                 $labelNames = unserialize(
@@ -122,17 +121,17 @@ class Redis implements Adapter
                     'value' => $values[$sampleKey]
                 );
             }
+            array_multisort($sampleResponses);
+
             $metricResponse = $this->redis->hGetAll($metricKey);
-            $metrics[] = new MetricFamilySamples(
-                array(
-                    'name' => $metricResponse['name'],
-                    'help' => $metricResponse['help'],
-                    'type' => $metricResponse['type'],
-                    'samples' => $sampleResponses
-                )
+            $metrics[] = array(
+                'name' => $metricResponse['name'],
+                'help' => $metricResponse['help'],
+                'type' => $metricResponse['type'],
+                'samples' => $sampleResponses
             );
         }
-        return array_reverse($metrics);
+        return $metrics;
     }
 
     private function openConnection()
@@ -194,15 +193,8 @@ class Redis implements Adapter
             $sample->getName()
         );
 
-        /**
-         * Store new metric family sample keys in order of occurence.
-         * This guarantees that the keys can be retrieved in the same order
-         * and don't need to be sorted again.
-         */
-        $currentMetricCounter = $this->redis->incr(self::PROMETHEUS_PREFIX . self::PROMETHEUS_METRICS_SAMPLE_COUNTER);
-        $this->redis->zAdd(
+        $this->redis->sAdd(
             $metricKey . self::PROMETHEUS_SAMPLE_KEYS_SUFFIX,
-            $currentMetricCounter,
             $sample->getKey()
         );
     }
@@ -218,15 +210,8 @@ class Redis implements Adapter
         $this->redis->hSet($metricKey, 'type', $metric->getType());
         $this->redis->hSet($metricKey, 'labelNames', serialize($metric->getLabelNames()));
 
-        /**
-         * Store new metric family keys in order of occurence.
-         * This guarantees that the keys can be retrieved in the same order
-         * and don't need to be sorted again.
-         */
-        $currentMetricCounter = $this->redis->incr(self::PROMETHEUS_PREFIX . self::PROMETHEUS_METRICS_COUNTER);
-        $this->redis->zAdd(
+        $this->redis->sAdd(
             self::PROMETHEUS_PREFIX . $metric->getType() . self::PROMETHEUS_METRIC_KEYS_SUFFIX,
-            $currentMetricCounter,
             $metric->getKey()
         );
     }
