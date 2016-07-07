@@ -10,7 +10,7 @@ use Prometheus\Sample;
 class InMemory implements Adapter
 {
     /**
-     * @var array
+     * @var Collector[]
      */
     private $metrics = array();
     /**
