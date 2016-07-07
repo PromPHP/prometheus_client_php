@@ -234,6 +234,144 @@ class HistogramTest extends PHPUnit_Framework_TestCase
 
     /**
      * @test
+     */
+    public function itShouldProvideDefaultBuckets()
+    {
+        // .005, .01, .025, .05, .075, .1, .25, .5, .75, 1.0, 2.5, 5.0, 7.5, 10.0
+
+        $gauge = new Histogram(
+            $this->storage,
+            'test',
+            'some_metric',
+            'this is for testing',
+            array()
+
+        );
+        $gauge->observe(0.11);
+        $gauge->observe(0.03);
+        $this->assertThat(
+            $this->storage->collect(),
+            $this->equalTo(
+                array(
+                    new MetricFamilySamples(
+                        array(
+                            'name' => 'test_some_metric',
+                            'help' => 'this is for testing',
+                            'type' => Histogram::TYPE,
+                            'labelNames' => array(),
+                            'samples' => array(
+                                array(
+                                    'name' => 'test_some_metric_bucket',
+                                    'labelNames' => array('le'),
+                                    'labelValues' => array(0.005),
+                                    'value' => 0,
+                                ),
+                                array(
+                                    'name' => 'test_some_metric_bucket',
+                                    'labelNames' => array('le'),
+                                    'labelValues' => array(0.01),
+                                    'value' => 0,
+                                ),
+                                array(
+                                    'name' => 'test_some_metric_bucket',
+                                    'labelNames' => array('le'),
+                                    'labelValues' => array(0.025),
+                                    'value' => 0,
+                                ),
+                                array(
+                                    'name' => 'test_some_metric_bucket',
+                                    'labelNames' => array('le'),
+                                    'labelValues' => array(0.05),
+                                    'value' => 1,
+                                ),
+                                array(
+                                    'name' => 'test_some_metric_bucket',
+                                    'labelNames' => array('le'),
+                                    'labelValues' => array(0.075),
+                                    'value' => 1,
+                                ),
+                                array(
+                                    'name' => 'test_some_metric_bucket',
+                                    'labelNames' => array('le'),
+                                    'labelValues' => array(0.1),
+                                    'value' => 1,
+                                ),
+                                array(
+                                    'name' => 'test_some_metric_bucket',
+                                    'labelNames' => array('le'),
+                                    'labelValues' => array(0.25),
+                                    'value' => 2,
+                                ),
+                                array(
+                                    'name' => 'test_some_metric_bucket',
+                                    'labelNames' => array('le'),
+                                    'labelValues' => array(0.5),
+                                    'value' => 2,
+                                ),
+                                array(
+                                    'name' => 'test_some_metric_bucket',
+                                    'labelNames' => array('le'),
+                                    'labelValues' => array(0.75),
+                                    'value' => 2,
+                                ),
+                                array(
+                                    'name' => 'test_some_metric_bucket',
+                                    'labelNames' => array('le'),
+                                    'labelValues' => array(1.0),
+                                    'value' => 2,
+                                ),
+                            array(
+                                'name' => 'test_some_metric_bucket',
+                                'labelNames' => array('le'),
+                                'labelValues' => array(2.5),
+                                'value' => 2,
+                            ),
+                            array(
+                                'name' => 'test_some_metric_bucket',
+                                'labelNames' => array('le'),
+                                'labelValues' => array(5),
+                                'value' => 2,
+                            ),
+                                array(
+                                    'name' => 'test_some_metric_bucket',
+                                    'labelNames' => array('le'),
+                                    'labelValues' => array(7.5),
+                                    'value' => 2,
+                                ),
+                                array(
+                                    'name' => 'test_some_metric_bucket',
+                                    'labelNames' => array('le'),
+                                    'labelValues' => array(10),
+                                    'value' => 2,
+                                ),
+                                array(
+                                    'name' => 'test_some_metric_bucket',
+                                    'labelNames' => array('le'),
+                                    'labelValues' => array('+Inf'),
+                                    'value' => 2,
+                                ),
+                                array(
+                                    'name' => 'test_some_metric_count',
+                                    'labelNames' => array(),
+                                    'labelValues' => array(),
+                                    'value' => 2,
+                                ),
+                                array(
+                                    'name' => 'test_some_metric_sum',
+                                    'labelNames' => array(),
+                                    'labelValues' => array(),
+                                    'value' => 0.14,
+                                )
+                            )
+                        )
+                    )
+                )
+            )
+        );
+    }
+
+    /**
+     * @test
      * @expectedException \InvalidArgumentException
      */
     public function itShouldThrowAnExceptionWhenTheBucketSizesAreNotIncreasing()
@@ -245,7 +383,7 @@ class HistogramTest extends PHPUnit_Framework_TestCase
      * @test
      * @expectedException \InvalidArgumentException
      */
-    public function itShouldThrowAnExceptionWhenThereIsLessThanOnBucket()
+    public function itShouldThrowAnExceptionWhenThereIsLessThanOneBucket()
     {
         new Histogram($this->storage, 'test', 'some_metric', 'this is for testing', array(), array());
     }

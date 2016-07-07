@@ -19,13 +19,18 @@ class Histogram extends Collector
      * @param array $labels
      * @param array $buckets
      */
-    public function __construct(Adapter $adapter, $namespace, $name, $help, $labels = array(), $buckets = array())
+    public function __construct(Adapter $adapter, $namespace, $name, $help, $labels = array(), $buckets = null)
     {
         parent::__construct($adapter, $namespace, $name, $help, $labels);
+
+        if (null === $buckets) {
+            $buckets = self::getDefaultBuckets();
+        }
 
         if (0 == count($buckets)) {
             throw new \InvalidArgumentException("Histogram must have at least one bucket.");
         }
+
         for ($i = 0; $i < count($buckets) - 1; $i++) {
             if ($buckets[$i] >= $buckets[$i + 1]) {
                 throw new \InvalidArgumentException(
@@ -40,6 +45,17 @@ class Histogram extends Collector
             }
         }
         $this->buckets = $buckets;
+    }
+
+    /**
+     * List of default buckets suitable for typical web application latency metrics
+     * @return array
+     */
+    public static function getDefaultBuckets()
+    {
+        return array(
+            0.005, 0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 0.75, 1.0, 2.5, 5.0, 7.5, 10.0
+        );
     }
 
     /**
