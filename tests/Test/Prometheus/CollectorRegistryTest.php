@@ -9,7 +9,7 @@ use Prometheus\CollectorRegistry;
 use Prometheus\RenderTextFormat;
 use Prometheus\Storage\Redis;
 
-class RegistryTest extends PHPUnit_Framework_TestCase
+class CollectorRegistryTest extends PHPUnit_Framework_TestCase
 {
     /**
      * @var RenderTextFormat
