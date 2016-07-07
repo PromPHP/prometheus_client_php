@@ -115,6 +115,46 @@ EOF
     /**
      * @test
      */
+    public function itShouldSaveHistogramsWithoutLabels()
+    {
+        $registry = new CollectorRegistry($this->newRedisAdapter());
+        $metric = $registry->registerHistogram('test', 'some_metric', 'this is for testing');
+        $metric->observe(2);
+        $registry->getHistogram('test', 'some_metric')->observe(13);
+        $registry->getHistogram('test', 'some_metric')->observe(7.1);
+
+        $registry = new CollectorRegistry($this->newRedisAdapter());
+        $this->assertThat(
+            $this->renderer->render($registry->getMetricFamilySamples()),
+            $this->equalTo(<<<EOF
+# HELP test_some_metric this is for testing
+# TYPE test_some_metric histogram
+test_some_metric_bucket{le="+Inf"} 3
+test_some_metric_bucket{le="0.005"} 0
+test_some_metric_bucket{le="0.01"} 0
+test_some_metric_bucket{le="0.025"} 0
+test_some_metric_bucket{le="0.05"} 0
+test_some_metric_bucket{le="0.075"} 0
+test_some_metric_bucket{le="0.1"} 0
+test_some_metric_bucket{le="0.25"} 0
+test_some_metric_bucket{le="0.5"} 0
+test_some_metric_bucket{le="0.75"} 0
+test_some_metric_bucket{le="1"} 0
+test_some_metric_bucket{le="2.5"} 1
+test_some_metric_bucket{le="5"} 1
+test_some_metric_bucket{le="7.5"} 2
+test_some_metric_bucket{le="10"} 2
+test_some_metric_count 3
+test_some_metric_sum 22.0999999999999996
+
+EOF
+            )
+        );
+    }
+
+    /**
+     * @test
+     */
     public function itShouldIncreaseACounterWithoutNamespace()
     {
         $registry = new CollectorRegistry($this->newRedisAdapter());
