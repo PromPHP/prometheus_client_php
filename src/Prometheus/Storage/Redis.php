@@ -3,10 +3,10 @@
 namespace Prometheus\Storage;
 
 
+use Prometheus\Collector;
 use Prometheus\Counter;
 use Prometheus\Gauge;
 use Prometheus\Histogram;
-use Prometheus\Collector;
 use Prometheus\MetricFamilySamples;
 use Prometheus\Sample;
 
@@ -25,31 +25,47 @@ class Redis implements Adapter
     const PROMETHEUS_SAMPLE_LABEL_VALUES_SUFFIX = '_LABEL_VALUES';
     const PROMETHEUS_SAMPLE_NAME_SUFFIX = '_NAME';
 
+    private static $defaultOptions = array();
+
     private $options;
     private $redis;
     private $metricTypes;
 
-    public function __construct(array $options)
+    public function __construct(array $options = array())
     {
-        if (!isset($options['host'])) {
-            $options['host'] = '127.0.0.1';
+        // with php 5.3 we cannot initialize the options directly on the field definition
+        // so we initialize them here for now
+        if (!isset(self::$defaultOptions['host'])) {
+            self::$defaultOptions['host'] = '127.0.0.1';
         }
-        if (!isset($options['port'])) {
-            $options['port'] = 6379;
+        if (!isset(self::$defaultOptions['port'])) {
+            self::$defaultOptions['port'] = 6379;
         }
-        if (!isset($options['connect_timeout'])) {
-            $options['connect_timeout'] = 0.1; // in seconds
+        if (!isset(self::$defaultOptions['timeout'])) {
+            self::$defaultOptions['timeout'] = 0.1; // in seconds
         }
-        if (!isset($options['persistent_connections'])) {
-            $options['persistent_connections'] = false;
+        if (!isset(self::$defaultOptions['read_timeout'])) {
+            self::$defaultOptions['read_timeout'] = 10; // in seconds
         }
-        $this->options = $options;
+        if (!isset(self::$defaultOptions['persistent_connections'])) {
+            self::$defaultOptions['persistent_connections'] = false;
+        }
+
+        $this->options = array_merge(self::$defaultOptions, $options);
         $this->redis = new \Redis();
         $this->metricTypes = array(
             Gauge::TYPE,
             Counter::TYPE,
             Histogram::TYPE,
         );
+    }
+
+    /**
+     * @param array $options
+     */
+    public static function setDefaultOptions(array $options)
+    {
+        self::$defaultOptions = array_merge(self::$defaultOptions, $options);
     }
 
     public function flushRedis()
@@ -68,25 +84,74 @@ class Redis implements Adapter
         foreach ($this->metricTypes as $metricType) {
             $metrics = array_merge($metrics, $this->fetchMetricsByType($metricType));
         }
-        return $metrics;
-    }
-
-    /**
-     * @param Collector $metric
-     */
-    private function storeMetric(Collector $metric)
-    {
-        $metricKey = self::PROMETHEUS_PREFIX . $metric->getType() . $metric->getKey();
-        $this->redis->hSet($metricKey, 'name', $metric->getName());
-        $this->redis->hSet($metricKey, 'help', $metric->getHelp());
-        $this->redis->hSet($metricKey, 'type', $metric->getType());
-        $this->redis->hSet($metricKey, 'labelNames', serialize($metric->getLabelNames()));
-        $this->storeNewMetricKey($metric->getType(), $metric->getKey());
+        array_multisort($metrics);
+        return array_map(function (array $metric) { return new MetricFamilySamples($metric); }, $metrics);
     }
 
     public function store($command, Collector $metric, Sample $sample)
     {
         $this->openConnection();
+        $this->storeMetricFamilySample($command, $metric, $sample);
+        $this->storeMetricFamilyMetadata($metric);
+    }
+
+    /**
+     * @param string $metricType
+     * @return array
+     */
+    private function fetchMetricsByType($metricType)
+    {
+        $keys = $this->redis->sMembers(self::PROMETHEUS_PREFIX . $metricType . self::PROMETHEUS_METRIC_KEYS_SUFFIX);
+        $metrics = array();
+        foreach ($keys as $key) {
+            $metricKey = self::PROMETHEUS_PREFIX . $metricType . $key;
+            $values = $this->redis->hGetAll($metricKey . self::PROMETHEUS_SAMPLE_VALUE_SUFFIX);
+            $labelValuesList = $this->redis->hGetAll($metricKey . self::PROMETHEUS_SAMPLE_LABEL_VALUES_SUFFIX);
+            $sampleKeys = $this->redis->sMembers($metricKey . self::PROMETHEUS_SAMPLE_KEYS_SUFFIX);
+            $sampleResponses = array();
+            foreach ($sampleKeys as $sampleKey) {
+                $labelNames = unserialize(
+                    $this->redis->hGet($metricKey . self::PROMETHEUS_SAMPLE_LABEL_NAMES_SUFFIX, $sampleKey)
+                );
+                $name = $this->redis->hGet($metricKey . self::PROMETHEUS_SAMPLE_NAME_SUFFIX, $sampleKey);
+                $sampleResponses[] = array(
+                    'name' => $name,
+                    'labelNames' => $labelNames,
+                    'labelValues' => unserialize($labelValuesList[$sampleKey]),
+                    'value' => $values[$sampleKey]
+                );
+            }
+            array_multisort($sampleResponses);
+
+            $metricResponse = $this->redis->hGetAll($metricKey);
+            $metrics[] = array(
+                'name' => $metricResponse['name'],
+                'help' => $metricResponse['help'],
+                'type' => $metricResponse['type'],
+                'labelNames' => unserialize($metricResponse['labelNames']),
+                'samples' => $sampleResponses
+            );
+        }
+        return $metrics;
+    }
+
+    private function openConnection()
+    {
+        if ($this->options['persistent_connections']) {
+            $this->redis->pconnect($this->options['host'], $this->options['port'], $this->options['timeout']);
+        } else {
+            $this->redis->connect($this->options['host'], $this->options['port'], $this->options['timeout']);
+        }
+        $this->redis->setOption(\Redis::OPT_READ_TIMEOUT, $this->options['read_timeout']);
+    }
+
+    /**
+     * @param $command
+     * @param Collector $metric
+     * @param Sample $sample
+     */
+    private function storeMetricFamilySample($command, Collector $metric, Sample $sample)
+    {
         $metricKey = self::PROMETHEUS_PREFIX . $metric->getType() . $metric->getKey();
         switch ($command) {
             case self::COMMAND_INCREMENT_INTEGER:
@@ -128,87 +193,27 @@ class Redis implements Adapter
             $sample->getKey(),
             $sample->getName()
         );
-        $this->storeNewMetricSampleKey($metric->getType(), $metric->getKey(), $sample->getKey());
 
-        $this->storeMetric($metric);
-    }
-
-    /**
-     * @param string $metricType
-     * @return MetricFamilySamples[]
-     */
-    private function fetchMetricsByType($metricType)
-    {
-        $keys = $this->redis->zRange(
-            self::PROMETHEUS_PREFIX . $metricType . self::PROMETHEUS_METRIC_KEYS_SUFFIX, 0, -1
-        );
-        $metrics = array();
-        foreach ($keys as $key) {
-            $metricKey = self::PROMETHEUS_PREFIX . $metricType . $key;
-            $values = $this->redis->hGetAll($metricKey . self::PROMETHEUS_SAMPLE_VALUE_SUFFIX);
-            $labelValuesList = $this->redis->hGetAll($metricKey . self::PROMETHEUS_SAMPLE_LABEL_VALUES_SUFFIX);
-            $sampleKeys = $this->redis->zRange($metricKey . self::PROMETHEUS_SAMPLE_KEYS_SUFFIX, 0, -1);
-            $sampleResponses = array();
-            foreach ($sampleKeys as $sampleKey) {
-                $labelNames = unserialize(
-                    $this->redis->hGet($metricKey . self::PROMETHEUS_SAMPLE_LABEL_NAMES_SUFFIX, $sampleKey)
-                );
-                $name = $this->redis->hGet($metricKey . self::PROMETHEUS_SAMPLE_NAME_SUFFIX, $sampleKey);
-                $sampleResponses[] = array(
-                    'name' => $name,
-                    'labelNames' => $labelNames,
-                    'labelValues' => unserialize($labelValuesList[$sampleKey]),
-                    'value' => $values[$sampleKey]
-                );
-            }
-            $metricResponse = $this->redis->hGetAll($metricKey);
-            $metrics[] = new MetricFamilySamples(
-                array(
-                    'name' => $metricResponse['name'],
-                    'help' => $metricResponse['help'],
-                    'type' => $metricResponse['type'],
-                    'samples' => $sampleResponses
-                )
-            );
-        }
-        return array_reverse($metrics);
-    }
-
-    /**
-     * @param string $metricType
-     * @param string $key
-     * @param string $sampleKey
-     */
-    private function storeNewMetricSampleKey($metricType, $key, $sampleKey)
-    {
-        $currentMetricCounter = $this->redis->incr(self::PROMETHEUS_PREFIX . self::PROMETHEUS_METRICS_SAMPLE_COUNTER);
-        $this->redis->zAdd(
-            self::PROMETHEUS_PREFIX . $metricType . $key . self::PROMETHEUS_SAMPLE_KEYS_SUFFIX,
-            $currentMetricCounter,
-            $sampleKey
+        $this->redis->sAdd(
+            $metricKey . self::PROMETHEUS_SAMPLE_KEYS_SUFFIX,
+            $sample->getKey()
         );
     }
 
     /**
-     * @param string $metricType
-     * @param string $key
+     * @param Collector $metric
      */
-    private function storeNewMetricKey($metricType, $key)
+    private function storeMetricFamilyMetadata(Collector $metric)
     {
-        $currentMetricCounter = $this->redis->incr(self::PROMETHEUS_PREFIX . self::PROMETHEUS_METRICS_COUNTER);
-        $this->redis->zAdd(
-            self::PROMETHEUS_PREFIX . $metricType . self::PROMETHEUS_METRIC_KEYS_SUFFIX,
-            $currentMetricCounter,
-            $key
-        );
-    }
+        $metricKey = self::PROMETHEUS_PREFIX . $metric->getType() . $metric->getKey();
+        $this->redis->hSet($metricKey, 'name', $metric->getName());
+        $this->redis->hSet($metricKey, 'help', $metric->getHelp());
+        $this->redis->hSet($metricKey, 'type', $metric->getType());
+        $this->redis->hSet($metricKey, 'labelNames', serialize($metric->getLabelNames()));
 
-    private function openConnection()
-    {
-        if ($this->options['persistent_connections']) {
-            $this->redis->pconnect($this->options['host'], $this->options['port'], $this->options['connect_timeout']);
-        } else {
-            $this->redis->connect($this->options['host'], $this->options['port'], $this->options['connect_timeout']);
-        }
+        $this->redis->sAdd(
+            self::PROMETHEUS_PREFIX . $metric->getType() . self::PROMETHEUS_METRIC_KEYS_SUFFIX,
+            $metric->getKey()
+        );
     }
 }

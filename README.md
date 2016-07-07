@@ -5,6 +5,18 @@
 This uses redis to do the client side aggregation.
 We recommend to run a local redis instance next to your PHP workers.
 
+## Why redis?
+
+Usually PHP worker processes don't share any state.
+
+We decided to use redis because:
+ * It is easy to deploy as a sidecar to the PHP worker processes (see [docker-compose.yml](docker-compose.yml)).
+ * It provides us with easy to use concurrency mechanisms we need for the metric aggregation (e.g. `incrByFloat`).
+
+We think this could be implemented with APCu as well and we might do so in the future.
+Of course we would also appreciate a pull-request.
+
+
 ## Usage
 
 A simple counter:
@@ -31,18 +43,23 @@ $histogram->observe(3.5, ['blue']);
 Expose the metrics:
 ```php
 $registry = \Prometheus\CollectorRegistry::getDefault();
-$result = $registry->toText();
+$registry = CollectorRegistry::getDefault();
 
-header('Content-type: text/plain; version=0.0.4');
+$renderer = new RenderTextFormat();
+$result = $renderer->render($registry->getMetricFamilySamples());
+
+header('Content-type: ' . RenderTextFormat::MIME_TYPE);
+echo $result;
 ```
 
 Change the redis options (the example shows the defaults):
 ```php
-CollectorRegistry::setDefaultRedisOptions(
+\Prometheus\Storage\Redis::setDefaultOptions(
     [
         'host' => '127.0.0.1',
         'port' => 6379,
-        'connect_timeout' => 0.1, // in seconds
+        'timeout' => 0.1, // in seconds
+        'read_timeout' => 10, // in seconds
         'persistent_connections' => false
     ]
 );

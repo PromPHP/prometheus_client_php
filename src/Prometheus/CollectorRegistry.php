@@ -15,11 +15,6 @@ class CollectorRegistry
     private static $defaultRegistry;
 
     /**
-     * @var string
-     */
-    private static $defaultRedisOptions;
-
-    /**
      * @var Adapter
      */
     private $storageAdapter;
@@ -42,20 +37,12 @@ class CollectorRegistry
     }
 
     /**
-     * @param array $options
-     */
-    public static function setDefaultRedisOptions(array $options)
-    {
-        self::$defaultRedisOptions = $options;
-    }
-
-    /**
      * @return CollectorRegistry
      */
     public static function getDefault()
     {
         if (!self::$defaultRegistry) {
-            return self::$defaultRegistry = new static(new Redis(self::$defaultRedisOptions));
+            return self::$defaultRegistry = new static(new Redis());
         }
         return self::$defaultRegistry;
     }
@@ -91,12 +78,11 @@ class CollectorRegistry
     }
 
     /**
-     * @return string
+     * @return MetricFamilySamples[]
      */
-    public function toText()
+    public function getMetricFamilySamples()
     {
-        $renderer = new RenderTextFormat();
-        return $renderer->render($this->storageAdapter->collect());
+        return $this->storageAdapter->collect();
     }
 
     /**

@@ -24,7 +24,7 @@ class Gauge extends Collector
             new Sample(
                 array(
                     'name' => $this->getName(),
-                    'labelNames' => $this->getLabelNames(),
+                    'labelNames' => array(),
                     'labelValues' => $labels,
                     'value' => $value
                 )
@@ -50,7 +50,7 @@ class Gauge extends Collector
             new Sample(
                 array(
                     'name' => $this->getName(),
-                    'labelNames' => $this->getLabelNames(),
+                    'labelNames' => array(),
                     'labelValues' => $labels,
                     'value' => 1
                 )
@@ -68,7 +68,7 @@ class Gauge extends Collector
             new Sample(
                 array(
                     'name' => $this->getName(),
-                    'labelNames' => $this->getLabelNames(),
+                    'labelNames' => array(),
                     'labelValues' => $labels,
                     'value' => $value
                 )
@@ -86,7 +86,7 @@ class Gauge extends Collector
             new Sample(
                 array(
                     'name' => $this->getName(),
-                    'labelNames' => $this->getLabelNames(),
+                    'labelNames' => array(),
                     'labelValues' => $labels,
                     'value' => -1
                 )
@@ -104,7 +104,7 @@ class Gauge extends Collector
             new Sample(
                 array(
                     'name' => $this->getName(),
-                    'labelNames' => $this->getLabelNames(),
+                    'labelNames' => array(),
                     'labelValues' => $labels,
                     'value' => -$value
                 )

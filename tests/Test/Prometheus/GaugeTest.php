@@ -5,6 +5,7 @@ namespace Test\Prometheus;
 
 use PHPUnit_Framework_TestCase;
 use Prometheus\Gauge;
+use Prometheus\MetricFamilySamples;
 use Prometheus\Sample;
 use Prometheus\Storage\InMemory;
 
@@ -31,15 +32,23 @@ class GaugeTest extends PHPUnit_Framework_TestCase
         $gauge = new Gauge($this->storage, 'test', 'some_metric', 'this is for testing', array('foo', 'bar'));
         $gauge->set(123, array('lalal', 'lululu'));
         $this->assertThat(
-            $this->storage->fetchSamples(),
+            $this->storage->collect(),
             $this->equalTo(
                 array(
-                    new Sample(
+                    new MetricFamilySamples(
                         array(
                             'name' => 'test_some_metric',
+                            'help' => 'this is for testing',
+                            'type' => Gauge::TYPE,
                             'labelNames' => array('foo', 'bar'),
-                            'labelValues' => array('lalal', 'lululu'),
-                            'value' => 123,
+                            'samples' => array(
+                                array(
+                                    'name' => 'test_some_metric',
+                                    'labelNames' => array(),
+                                    'labelValues' => array('lalal', 'lululu'),
+                                    'value' => 123,
+                                )
+                            )
                         )
                     )
                 )
@@ -57,15 +66,23 @@ class GaugeTest extends PHPUnit_Framework_TestCase
         $gauge = new Gauge($this->storage, 'test', 'some_metric', 'this is for testing');
         $gauge->set(123);
         $this->assertThat(
-            $this->storage->fetchSamples(),
+            $this->storage->collect(),
             $this->equalTo(
                 array(
-                    new Sample(
+                    new MetricFamilySamples(
                         array(
                             'name' => 'test_some_metric',
+                            'help' => 'this is for testing',
+                            'type' => Gauge::TYPE,
                             'labelNames' => array(),
-                            'labelValues' => array(),
-                            'value' => 123,
+                            'samples' => array(
+                                array(
+                                    'name' => 'test_some_metric',
+                                    'labelNames' => array(),
+                                    'labelValues' => array(),
+                                    'value' => 123,
+                                )
+                            )
                         )
                     )
                 )
@@ -84,15 +101,23 @@ class GaugeTest extends PHPUnit_Framework_TestCase
         $gauge->inc(array('lalal', 'lululu'));
         $gauge->incBy(123, array('lalal', 'lululu'));
         $this->assertThat(
-            $this->storage->fetchSamples(),
+            $this->storage->collect(),
             $this->equalTo(
                 array(
-                    new Sample(
+                    new MetricFamilySamples(
                         array(
                             'name' => 'test_some_metric',
+                            'help' => 'this is for testing',
+                            'type' => Gauge::TYPE,
                             'labelNames' => array('foo', 'bar'),
-                            'labelValues' => array('lalal', 'lululu'),
-                            'value' => 124,
+                            'samples' => array(
+                                array(
+                                    'name' => 'test_some_metric',
+                                    'labelNames' => array(),
+                                    'labelValues' => array('lalal', 'lululu'),
+                                    'value' => 124,
+                                )
+                            )
                         )
                     )
                 )
@@ -109,15 +134,23 @@ class GaugeTest extends PHPUnit_Framework_TestCase
         $gauge->dec(array('lalal', 'lululu'));
         $gauge->decBy(123, array('lalal', 'lululu'));
         $this->assertThat(
-            $this->storage->fetchSamples(),
+            $this->storage->collect(),
             $this->equalTo(
                 array(
-                    new Sample(
+                    new MetricFamilySamples(
                         array(
                             'name' => 'test_some_metric',
+                            'help' => 'this is for testing',
+                            'type' => Gauge::TYPE,
                             'labelNames' => array('foo', 'bar'),
-                            'labelValues' => array('lalal', 'lululu'),
-                            'value' => -124,
+                            'samples' => array(
+                                array(
+                                    'name' => 'test_some_metric',
+                                    'labelNames' => array(),
+                                    'labelValues' => array('lalal', 'lululu'),
+                                    'value' => -124,
+                                )
+                            )
                         )
                     )
                 )
