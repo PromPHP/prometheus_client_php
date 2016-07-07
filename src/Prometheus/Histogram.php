@@ -58,7 +58,7 @@ class Histogram extends Collector
                     new Sample(
                         array(
                             'name' => $this->getName() . '_bucket',
-                            'labelNames' => array_merge($this->getLabelNames(), array('le')),
+                            'labelNames' => array('le'),
                             'labelValues' => array_merge($labels, array($bucket)),
                             'value' => 1
                         )
@@ -71,7 +71,7 @@ class Histogram extends Collector
                     new Sample(
                         array(
                             'name' => $this->getName() . '_bucket',
-                            'labelNames' => array_merge($this->getLabelNames(), array('le')),
+                            'labelNames' => array('le'),
                             'labelValues' => array_merge($labels, array($bucket)),
                             'value' => 0
                         )
@@ -85,7 +85,7 @@ class Histogram extends Collector
             new Sample(
                 array(
                     'name' => $this->getName() . '_bucket',
-                    'labelNames' => array_merge($this->getLabelNames(), array('le')),
+                    'labelNames' => array('le'),
                     'labelValues' => array_merge($labels, array('+Inf')),
                     'value' => 1
                 )
@@ -97,7 +97,7 @@ class Histogram extends Collector
             new Sample(
                 array(
                     'name' => $this->getName() . '_count',
-                    'labelNames' => $this->getLabelNames(),
+                    'labelNames' => array(),
                     'labelValues' => $labels,
                     'value' => 1
                 )
@@ -109,7 +109,7 @@ class Histogram extends Collector
             new Sample(
                 array(
                     'name' => $this->getName() . '_sum',
-                    'labelNames' => $this->getLabelNames(),
+                    'labelNames' => array(),
                     'labelValues' => $labels,
                     'value' => $value
                 )

@@ -30,7 +30,8 @@ class InMemory implements Adapter
                     'name' => $metric->getName(),
                     'type' => $metric->getType(),
                     'help' => $metric->getHelp(),
-                    'samples' => $this->samples[$metric->getKey()]
+                    'samples' => $this->samples[$metric->getKey()],
+                    'labelNames' => $metric->getLabelNames()
                 )
             );
         }

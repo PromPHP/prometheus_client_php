@@ -5,7 +5,7 @@ namespace Test\Prometheus;
 
 use PHPUnit_Framework_TestCase;
 use Prometheus\Histogram;
-use Prometheus\Sample;
+use Prometheus\MetricFamilySamples;
 use Prometheus\Storage\InMemory;
 
 /**
@@ -39,55 +39,53 @@ class HistogramTest extends PHPUnit_Framework_TestCase
         $gauge->observe(123, array('lalal', 'lululu'));
         $gauge->observe(245, array('lalal', 'lululu'));
         $this->assertThat(
-            $this->storage->fetchSamples(),
+            $this->storage->collect(),
             $this->equalTo(
                 array(
-                    new Sample(
+                    new MetricFamilySamples(
                         array(
-                            'name' => 'test_some_metric_bucket',
-                            'labelNames' => array('foo', 'bar', 'le'),
-                            'labelValues' => array('lalal', 'lululu', 100),
-                            'value' => 0,
-                        )
-                    ),
-                    new Sample(
-                        array(
-                            'name' => 'test_some_metric_bucket',
-                            'labelNames' => array('foo', 'bar', 'le'),
-                            'labelValues' => array('lalal', 'lululu', 200),
-                            'value' => 1,
-                        )
-                    ),
-                    new Sample(
-                        array(
-                            'name' => 'test_some_metric_bucket',
-                            'labelNames' => array('foo', 'bar', 'le'),
-                            'labelValues' => array('lalal', 'lululu', 300),
-                            'value' => 2,
-                        )
-                    ),
-                    new Sample(
-                        array(
-                            'name' => 'test_some_metric_bucket',
-                            'labelNames' => array('foo', 'bar', 'le'),
-                            'labelValues' => array('lalal', 'lululu', '+Inf'),
-                            'value' => 2,
-                        )
-                    ),
-                    new Sample(
-                        array(
-                            'name' => 'test_some_metric_count',
+                            'name' => 'test_some_metric',
+                            'help' => 'this is for testing',
+                            'type' => Histogram::TYPE,
                             'labelNames' => array('foo', 'bar'),
-                            'labelValues' => array('lalal', 'lululu'),
-                            'value' => 2,
-                        )
-                    ),
-                    new Sample(
-                        array(
-                            'name' => 'test_some_metric_sum',
-                            'labelNames' => array('foo', 'bar'),
-                            'labelValues' => array('lalal', 'lululu'),
-                            'value' => 368,
+                            'samples' => array(
+                                array(
+                                    'name' => 'test_some_metric_bucket',
+                                    'labelNames' => array('le'),
+                                    'labelValues' => array('lalal', 'lululu', 100),
+                                    'value' => 0,
+                                ),
+                                array(
+                                    'name' => 'test_some_metric_bucket',
+                                    'labelNames' => array('le'),
+                                    'labelValues' => array('lalal', 'lululu', 200),
+                                    'value' => 1,
+                                ),
+                                array(
+                                    'name' => 'test_some_metric_bucket',
+                                    'labelNames' => array('le'),
+                                    'labelValues' => array('lalal', 'lululu', 300),
+                                    'value' => 2,
+                                ),
+                                array(
+                                    'name' => 'test_some_metric_bucket',
+                                    'labelNames' => array('le'),
+                                    'labelValues' => array('lalal', 'lululu', '+Inf'),
+                                    'value' => 2,
+                                ),
+                                array(
+                                    'name' => 'test_some_metric_count',
+                                    'labelNames' => array(),
+                                    'labelValues' => array('lalal', 'lululu'),
+                                    'value' => 2,
+                                ),
+                                array(
+                                    'name' => 'test_some_metric_sum',
+                                    'labelNames' => array(),
+                                    'labelValues' => array('lalal', 'lululu'),
+                                    'value' => 368,
+                                )
+                            )
                         )
                     )
                 )
@@ -110,55 +108,53 @@ class HistogramTest extends PHPUnit_Framework_TestCase
         );
         $gauge->observe(245);
         $this->assertThat(
-            $this->storage->fetchSamples(),
+            $this->storage->collect(),
             $this->equalTo(
                 array(
-                    new Sample(
+                    new MetricFamilySamples(
                         array(
-                            'name' => 'test_some_metric_bucket',
-                            'labelNames' => array('le'),
-                            'labelValues' => array(100),
-                            'value' => 0,
-                        )
-                    ),
-                    new Sample(
-                        array(
-                            'name' => 'test_some_metric_bucket',
-                            'labelNames' => array('le'),
-                            'labelValues' => array(200),
-                            'value' => 0,
-                        )
-                    ),
-                    new Sample(
-                        array(
-                            'name' => 'test_some_metric_bucket',
-                            'labelNames' => array('le'),
-                            'labelValues' => array(300),
-                            'value' => 1,
-                        )
-                    ),
-                    new Sample(
-                        array(
-                            'name' => 'test_some_metric_bucket',
-                            'labelNames' => array('le'),
-                            'labelValues' => array('+Inf'),
-                            'value' => 1,
-                        )
-                    ),
-                    new Sample(
-                        array(
-                            'name' => 'test_some_metric_count',
+                            'name' => 'test_some_metric',
+                            'help' => 'this is for testing',
+                            'type' => Histogram::TYPE,
                             'labelNames' => array(),
-                            'labelValues' => array(),
-                            'value' => 1,
-                        )
-                    ),
-                    new Sample(
-                        array(
-                            'name' => 'test_some_metric_sum',
-                            'labelNames' => array(),
-                            'labelValues' => array(),
-                            'value' => 245,
+                            'samples' => array(
+                                array(
+                                    'name' => 'test_some_metric_bucket',
+                                    'labelNames' => array('le'),
+                                    'labelValues' => array(100),
+                                    'value' => 0,
+                                ),
+                                array(
+                                    'name' => 'test_some_metric_bucket',
+                                    'labelNames' => array('le'),
+                                    'labelValues' => array(200),
+                                    'value' => 0,
+                                ),
+                                array(
+                                    'name' => 'test_some_metric_bucket',
+                                    'labelNames' => array('le'),
+                                    'labelValues' => array(300),
+                                    'value' => 1,
+                                ),
+                                array(
+                                    'name' => 'test_some_metric_bucket',
+                                    'labelNames' => array('le'),
+                                    'labelValues' => array('+Inf'),
+                                    'value' => 1,
+                                ),
+                                array(
+                                    'name' => 'test_some_metric_count',
+                                    'labelNames' => array(),
+                                    'labelValues' => array(),
+                                    'value' => 1,
+                                ),
+                                array(
+                                    'name' => 'test_some_metric_sum',
+                                    'labelNames' => array(),
+                                    'labelValues' => array(),
+                                    'value' => 245,
+                                )
+                            )
                         )
                     )
                 )
@@ -182,55 +178,53 @@ class HistogramTest extends PHPUnit_Framework_TestCase
         $gauge->observe(0.11);
         $gauge->observe(0.3);
         $this->assertThat(
-            $this->storage->fetchSamples(),
+            $this->storage->collect(),
             $this->equalTo(
                 array(
-                    new Sample(
+                    new MetricFamilySamples(
                         array(
-                            'name' => 'test_some_metric_bucket',
-                            'labelNames' => array('le'),
-                            'labelValues' => array(0.1),
-                            'value' => 0,
-                        )
-                    ),
-                    new Sample(
-                        array(
-                            'name' => 'test_some_metric_bucket',
-                            'labelNames' => array('le'),
-                            'labelValues' => array(0.2),
-                            'value' => 1,
-                        )
-                    ),
-                    new Sample(
-                        array(
-                            'name' => 'test_some_metric_bucket',
-                            'labelNames' => array('le'),
-                            'labelValues' => array(0.3),
-                            'value' => 2,
-                        )
-                    ),
-                    new Sample(
-                        array(
-                            'name' => 'test_some_metric_bucket',
-                            'labelNames' => array('le'),
-                            'labelValues' => array('+Inf'),
-                            'value' => 2,
-                        )
-                    ),
-                    new Sample(
-                        array(
-                            'name' => 'test_some_metric_count',
+                            'name' => 'test_some_metric',
+                            'help' => 'this is for testing',
+                            'type' => Histogram::TYPE,
                             'labelNames' => array(),
-                            'labelValues' => array(),
-                            'value' => 2,
-                        )
-                    ),
-                    new Sample(
-                        array(
-                            'name' => 'test_some_metric_sum',
-                            'labelNames' => array(),
-                            'labelValues' => array(),
-                            'value' => 0.41,
+                            'samples' => array(
+                                array(
+                                    'name' => 'test_some_metric_bucket',
+                                    'labelNames' => array('le'),
+                                    'labelValues' => array(0.1),
+                                    'value' => 0,
+                                ),
+                                array(
+                                    'name' => 'test_some_metric_bucket',
+                                    'labelNames' => array('le'),
+                                    'labelValues' => array(0.2),
+                                    'value' => 1,
+                                ),
+                                array(
+                                    'name' => 'test_some_metric_bucket',
+                                    'labelNames' => array('le'),
+                                    'labelValues' => array(0.3),
+                                    'value' => 2,
+                                ),
+                                array(
+                                    'name' => 'test_some_metric_bucket',
+                                    'labelNames' => array('le'),
+                                    'labelValues' => array('+Inf'),
+                                    'value' => 2,
+                                ),
+                                array(
+                                    'name' => 'test_some_metric_count',
+                                    'labelNames' => array(),
+                                    'labelValues' => array(),
+                                    'value' => 2,
+                                ),
+                                array(
+                                    'name' => 'test_some_metric_sum',
+                                    'labelNames' => array(),
+                                    'labelValues' => array(),
+                                    'value' => 0.41,
+                                )
+                            )
                         )
                     )
                 )

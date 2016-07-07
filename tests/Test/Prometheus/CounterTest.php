@@ -5,6 +5,7 @@ namespace Test\Prometheus;
 
 use PHPUnit_Framework_TestCase;
 use Prometheus\Counter;
+use Prometheus\MetricFamilySamples;
 use Prometheus\Sample;
 use Prometheus\Storage\InMemory;
 
@@ -33,15 +34,23 @@ class CounterTest extends PHPUnit_Framework_TestCase
         $gauge->inc(array('lalal', 'lululu'));
         $gauge->inc(array('lalal', 'lululu'));
         $this->assertThat(
-            $this->storage->fetchSamples(),
+            $this->storage->collect(),
             $this->equalTo(
                 array(
-                    new Sample(
+                    new MetricFamilySamples(
                         array(
+                            'type' => Counter::TYPE,
+                            'help' => 'this is for testing',
                             'name' => 'test_some_metric',
                             'labelNames' => array('foo', 'bar'),
-                            'labelValues' => array('lalal', 'lululu'),
-                            'value' => 3,
+                            'samples' => array(
+                                array(
+                                    'labelValues' => array('lalal', 'lululu'),
+                                    'value' => 3,
+                                    'name' => 'test_some_metric',
+                                    'labelNames' => array()
+                                ),
+                            )
                         )
                     )
                 )
@@ -57,15 +66,23 @@ class CounterTest extends PHPUnit_Framework_TestCase
         $gauge = new Counter($this->storage, 'test', 'some_metric', 'this is for testing');
         $gauge->inc();
         $this->assertThat(
-            $this->storage->fetchSamples(),
+            $this->storage->collect(),
             $this->equalTo(
                 array(
-                    new Sample(
+                    new MetricFamilySamples(
                         array(
+                            'type' => Counter::TYPE,
+                            'help' => 'this is for testing',
                             'name' => 'test_some_metric',
                             'labelNames' => array(),
-                            'labelValues' => array(),
-                            'value' => 1,
+                            'samples' => array(
+                                array(
+                                    'labelValues' => array(),
+                                    'value' => 1,
+                                    'name' => 'test_some_metric',
+                                    'labelNames' => array()
+                                ),
+                            )
                         )
                     )
                 )
@@ -82,15 +99,23 @@ class CounterTest extends PHPUnit_Framework_TestCase
         $gauge->inc(array('lalal', 'lululu'));
         $gauge->incBy(123, array('lalal', 'lululu'));
         $this->assertThat(
-            $this->storage->fetchSamples(),
+            $this->storage->collect(),
             $this->equalTo(
                 array(
-                    new Sample(
+                    new MetricFamilySamples(
                         array(
+                            'type' => Counter::TYPE,
+                            'help' => 'this is for testing',
                             'name' => 'test_some_metric',
                             'labelNames' => array('foo', 'bar'),
-                            'labelValues' => array('lalal', 'lululu'),
-                            'value' => 124,
+                            'samples' => array(
+                                array(
+                                    'labelValues' => array('lalal', 'lululu'),
+                                    'value' => 124,
+                                    'name' => 'test_some_metric',
+                                    'labelNames' => array()
+                                ),
+                            )
                         )
                     )
                 )

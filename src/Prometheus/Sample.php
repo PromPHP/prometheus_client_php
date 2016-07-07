@@ -57,16 +57,4 @@ class Sample
     {
         return sha1($this->getName() . serialize($this->getLabelValues()));
     }
-
-    /**
-     * @return array
-     */
-    public function getLabels()
-    {
-        $labelNames = $this->getLabelNames();
-        if (empty($labelNames)) {
-            return array();
-        }
-        return array_combine($labelNames, $this->getLabelValues());
-    }
 }

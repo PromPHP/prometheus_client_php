@@ -48,11 +48,11 @@ class CollectorRegistryTest extends PHPUnit_Framework_TestCase
 test_some_metric -1
 # HELP test_some_metric this is for testing
 # TYPE test_some_metric gauge
-test_some_metric{foo="lalal",bar="lululu"} 34
-# HELP test_some_metric this is for testing
-# TYPE test_some_metric gauge
 test_some_metric{foo="lalab"} 35
 test_some_metric{foo="lalal"} 32
+# HELP test_some_metric this is for testing
+# TYPE test_some_metric gauge
+test_some_metric{foo="lalal",bar="lululu"} 34
 
 EOF
             )

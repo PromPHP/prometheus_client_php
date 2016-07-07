@@ -18,23 +18,20 @@ class RenderTextFormat
             $lines[] = "# HELP " . $metric->getName() . " {$metric->getHelp()}";
             $lines[] = "# TYPE " . $metric->getName() . " {$metric->getType()}";
             foreach ($metric->getSamples() as $sample) {
-                $lines[] = $this->renderSample($sample);
+                $lines[] = $this->renderSample($metric, $sample);
             }
         }
         return implode("\n", $lines) . "\n";
     }
 
-
-    /**
-     * @param Sample $sample
-     * @return string
-     */
-    private function renderSample(Sample $sample)
+    private function renderSample(MetricFamilySamples $metric, Sample $sample)
     {
         $escapedLabels = array();
-        $labels = $sample->getLabels();
-        if (!empty($labels)) {
-            foreach ($sample->getLabels() as $labelName => $labelValue) {
+
+        $labelNames = $metric->getLabelNames();
+        if (!empty($labelNames)) {
+            $labels = array_combine(array_merge($labelNames, $sample->getLabelNames()), $sample->getLabelValues());
+            foreach ($labels as $labelName => $labelValue) {
                 $escapedLabels[] = $labelName . '="' . $this->escapeLabelValue($labelValue) . '"';
             }
             return $sample->getName() . '{' . implode(',', $escapedLabels) . '} ' . $sample->getValue();

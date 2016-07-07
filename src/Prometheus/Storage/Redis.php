@@ -97,7 +97,7 @@ class Redis implements Adapter
 
     /**
      * @param string $metricType
-     * @return MetricFamilySamples[]
+     * @return array
      */
     private function fetchMetricsByType($metricType)
     {
@@ -128,6 +128,7 @@ class Redis implements Adapter
                 'name' => $metricResponse['name'],
                 'help' => $metricResponse['help'],
                 'type' => $metricResponse['type'],
+                'labelNames' => unserialize($metricResponse['labelNames']),
                 'samples' => $sampleResponses
             );
         }

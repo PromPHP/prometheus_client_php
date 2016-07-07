@@ -4,10 +4,11 @@ namespace Prometheus;
 
 class MetricFamilySamples
 {
-    protected $name;
-    protected $type;
-    protected $help;
-    protected $samples = array();
+    private $name;
+    private $type;
+    private $help;
+    private $labelNames;
+    private $samples = array();
 
     /**
      * @param array $data
@@ -17,6 +18,7 @@ class MetricFamilySamples
         $this->name = $data['name'];
         $this->type = $data['type'];
         $this->help = $data['help'];
+        $this->labelNames = $data['labelNames'];
         foreach ($data['samples'] as $sampleData) {
             $this->samples[] = new Sample($sampleData);
         }
@@ -52,5 +54,13 @@ class MetricFamilySamples
     public function getSamples()
     {
         return $this->samples;
+    }
+
+    /**
+     * @return array
+     */
+    public function getLabelNames()
+    {
+        return $this->labelNames;
     }
 }

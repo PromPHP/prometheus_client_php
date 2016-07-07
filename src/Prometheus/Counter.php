@@ -39,7 +39,7 @@ class Counter extends Collector
             new Sample(
                 array(
                     'name' => $this->getName(),
-                    'labelNames' => $this->getLabelNames(),
+                    'labelNames' => array(),
                     'labelValues' => $labels,
                     'value' => $count
                 )
