@@ -13,7 +13,7 @@ We decided to use redis because:
  * It is easy to deploy as a sidecar to the PHP worker processes (see [docker-compose.yml](docker-compose.yml)).
  * It provides us with easy to use concurrency mechanisms we need for the metric aggregation (e.g. `incrByFloat`).
 
-We think this could be implemented with APCu as well and we will not exclude to do so in the future.
+We think this could be implemented with APCu as well and we might do so in the future.
 Of course we would also appreciate a pull-request.
 
 
