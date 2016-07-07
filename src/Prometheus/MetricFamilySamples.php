@@ -63,4 +63,12 @@ class MetricFamilySamples
     {
         return $this->labelNames;
     }
+
+    /**
+     * @return bool
+     */
+    public function hasLabelNames()
+    {
+        return !empty($this->labelNames);
+    }
 }
