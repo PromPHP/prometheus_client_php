@@ -123,7 +123,7 @@ class CollectorRegistry
      * @param array $buckets e.g. [100, 200, 300]
      * @return Histogram
      */
-    public function registerHistogram($namespace, $name, $help, $labels = array(), $buckets = array())
+    public function registerHistogram($namespace, $name, $help, $labels = array(), $buckets = null)
     {
         $this->histograms[self::metricIdentifier($namespace, $name, $labels)] = new Histogram(
             $this->storageAdapter,
