@@ -1,13 +1,13 @@
 <?php
 
 
-namespace Prometheus\Storage;
+namespace Prometheus\Exception;
 
 
 /**
  * Exception thrown if an error occurs during metrics storage.
  */
-class Exception extends \RuntimeException
+class StorageException extends \Exception
 {
 
 }

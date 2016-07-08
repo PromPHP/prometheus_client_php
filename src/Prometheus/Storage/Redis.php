@@ -5,6 +5,7 @@ namespace Prometheus\Storage;
 
 use Prometheus\Collector;
 use Prometheus\Counter;
+use Prometheus\Exception\StorageException;
 use Prometheus\Gauge;
 use Prometheus\Histogram;
 use Prometheus\MetricFamilySamples;
@@ -76,7 +77,7 @@ class Redis implements Adapter
 
     /**
      * @return MetricFamilySamples[]
-     * @throws Exception
+     * @throws StorageException
      */
     public function collect()
     {
@@ -90,7 +91,7 @@ class Redis implements Adapter
     }
 
     /**
-     * @throws Exception
+     * @throws StorageException
      */
     public function store($command, Collector $metric, Sample $sample)
     {
@@ -140,7 +141,7 @@ class Redis implements Adapter
     }
 
     /**
-     * @throws Exception
+     * @throws StorageException
      */
     private function openConnection()
     {
@@ -152,7 +153,7 @@ class Redis implements Adapter
             }
             $this->redis->setOption(\Redis::OPT_READ_TIMEOUT, $this->options['read_timeout']);
         } catch (\RedisException $e) {
-            throw new Exception("Can't connect to Redis server", 0, $e);
+            throw new StorageException("Can't connect to Redis server", 0, $e);
         }
     }
 
