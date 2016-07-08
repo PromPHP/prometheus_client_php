@@ -76,6 +76,7 @@ class Redis implements Adapter
 
     /**
      * @return MetricFamilySamples[]
+     * @throws Exception
      */
     public function collect()
     {
@@ -88,6 +89,9 @@ class Redis implements Adapter
         return array_map(function (array $metric) { return new MetricFamilySamples($metric); }, $metrics);
     }
 
+    /**
+     * @throws Exception
+     */
     public function store($command, Collector $metric, Sample $sample)
     {
         $this->openConnection();
@@ -135,14 +139,21 @@ class Redis implements Adapter
         return $metrics;
     }
 
+    /**
+     * @throws Exception
+     */
     private function openConnection()
     {
-        if ($this->options['persistent_connections']) {
-            $this->redis->pconnect($this->options['host'], $this->options['port'], $this->options['timeout']);
-        } else {
-            $this->redis->connect($this->options['host'], $this->options['port'], $this->options['timeout']);
+        try {
+            if ($this->options['persistent_connections']) {
+                @$this->redis->pconnect($this->options['host'], $this->options['port'], $this->options['timeout']);
+            } else {
+                @$this->redis->connect($this->options['host'], $this->options['port'], $this->options['timeout']);
+            }
+            $this->redis->setOption(\Redis::OPT_READ_TIMEOUT, $this->options['read_timeout']);
+        } catch (\RedisException $e) {
+            throw new Exception("Can't connect to Redis server", 0, $e);
         }
-        $this->redis->setOption(\Redis::OPT_READ_TIMEOUT, $this->options['read_timeout']);
     }
 
     /**
