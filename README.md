@@ -1,6 +1,7 @@
 # A prometheus client library written in PHP
 
 [![Build Status](https://travis-ci.org/Jimdo/prometheus_client_php.svg?branch=master)](https://travis-ci.org/Jimdo/prometheus_client_php)
+[![Code Climate](https://codeclimate.com/github/Jimdo/prometheus_client_php.png)](https://codeclimate.com/github/Jimdo/prometheus_client_php)
 
 This uses redis to do the client side aggregation.
 We recommend to run a local redis instance next to your PHP workers.
