@@ -87,7 +87,12 @@ class Redis implements Adapter
             $metrics = array_merge($metrics, $this->fetchMetricsByType($metricType));
         }
         array_multisort($metrics);
-        return array_map(function (array $metric) { return new MetricFamilySamples($metric); }, $metrics);
+        return array_map(
+            function (array $metric) {
+                return new MetricFamilySamples($metric);
+            },
+            $metrics
+        );
     }
 
     /**
