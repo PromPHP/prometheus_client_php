@@ -218,10 +218,15 @@ class Redis implements Adapter
     private function storeMetricFamilyMetadata(Collector $metric)
     {
         $metricKey = self::PROMETHEUS_PREFIX . $metric->getType() . $metric->getKey();
-        $this->redis->hSet($metricKey, 'name', $metric->getName());
-        $this->redis->hSet($metricKey, 'help', $metric->getHelp());
-        $this->redis->hSet($metricKey, 'type', $metric->getType());
-        $this->redis->hSet($metricKey, 'labelNames', serialize($metric->getLabelNames()));
+        $this->redis->hMset(
+            $metricKey,
+            array(
+                'name' => $metric->getName(),
+                'help' => $metric->getHelp(),
+                'type' => $metric->getType(),
+                'labelNames' => serialize($metric->getLabelNames()),
+            )
+        );
 
         $this->redis->sAdd(
             self::PROMETHEUS_PREFIX . $metric->getType() . self::PROMETHEUS_METRIC_KEYS_SUFFIX,
