@@ -21,10 +21,10 @@ class Redis implements Adapter
     const PROMETHEUS_METRIC_KEYS_SUFFIX = '_METRIC_KEYS';
     const PROMETHEUS_SAMPLE_KEYS_SUFFIX = '_SAMPLE_KEYS';
 
-    const PROMETHEUS_SAMPLE_VALUE_SUFFIX = '_VALUE';
-    const PROMETHEUS_SAMPLE_LABEL_NAMES_SUFFIX = '_LABEL_NAMES';
-    const PROMETHEUS_SAMPLE_LABEL_VALUES_SUFFIX = '_LABEL_VALUES';
-    const PROMETHEUS_SAMPLE_NAME_SUFFIX = '_NAME';
+    const PROMETHEUS_SAMPLE_VALUE_KEY = '_VALUE';
+    const PROMETHEUS_SAMPLE_LABEL_NAMES_KEY = '_LABEL_NAMES';
+    const PROMETHEUS_SAMPLE_LABEL_VALUES_KEY = '_LABEL_VALUES';
+    const PROMETHEUS_SAMPLE_NAME_KEY = '_NAME';
 
     private static $defaultOptions = array();
 
@@ -87,7 +87,12 @@ class Redis implements Adapter
             $metrics = array_merge($metrics, $this->fetchMetricsByType($metricType));
         }
         array_multisort($metrics);
-        return array_map(function (array $metric) { return new MetricFamilySamples($metric); }, $metrics);
+        return array_map(
+            function (array $metric) {
+                return new MetricFamilySamples($metric);
+            },
+            $metrics
+        );
     }
 
     /**
@@ -110,20 +115,15 @@ class Redis implements Adapter
         $metrics = array();
         foreach ($keys as $key) {
             $metricKey = self::PROMETHEUS_PREFIX . $metricType . $key;
-            $values = $this->redis->hGetAll($metricKey . self::PROMETHEUS_SAMPLE_VALUE_SUFFIX);
-            $labelValuesList = $this->redis->hGetAll($metricKey . self::PROMETHEUS_SAMPLE_LABEL_VALUES_SUFFIX);
             $sampleKeys = $this->redis->sMembers($metricKey . self::PROMETHEUS_SAMPLE_KEYS_SUFFIX);
             $sampleResponses = array();
             foreach ($sampleKeys as $sampleKey) {
-                $labelNames = unserialize(
-                    $this->redis->hGet($metricKey . self::PROMETHEUS_SAMPLE_LABEL_NAMES_SUFFIX, $sampleKey)
-                );
-                $name = $this->redis->hGet($metricKey . self::PROMETHEUS_SAMPLE_NAME_SUFFIX, $sampleKey);
+                $sample = $this->redis->hGetAll($metricKey . $sampleKey);
                 $sampleResponses[] = array(
-                    'name' => $name,
-                    'labelNames' => $labelNames,
-                    'labelValues' => unserialize($labelValuesList[$sampleKey]),
-                    'value' => $values[$sampleKey]
+                    'name' => $sample[self::PROMETHEUS_SAMPLE_NAME_KEY],
+                    'labelNames' => unserialize($sample[self::PROMETHEUS_SAMPLE_LABEL_NAMES_KEY]),
+                    'labelValues' => unserialize($sample[self::PROMETHEUS_SAMPLE_LABEL_VALUES_KEY]),
+                    'value' => $sample[self::PROMETHEUS_SAMPLE_VALUE_KEY]
                 );
             }
             array_multisort($sampleResponses);
@@ -165,50 +165,50 @@ class Redis implements Adapter
     private function storeMetricFamilySample($command, Collector $metric, Sample $sample)
     {
         $metricKey = self::PROMETHEUS_PREFIX . $metric->getType() . $metric->getKey();
+        $sampleKey = $metricKey . $sample->getKey();
         switch ($command) {
             case self::COMMAND_INCREMENT_INTEGER:
                 $this->redis->hIncrBy(
-                    $metricKey . self::PROMETHEUS_SAMPLE_VALUE_SUFFIX,
-                    $sample->getKey(),
+                    $sampleKey,
+                    self::PROMETHEUS_SAMPLE_VALUE_KEY,
                     $sample->getValue()
                 );
                 break;
             case self::COMMAND_INCREMENT_FLOAT:
                 $this->redis->hIncrByFloat(
-                    $metricKey . self::PROMETHEUS_SAMPLE_VALUE_SUFFIX,
-                    $sample->getKey(),
+                    $sampleKey,
+                    self::PROMETHEUS_SAMPLE_VALUE_KEY,
                     $sample->getValue()
                 );
                 break;
             case self::COMMAND_SET:
                 $this->redis->hSet(
-                    $metricKey . self::PROMETHEUS_SAMPLE_VALUE_SUFFIX,
-                    $sample->getKey(),
+                    $sampleKey,
+                    self::PROMETHEUS_SAMPLE_VALUE_KEY,
                     $sample->getValue()
                 );
                 break;
             default:
                 throw new \RuntimeException('Unknown command.');
         }
-        $this->redis->hSet(
-            $metricKey . self::PROMETHEUS_SAMPLE_LABEL_VALUES_SUFFIX,
-            $sample->getKey(),
-            serialize($sample->getLabelValues())
-        );
-        $this->redis->hSet(
-            $metricKey . self::PROMETHEUS_SAMPLE_LABEL_NAMES_SUFFIX,
-            $sample->getKey(),
-            serialize($sample->getLabelNames())
-        );
-        $this->redis->hSet(
-            $metricKey . self::PROMETHEUS_SAMPLE_NAME_SUFFIX,
-            $sample->getKey(),
-            $sample->getName()
-        );
-
-        $this->redis->sAdd(
-            $metricKey . self::PROMETHEUS_SAMPLE_KEYS_SUFFIX,
-            $sample->getKey()
+        $this->redis->eval(<<<LUA
+if redis.call('sadd', KEYS[2], KEYS[3]) == 1 then
+  redis.call('hMset', KEYS[1], unpack(ARGV))
+end
+LUA
+            ,
+            array(
+                $sampleKey,
+                $metricKey . self::PROMETHEUS_SAMPLE_KEYS_SUFFIX,
+                $sample->getKey(),
+                self::PROMETHEUS_SAMPLE_LABEL_VALUES_KEY,
+                serialize($sample->getLabelValues()),
+                self::PROMETHEUS_SAMPLE_LABEL_NAMES_KEY,
+                serialize($sample->getLabelNames()),
+                self::PROMETHEUS_SAMPLE_NAME_KEY,
+                $sample->getName(),
+            ),
+            3
         );
     }
 
@@ -218,14 +218,26 @@ class Redis implements Adapter
     private function storeMetricFamilyMetadata(Collector $metric)
     {
         $metricKey = self::PROMETHEUS_PREFIX . $metric->getType() . $metric->getKey();
-        $this->redis->hSet($metricKey, 'name', $metric->getName());
-        $this->redis->hSet($metricKey, 'help', $metric->getHelp());
-        $this->redis->hSet($metricKey, 'type', $metric->getType());
-        $this->redis->hSet($metricKey, 'labelNames', serialize($metric->getLabelNames()));
-
-        $this->redis->sAdd(
-            self::PROMETHEUS_PREFIX . $metric->getType() . self::PROMETHEUS_METRIC_KEYS_SUFFIX,
-            $metric->getKey()
+        $this->redis->eval(<<<LUA
+if redis.call('sadd', KEYS[2], KEYS[3]) == 1 then
+  redis.call('hMset', KEYS[1], unpack(ARGV))
+end
+LUA
+            ,
+            array(
+                $metricKey,
+                self::PROMETHEUS_PREFIX . $metric->getType() . self::PROMETHEUS_METRIC_KEYS_SUFFIX,
+                $metric->getKey(),
+                'name',
+                $metric->getName(),
+                'help',
+                $metric->getHelp(),
+                'type',
+                $metric->getType(),
+                'labelNames',
+                serialize($metric->getLabelNames()),
+            ),
+            3
         );
     }
 }
