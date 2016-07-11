@@ -25,16 +25,19 @@ class InMemory implements Adapter
     {
         $responses = array();
         foreach ($this->metrics as $metric) {
+            $samples = $this->samples[$metric->getKey()];
+            array_multisort($samples);
             $responses[] = new MetricFamilySamples(
                 array(
                     'name' => $metric->getName(),
                     'type' => $metric->getType(),
                     'help' => $metric->getHelp(),
-                    'samples' => $this->samples[$metric->getKey()],
+                    'samples' => $samples,
                     'labelNames' => $metric->getLabelNames()
                 )
             );
         }
+        array_multisort($responses);
         return $responses;
     }
 
