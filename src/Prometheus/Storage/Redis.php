@@ -166,14 +166,6 @@ class Redis implements Adapter
     {
         $metricKey = self::PROMETHEUS_PREFIX . $metric->getType() . $metric->getKey();
         $sampleKey = $metricKey . $sample->getKey();
-        $this->redis->hMset(
-            $sampleKey,
-            array(
-                self::PROMETHEUS_SAMPLE_LABEL_VALUES_KEY => serialize($sample->getLabelValues()),
-                self::PROMETHEUS_SAMPLE_LABEL_NAMES_KEY => serialize($sample->getLabelNames()),
-                self::PROMETHEUS_SAMPLE_NAME_KEY => $sample->getName(),
-            )
-        );
         switch ($command) {
             case self::COMMAND_INCREMENT_INTEGER:
                 $this->redis->hIncrBy(
@@ -199,9 +191,24 @@ class Redis implements Adapter
             default:
                 throw new \RuntimeException('Unknown command.');
         }
-        $this->redis->sAdd(
-            $metricKey . self::PROMETHEUS_SAMPLE_KEYS_SUFFIX,
-            $sample->getKey()
+        $this->redis->eval(<<<LUA
+if redis.call('sadd', KEYS[2], KEYS[3]) == 1 then
+  redis.call('hMset', KEYS[1], unpack(ARGV))
+end
+LUA
+            ,
+            array(
+                $sampleKey,
+                $metricKey . self::PROMETHEUS_SAMPLE_KEYS_SUFFIX,
+                $sample->getKey(),
+                self::PROMETHEUS_SAMPLE_LABEL_VALUES_KEY,
+                serialize($sample->getLabelValues()),
+                self::PROMETHEUS_SAMPLE_LABEL_NAMES_KEY,
+                serialize($sample->getLabelNames()),
+                self::PROMETHEUS_SAMPLE_NAME_KEY,
+                $sample->getName(),
+            ),
+            3
         );
     }
 
@@ -211,19 +218,26 @@ class Redis implements Adapter
     private function storeMetricFamilyMetadata(Collector $metric)
     {
         $metricKey = self::PROMETHEUS_PREFIX . $metric->getType() . $metric->getKey();
-        $this->redis->hMset(
-            $metricKey,
+        $this->redis->eval(<<<LUA
+if redis.call('sadd', KEYS[2], KEYS[3]) == 1 then
+  redis.call('hMset', KEYS[1], unpack(ARGV))
+end
+LUA
+            ,
             array(
-                'name' => $metric->getName(),
-                'help' => $metric->getHelp(),
-                'type' => $metric->getType(),
-                'labelNames' => serialize($metric->getLabelNames()),
-            )
-        );
-
-        $this->redis->sAdd(
-            self::PROMETHEUS_PREFIX . $metric->getType() . self::PROMETHEUS_METRIC_KEYS_SUFFIX,
-            $metric->getKey()
+                $metricKey,
+                self::PROMETHEUS_PREFIX . $metric->getType() . self::PROMETHEUS_METRIC_KEYS_SUFFIX,
+                $metric->getKey(),
+                'name',
+                $metric->getName(),
+                'help',
+                $metric->getHelp(),
+                'type',
+                $metric->getType(),
+                'labelNames',
+                serialize($metric->getLabelNames()),
+            ),
+            3
         );
     }
 }
