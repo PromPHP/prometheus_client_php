@@ -240,4 +240,33 @@ LUA
             3
         );
     }
+
+    public function updateHistogram($value, array $key, array $metaData)
+    {
+        $bucketToIncrease = null;
+        foreach ($metaData['buckets'] as $bucket) {
+            if ($value <= $bucket) {
+                $bucketToIncrease = 'le_' . $value;
+                break;
+            }
+        }
+        $this->redis->eval(<<<LUA
+local increment = redis.call('hIncrByFloat', KEYS[1], 'sum', KEYS[2])
+redis.call('hIncrBy', KEYS[1], KEYS[3], 1)
+if increment == KEYS[2] then
+    redis.call('hMSet', KEYS[1], 'metaData', KEYS[4]
+    redis.call('sadd', KEYS[5], KEYS[1])
+end
+LUA
+            ,
+            array(
+                implode('', $key),
+                $value,
+                $bucketToIncrease,
+                serialize($metaData),
+                self::PROMETHEUS_PREFIX . $metaData['type'] . self::PROMETHEUS_METRIC_KEYS_SUFFIX,
+            ),
+            3
+        );
+    }
 }

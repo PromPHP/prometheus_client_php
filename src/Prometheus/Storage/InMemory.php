@@ -76,4 +76,9 @@ class InMemory implements Adapter
             array_values(array_reduce(array_values($this->samples), 'array_merge', array()))
         );
     }
+
+    public function updateHistogram($value, array $key, array $metaData)
+    {
+        // TODO: Implement incrementByFloat() method.
+    }
 }
