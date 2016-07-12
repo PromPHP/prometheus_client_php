@@ -236,6 +236,7 @@ LUA
 
     public function updateHistogram($value, array $key, array $metaData)
     {
+        $this->openConnection();
         $bucketToIncrease = 'le_+Inf';
         foreach ($metaData['buckets'] as $bucket) {
             if ($value <= $bucket) {
