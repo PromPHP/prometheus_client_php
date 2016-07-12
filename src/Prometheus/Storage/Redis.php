@@ -83,6 +83,17 @@ class Redis implements Adapter
     {
         $this->openConnection();
         $metrics = array();
+
+        $metrics = $this->collectHistograms();
+
+        array_multisort($metrics);
+        return array_map(
+            function (array $metric) {
+                return new MetricFamilySamples($metric);
+            },
+            $metrics
+        );
+
         foreach ($this->metricTypes as $metricType) {
             $metrics = array_merge($metrics, $this->fetchMetricsByType($metricType));
         }
@@ -268,5 +279,69 @@ LUA
             ),
             3
         );
+    }
+
+    private function collectHistograms()
+    {
+        $keys = $this->redis->sMembers(self::PROMETHEUS_PREFIX . Histogram::TYPE . self::PROMETHEUS_METRIC_KEYS_SUFFIX);
+        $histograms = array();
+        foreach ($keys as $key) {
+            $raw = $this->redis->hGetAll($key);
+            $histogram = unserialize($raw['metaData']);
+
+            $histogram['samples'] = array();
+
+            // Fill up all buckets.
+            // If the bucket doesn't exist fill in values from
+            // the previous one.
+            $acc = 0;
+            foreach ($histogram['buckets'] as $bucket) {
+                if (!isset($raw['le_' . $bucket])) {
+                    $histogram['samples'][] = array(
+                       'name' => $histogram['name'] . '_bucket',
+                       'labelNames' => array('le'),
+                       'labelValues' => array_merge($histogram['labelValues'], array($bucket)),
+                       'value' => $acc
+                   );
+                } else {
+                    $acc += $raw['le_' . $bucket];
+                    $histogram['samples'][] = array(
+                        'name' => $histogram['name'] . '_bucket',
+                        'labelNames' => array('le'),
+                        'labelValues' => array_merge($histogram['labelValues'], array($bucket)),
+                        'value' => $acc
+                    );
+                }
+
+            }
+
+            // Prepend the +Inf bucket to the start
+            array_unshift($histogram['samples'], array(
+                'name' => $histogram['name'] . '_bucket',
+                'labelNames' => array('le'),
+                'labelValues' => array_merge($histogram['labelValues'], array('+Inf')),
+                'value' => $acc
+            ));
+
+            // Add the count
+            $histogram['samples'][] = array(
+                'name' => $histogram['name'] . '_count',
+                'labelNames' => array(),
+                'labelValues' => $histogram['labelValues'],
+                'value' => $acc
+            );
+
+            // Add the sum
+            $histogram['samples'][] = array(
+                'name' => $histogram['name'] . '_sum',
+                'labelNames' => array(),
+                'labelValues' => $histogram['labelValues'],
+                'value' => $raw['sum']
+            );
+
+            $histograms[] = $histogram;
+        }
+
+        return $histograms;
     }
 }
