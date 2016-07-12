@@ -246,25 +246,25 @@ LUA
         $bucketToIncrease = null;
         foreach ($metaData['buckets'] as $bucket) {
             if ($value <= $bucket) {
-                $bucketToIncrease = 'le_' . $value;
+                $bucketToIncrease = 'le_' . $bucket;
                 break;
             }
         }
         $this->redis->eval(<<<LUA
-local increment = redis.call('hIncrByFloat', KEYS[1], 'sum', KEYS[2])
-redis.call('hIncrBy', KEYS[1], KEYS[3], 1)
-if increment == KEYS[2] then
-    redis.call('hMSet', KEYS[1], 'metaData', KEYS[4]
-    redis.call('sadd', KEYS[5], KEYS[1])
+local increment = redis.call('hIncrByFloat', KEYS[1], 'sum', ARGV[1])
+redis.call('hIncrBy', KEYS[1], KEYS[2], 1)
+if increment == ARGV[1] then
+    redis.call('hMSet', KEYS[1], 'metaData', ARGV[2])
+    redis.call('sAdd', KEYS[3], KEYS[1])
 end
 LUA
             ,
             array(
                 implode('', $key),
-                $value,
                 $bucketToIncrease,
+                self::PROMETHEUS_PREFIX . Histogram::TYPE . self::PROMETHEUS_METRIC_KEYS_SUFFIX,
+                $value,
                 serialize($metaData),
-                self::PROMETHEUS_PREFIX . $metaData['type'] . self::PROMETHEUS_METRIC_KEYS_SUFFIX,
             ),
             3
         );
