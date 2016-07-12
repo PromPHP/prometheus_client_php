@@ -236,7 +236,7 @@ LUA
 
     public function updateHistogram($value, array $key, array $metaData)
     {
-        $bucketToIncrease = null;
+        $bucketToIncrease = 'le_+Inf';
         foreach ($metaData['buckets'] as $bucket) {
             if ($value <= $bucket) {
                 $bucketToIncrease = 'le_' . $bucket;
@@ -277,8 +277,10 @@ LUA
             // If the bucket doesn't exist fill in values from
             // the previous one.
             $acc = 0;
+            $histogram['buckets'][] = '+Inf';
             foreach ($histogram['buckets'] as $bucket) {
-                if (!isset($raw['le_' . $bucket])) {
+                $bucketKey = 'le_' . $bucket;
+                if (!isset($raw[$bucketKey])) {
                     $histogram['samples'][] = array(
                        'name' => $histogram['name'] . '_bucket',
                        'labelNames' => array('le'),
@@ -286,7 +288,7 @@ LUA
                        'value' => $acc
                    );
                 } else {
-                    $acc += $raw['le_' . $bucket];
+                    $acc += $raw[$bucketKey];
                     $histogram['samples'][] = array(
                         'name' => $histogram['name'] . '_bucket',
                         'labelNames' => array('le'),
@@ -296,14 +298,6 @@ LUA
                 }
 
             }
-
-            // Prepend the +Inf bucket to the start
-            array_unshift($histogram['samples'], array(
-                'name' => $histogram['name'] . '_bucket',
-                'labelNames' => array('le'),
-                'labelValues' => array_merge($histogram['labelValues'], array('+Inf')),
-                'value' => $acc
-            ));
 
             // Add the count
             $histogram['samples'][] = array(

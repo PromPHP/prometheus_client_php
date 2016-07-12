@@ -54,12 +54,6 @@ class HistogramTest extends PHPUnit_Framework_TestCase
                                 array(
                                     'name' => 'test_some_metric_bucket',
                                     'labelNames' => array('le'),
-                                    'labelValues' => array('lalal', 'lululu', '+Inf'),
-                                    'value' => 2,
-                                ),
-                                array(
-                                    'name' => 'test_some_metric_bucket',
-                                    'labelNames' => array('le'),
                                     'labelValues' => array('lalal', 'lululu', 100),
                                     'value' => 0,
                                 ),
@@ -73,6 +67,12 @@ class HistogramTest extends PHPUnit_Framework_TestCase
                                     'name' => 'test_some_metric_bucket',
                                     'labelNames' => array('le'),
                                     'labelValues' => array('lalal', 'lululu', 300),
+                                    'value' => 2,
+                                ),
+                                array(
+                                    'name' => 'test_some_metric_bucket',
+                                    'labelNames' => array('le'),
+                                    'labelValues' => array('lalal', 'lululu', '+Inf'),
                                     'value' => 2,
                                 ),
                                 array(
@@ -123,12 +123,6 @@ class HistogramTest extends PHPUnit_Framework_TestCase
                                 array(
                                     'name' => 'test_some_metric_bucket',
                                     'labelNames' => array('le'),
-                                    'labelValues' => array('+Inf'),
-                                    'value' => 1,
-                                ),
-                                array(
-                                    'name' => 'test_some_metric_bucket',
-                                    'labelNames' => array('le'),
                                     'labelValues' => array(100),
                                     'value' => 0,
                                 ),
@@ -142,6 +136,12 @@ class HistogramTest extends PHPUnit_Framework_TestCase
                                     'name' => 'test_some_metric_bucket',
                                     'labelNames' => array('le'),
                                     'labelValues' => array(300),
+                                    'value' => 1,
+                                ),
+                                array(
+                                    'name' => 'test_some_metric_bucket',
+                                    'labelNames' => array('le'),
+                                    'labelValues' => array('+Inf'),
                                     'value' => 1,
                                 ),
                                 array(
@@ -193,12 +193,6 @@ class HistogramTest extends PHPUnit_Framework_TestCase
                                 array(
                                     'name' => 'test_some_metric_bucket',
                                     'labelNames' => array('le'),
-                                    'labelValues' => array('+Inf'),
-                                    'value' => 2,
-                                ),
-                                array(
-                                    'name' => 'test_some_metric_bucket',
-                                    'labelNames' => array('le'),
                                     'labelValues' => array(0.1),
                                     'value' => 0,
                                 ),
@@ -212,6 +206,12 @@ class HistogramTest extends PHPUnit_Framework_TestCase
                                     'name' => 'test_some_metric_bucket',
                                     'labelNames' => array('le'),
                                     'labelValues' => array(0.3),
+                                    'value' => 2,
+                                ),
+                                array(
+                                    'name' => 'test_some_metric_bucket',
+                                    'labelNames' => array('le'),
+                                    'labelValues' => array('+Inf'),
                                     'value' => 2,
                                 ),
                                 array(
@@ -262,12 +262,6 @@ class HistogramTest extends PHPUnit_Framework_TestCase
                             'type' => Histogram::TYPE,
                             'labelNames' => array(),
                             'samples' => array(
-                                array(
-                                    'name' => 'test_some_metric_bucket',
-                                    'labelNames' => array('le'),
-                                    'labelValues' => array('+Inf'),
-                                    'value' => 2,
-                                ),
                                 array(
                                     'name' => 'test_some_metric_bucket',
                                     'labelNames' => array('le'),
@@ -350,6 +344,12 @@ class HistogramTest extends PHPUnit_Framework_TestCase
                                     'name' => 'test_some_metric_bucket',
                                     'labelNames' => array('le'),
                                     'labelValues' => array(10),
+                                    'value' => 2,
+                                ),
+                                array(
+                                    'name' => 'test_some_metric_bucket',
+                                    'labelNames' => array('le'),
+                                    'labelValues' => array('+Inf'),
                                     'value' => 2,
                                 ),
                                 array(
