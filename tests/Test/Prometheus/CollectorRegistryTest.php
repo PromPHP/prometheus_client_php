@@ -97,10 +97,19 @@ EOF
         $registry->getHistogram('test', 'some_metric', array('foo', 'bar'))->observe(7.1, array('lalal', 'lululu'));
         $registry->getHistogram('test', 'some_metric', array('foo', 'bar'))->observe(7.1, array('gnaaha', 'hihihi'));
 
+        $registry->registerHistogram('test', 'some_metric', 'this is for hoeoeoeoe', array('you_got_me'), array(10))
+            ->observe(9, array('yes'));
+
         $registry = new CollectorRegistry($this->redisAdapter);
         $this->assertThat(
             $this->renderer->render($registry->getMetricFamilySamples()),
             $this->equalTo(<<<EOF
+# HELP test_some_metric this is for hoeoeoeoe
+# TYPE test_some_metric histogram
+test_some_metric_bucket{you_got_me="yes",le="10"} 1
+test_some_metric_bucket{you_got_me="yes",le="+Inf"} 1
+test_some_metric_count{you_got_me="yes"} 1
+test_some_metric_sum{you_got_me="yes"} 9
 # HELP test_some_metric this is for testing
 # TYPE test_some_metric histogram
 test_some_metric_bucket{foo="gnaaha",bar="hihihi",le="0.1"} 0

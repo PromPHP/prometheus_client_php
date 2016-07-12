@@ -81,4 +81,9 @@ class InMemory implements Adapter
     {
         // TODO: Implement incrementByFloat() method.
     }
+
+    public function updateGauge(array $data)
+    {
+        // TODO: Implement updateGauge() method.
+    }
 }

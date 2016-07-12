@@ -7,9 +7,9 @@ use Prometheus\Sample;
 
 interface Adapter
 {
-    const COMMAND_INCREMENT_INTEGER = 1;
-    const COMMAND_INCREMENT_FLOAT = 2;
-    const COMMAND_SET = 3;
+    const COMMAND_INCREMENT_INTEGER = 'hIncrBy';
+    const COMMAND_INCREMENT_FLOAT = 'hIncrByFloat';
+    const COMMAND_SET = 'hSet';
 
     /**
      * @return MetricFamilySamples[]
@@ -19,4 +19,6 @@ interface Adapter
     public function store($command, Collector $metric, Sample $sample);
 
     public function updateHistogram(array $data);
+
+    public function updateGauge(array $data);
 }

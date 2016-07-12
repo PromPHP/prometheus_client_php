@@ -77,7 +77,7 @@ class Redis implements Adapter
     {
         $this->openConnection();
         $metrics = $this->collectHistograms();
-        $metrics = array_merge($metrics, $this->fetchMetricsByType(Gauge::TYPE));
+        $metrics = array_merge($metrics, $this->collectGauges());
         $metrics = array_merge($metrics, $this->fetchMetricsByType(Counter::TYPE));
         array_multisort($metrics);
         return array_map(
@@ -266,6 +266,39 @@ LUA
         );
     }
 
+    public function updateGauge(array $data)
+    {
+        $this->openConnection();
+        $metaData = $data;
+        unset($metaData['value']);
+        unset($metaData['command']);
+        $this->redis->eval(<<<LUA
+local result = redis.call(KEYS[2], KEYS[1], 'value', ARGV[1])
+
+if KEYS[2] == 'hSet' then
+    if result == 1 then
+        redis.call('hMSet', KEYS[1], 'metaData', ARGV[2])
+        redis.call('sAdd', KEYS[3], KEYS[1])
+    end
+else
+    if result == ARGV[1] then
+        redis.call('hMSet', KEYS[1], 'metaData', ARGV[2])
+        redis.call('sAdd', KEYS[3], KEYS[1])
+    end
+end
+LUA
+            ,
+            array(
+                implode('', array_merge(array($data['name']), $data['labelValues'])),
+                $data['command'],
+                self::PROMETHEUS_PREFIX . Gauge::TYPE . self::PROMETHEUS_METRIC_KEYS_SUFFIX,
+                $data['value'],
+                serialize($metaData),
+            ),
+            3
+        );    }
+
+
     private function collectHistograms()
     {
         $keys = $this->redis->sMembers(self::PROMETHEUS_PREFIX . Histogram::TYPE . self::PROMETHEUS_METRIC_KEYS_SUFFIX);
@@ -324,8 +357,9 @@ LUA
         // group metrics by name
         $groupedHistograms = array();
         foreach ($histograms as $histogram) {
-            if (!isset($groupedHistograms[$histogram['name']])) {
-                $groupedHistograms[$histogram['name']] = array(
+            $groupingKey = $histogram['name'] . serialize($histogram['labelNames']);
+            if (!isset($groupedHistograms[$groupingKey])) {
+                $groupedHistograms[$groupingKey] = array(
                     'name' => $histogram['name'],
                     'type' => $histogram['type'],
                     'help' => $histogram['help'],
@@ -333,9 +367,48 @@ LUA
                     'samples' => array(),
                 );
             }
-            $groupedHistograms[$histogram['name']]['samples'] = array_merge($groupedHistograms[$histogram['name']]['samples'], $histogram['samples']);
+            $groupedHistograms[$groupingKey]['samples'] = array_merge(
+                $groupedHistograms[$groupingKey]['samples'],
+                $histogram['samples']
+            );
         }
 
         return array_values($groupedHistograms);
     }
+
+    private function collectGauges()
+    {
+        $keys = $this->redis->sMembers(self::PROMETHEUS_PREFIX . Gauge::TYPE . self::PROMETHEUS_METRIC_KEYS_SUFFIX);
+        $gauges = array();
+        foreach ($keys as $key) {
+            $raw = $this->redis->hGetAll($key);
+            $gauge = unserialize($raw['metaData']);
+            $gauge['value'] = $raw['value'];
+            $gauges[] = $gauge;
+        }
+
+        // group metrics by name
+        $groupedGauges = array();
+        foreach ($gauges as $gauge) {
+            $groupingKey = $gauge['name'] . serialize($gauge['labelNames']);
+            if (!isset($groupedGauges[$groupingKey])) {
+                $groupedGauges[$groupingKey] = array(
+                    'name' => $gauge['name'],
+                    'type' => $gauge['type'],
+                    'help' => $gauge['help'],
+                    'labelNames' => $gauge['labelNames'],
+                    'samples' => array(),
+                );
+            }
+            $groupedGauges[$groupingKey]['samples'][] = array(
+                'name' => $gauge['name'],
+                'labelNames' => array(),
+                'labelValues' => $gauge['labelValues'],
+                'value' => $gauge['value'],
+            );
+        }
+
+        return array_values($groupedGauges);
+    }
+
 }
