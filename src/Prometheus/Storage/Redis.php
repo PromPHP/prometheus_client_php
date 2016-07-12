@@ -78,7 +78,7 @@ class Redis implements Adapter
         $this->openConnection();
         $metrics = $this->collectHistograms();
         $metrics = array_merge($metrics, $this->collectGauges());
-        $metrics = array_merge($metrics, $this->fetchMetricsByType(Counter::TYPE));
+        $metrics = array_merge($metrics, $this->collectCounters());
         array_multisort($metrics);
         return array_map(
             function (array $metric) {
@@ -96,41 +96,6 @@ class Redis implements Adapter
         $this->openConnection();
         $this->storeMetricFamilySample($command, $metric, $sample);
         $this->storeMetricFamilyMetadata($metric);
-    }
-
-    /**
-     * @param string $metricType
-     * @return array
-     */
-    private function fetchMetricsByType($metricType)
-    {
-        $keys = $this->redis->sMembers(self::PROMETHEUS_PREFIX . $metricType . self::PROMETHEUS_METRIC_KEYS_SUFFIX);
-        $metrics = array();
-        foreach ($keys as $key) {
-            $metricKey = self::PROMETHEUS_PREFIX . $metricType . $key;
-            $sampleKeys = $this->redis->sMembers($metricKey . self::PROMETHEUS_SAMPLE_KEYS_SUFFIX);
-            $sampleResponses = array();
-            foreach ($sampleKeys as $sampleKey) {
-                $sample = $this->redis->hGetAll($metricKey . $sampleKey);
-                $sampleResponses[] = array(
-                    'name' => $sample[self::PROMETHEUS_SAMPLE_NAME_KEY],
-                    'labelNames' => unserialize($sample[self::PROMETHEUS_SAMPLE_LABEL_NAMES_KEY]),
-                    'labelValues' => unserialize($sample[self::PROMETHEUS_SAMPLE_LABEL_VALUES_KEY]),
-                    'value' => $sample[self::PROMETHEUS_SAMPLE_VALUE_KEY]
-                );
-            }
-            array_multisort($sampleResponses);
-
-            $metricResponse = $this->redis->hGetAll($metricKey);
-            $metrics[] = array(
-                'name' => $metricResponse['name'],
-                'help' => $metricResponse['help'],
-                'type' => $metricResponse['type'],
-                'labelNames' => unserialize($metricResponse['labelNames']),
-                'samples' => $sampleResponses
-            );
-        }
-        return $metrics;
     }
 
     /**
@@ -296,8 +261,36 @@ LUA
                 serialize($metaData),
             ),
             3
-        );    }
+        );
+    }
 
+    public function updateCounter(array $data)
+    {
+        $this->openConnection();
+        $metaData = $data;
+        unset($metaData['value']);
+        unset($metaData['command']);
+        $args = array(
+            implode('', array_merge(array($data['name']), $data['labelValues'])),
+            $this->getRedisCommand($data['command']),
+            self::PROMETHEUS_PREFIX . Counter::TYPE . self::PROMETHEUS_METRIC_KEYS_SUFFIX,
+            $data['value'],
+            serialize($metaData),
+        );
+        $result = $this->redis->eval(<<<LUA
+local result = redis.call(KEYS[2], KEYS[1], 'value', ARGV[1])
+if result == tonumber(ARGV[1]) then
+    redis.call('hMSet', KEYS[1], 'metaData', ARGV[2])
+    redis.call('sAdd', KEYS[3], KEYS[1])
+end
+return result
+LUA
+            ,
+            $args,
+            3
+        );
+        return $result;
+    }
 
     private function collectHistograms()
     {
@@ -409,6 +402,41 @@ LUA
         }
 
         return array_values($groupedGauges);
+    }
+
+    private function collectCounters()
+    {
+        $keys = $this->redis->sMembers(self::PROMETHEUS_PREFIX . Counter::TYPE . self::PROMETHEUS_METRIC_KEYS_SUFFIX);
+        $counters = array();
+        foreach ($keys as $key) {
+            $raw = $this->redis->hGetAll($key);
+            $counter = unserialize($raw['metaData']);
+            $counter['value'] = $raw['value'];
+            $counters[] = $counter;
+        }
+
+        // group metrics by name
+        $groupedCounters = array();
+        foreach ($counters as $counter) {
+            $groupingKey = $counter['name'] . serialize($counter['labelNames']);
+            if (!isset($groupedCounters[$groupingKey])) {
+                $groupedCounters[$groupingKey] = array(
+                    'name' => $counter['name'],
+                    'type' => $counter['type'],
+                    'help' => $counter['help'],
+                    'labelNames' => $counter['labelNames'],
+                    'samples' => array(),
+                );
+            }
+            $groupedCounters[$groupingKey]['samples'][] = array(
+                'name' => $counter['name'],
+                'labelNames' => array(),
+                'labelValues' => $counter['labelValues'],
+                'value' => $counter['value'],
+            );
+        }
+
+        return array_values($groupedCounters);
     }
 
     private function getRedisCommand($cmd)

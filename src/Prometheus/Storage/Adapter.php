@@ -21,4 +21,6 @@ interface Adapter
     public function updateHistogram(array $data);
 
     public function updateGauge(array $data);
+
+    public function updateCounter(array $data);
 }

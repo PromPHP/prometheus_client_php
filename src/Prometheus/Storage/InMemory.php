@@ -86,4 +86,11 @@ class InMemory implements Adapter
     {
         // TODO: Implement updateGauge() method.
     }
+
+    public function updateCounter(array $data)
+    {
+        // TODO: Implement updateCounter() method.
+    }
+
+
 }
