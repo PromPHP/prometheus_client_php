@@ -319,6 +319,21 @@ LUA
             $histograms[] = $histogram;
         }
 
-        return $histograms;
+        // group metrics by name
+        $groupedHistograms = array();
+        foreach ($histograms as $histogram) {
+            if (!isset($groupedHistograms[$histogram['name']])) {
+                $groupedHistograms[$histogram['name']] = array(
+                    'name' => $histogram['name'],
+                    'type' => $histogram['type'],
+                    'help' => $histogram['help'],
+                    'labelNames' => $histogram['labelNames'],
+                    'samples' => array(),
+                );
+            }
+            $groupedHistograms[$histogram['name']]['samples'] = array_merge($groupedHistograms[$histogram['name']]['samples'], $histogram['samples']);
+        }
+
+        return array_values($groupedHistograms);
     }
 }

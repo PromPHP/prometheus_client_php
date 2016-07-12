@@ -95,6 +95,7 @@ EOF
         $metric->observe(2, array('lalal', 'lululu'));
         $registry->getHistogram('test', 'some_metric', array('foo', 'bar'))->observe(13, array('lalal', 'lululu'));
         $registry->getHistogram('test', 'some_metric', array('foo', 'bar'))->observe(7.1, array('lalal', 'lululu'));
+        $registry->getHistogram('test', 'some_metric', array('foo', 'bar'))->observe(7.1, array('gnaaha', 'hihihi'));
 
         $registry = new CollectorRegistry($this->redisAdapter);
         $this->assertThat(
@@ -102,6 +103,13 @@ EOF
             $this->equalTo(<<<EOF
 # HELP test_some_metric this is for testing
 # TYPE test_some_metric histogram
+test_some_metric_bucket{foo="gnaaha",bar="hihihi",le="0.1"} 0
+test_some_metric_bucket{foo="gnaaha",bar="hihihi",le="1"} 0
+test_some_metric_bucket{foo="gnaaha",bar="hihihi",le="5"} 0
+test_some_metric_bucket{foo="gnaaha",bar="hihihi",le="10"} 1
+test_some_metric_bucket{foo="gnaaha",bar="hihihi",le="+Inf"} 1
+test_some_metric_count{foo="gnaaha",bar="hihihi"} 1
+test_some_metric_sum{foo="gnaaha",bar="hihihi"} 7.1
 test_some_metric_bucket{foo="lalal",bar="lululu",le="0.1"} 0
 test_some_metric_bucket{foo="lalal",bar="lululu",le="1"} 0
 test_some_metric_bucket{foo="lalal",bar="lululu",le="5"} 1
