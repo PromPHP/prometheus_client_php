@@ -16,8 +16,6 @@ interface Adapter
      */
     public function collect();
 
-    public function store($command, Collector $metric, Sample $sample);
-
     public function updateHistogram(array $data);
 
     public function updateGauge(array $data);
