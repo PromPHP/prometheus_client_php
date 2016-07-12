@@ -18,5 +18,5 @@ interface Adapter
 
     public function store($command, Collector $metric, Sample $sample);
 
-    public function updateHistogram($value, array $key, array $metaData);
+    public function updateHistogram(array $data);
 }

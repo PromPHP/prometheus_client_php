@@ -234,16 +234,18 @@ LUA
         );
     }
 
-    public function updateHistogram($value, array $key, array $metaData)
+    public function updateHistogram(array $data)
     {
         $this->openConnection();
         $bucketToIncrease = 'le_+Inf';
-        foreach ($metaData['buckets'] as $bucket) {
-            if ($value <= $bucket) {
+        foreach ($data['buckets'] as $bucket) {
+            if ($data['value'] <= $bucket) {
                 $bucketToIncrease = 'le_' . $bucket;
                 break;
             }
         }
+        $metaData = $data;
+        unset($metaData['value']);
         $this->redis->eval(<<<LUA
 local increment = redis.call('hIncrByFloat', KEYS[1], 'sum', ARGV[1])
 redis.call('hIncrBy', KEYS[1], KEYS[2], 1)
@@ -254,10 +256,10 @@ end
 LUA
             ,
             array(
-                implode('', $key),
+                implode('', array_merge(array($data['name']), $data['labelValues'])),
                 $bucketToIncrease,
                 self::PROMETHEUS_PREFIX . Histogram::TYPE . self::PROMETHEUS_METRIC_KEYS_SUFFIX,
-                $value,
+                $data['value'],
                 serialize($metaData),
             ),
             3

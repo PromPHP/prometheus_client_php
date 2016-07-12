@@ -77,7 +77,7 @@ class InMemory implements Adapter
         );
     }
 
-    public function updateHistogram($value, array $key, array $metaData)
+    public function updateHistogram(array $data)
     {
         // TODO: Implement incrementByFloat() method.
     }

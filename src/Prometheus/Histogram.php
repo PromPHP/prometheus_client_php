@@ -67,9 +67,8 @@ class Histogram extends Collector
         $this->assertLabelsAreDefinedCorrectly($labels);
 
         $this->storageAdapter->updateHistogram(
-            $value,
-            array_merge(array($this->getName()), $labels),
             array(
+                'value' => $value,
                 'name' => $this->getName(),
                 'help' => $this->getHelp(),
                 'type' => $this->getType(),
