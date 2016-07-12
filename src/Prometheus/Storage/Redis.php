@@ -115,7 +115,7 @@ end
 LUA
             ,
             array(
-                implode('', array_merge(array($data['name']), $data['labelValues'])),
+                $this->toMetricKey($data),
                 $bucketToIncrease,
                 self::PROMETHEUS_PREFIX . Histogram::TYPE . self::PROMETHEUS_METRIC_KEYS_SUFFIX,
                 $data['value'],
@@ -148,7 +148,7 @@ end
 LUA
             ,
             array(
-                implode('', array_merge(array($data['name']), $data['labelValues'])),
+                $this->toMetricKey($data),
                 $this->getRedisCommand($data['command']),
                 self::PROMETHEUS_PREFIX . Gauge::TYPE . self::PROMETHEUS_METRIC_KEYS_SUFFIX,
                 $data['value'],
@@ -165,7 +165,7 @@ LUA
         unset($metaData['value']);
         unset($metaData['command']);
         $args = array(
-            implode('', array_merge(array($data['name']), $data['labelValues'])),
+            $this->toMetricKey($data),
             $this->getRedisCommand($data['command']),
             self::PROMETHEUS_PREFIX . Counter::TYPE . self::PROMETHEUS_METRIC_KEYS_SUFFIX,
             $data['value'],
@@ -189,6 +189,7 @@ LUA
     private function collectHistograms()
     {
         $keys = $this->redis->sMembers(self::PROMETHEUS_PREFIX . Histogram::TYPE . self::PROMETHEUS_METRIC_KEYS_SUFFIX);
+        sort($keys);
         $histograms = array();
         foreach ($keys as $key) {
             $raw = $this->redis->hGetAll($key);
@@ -266,6 +267,7 @@ LUA
     private function collectGauges()
     {
         $keys = $this->redis->sMembers(self::PROMETHEUS_PREFIX . Gauge::TYPE . self::PROMETHEUS_METRIC_KEYS_SUFFIX);
+        sort($keys);
         $gauges = array();
         foreach ($keys as $key) {
             $raw = $this->redis->hGetAll($key);
@@ -301,6 +303,7 @@ LUA
     private function collectCounters()
     {
         $keys = $this->redis->sMembers(self::PROMETHEUS_PREFIX . Counter::TYPE . self::PROMETHEUS_METRIC_KEYS_SUFFIX);
+        sort($keys);
         $counters = array();
         foreach ($keys as $key) {
             $raw = $this->redis->hGetAll($key);
@@ -345,6 +348,15 @@ LUA
             default:
                 throw new \InvalidArgumentException("Unknown command");
         }
+    }
+
+    /**
+     * @param array $data
+     * @return string
+     */
+    private function toMetricKey(array $data)
+    {
+        return implode(':', array_merge(array(self::PROMETHEUS_PREFIX, $data['type'], $data['name']), $data['labelValues']));
     }
 
 }
