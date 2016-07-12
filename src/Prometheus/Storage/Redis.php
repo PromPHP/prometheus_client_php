@@ -290,7 +290,7 @@ LUA
             ,
             array(
                 implode('', array_merge(array($data['name']), $data['labelValues'])),
-                $data['command'],
+                $this->getRedisCommand($data['command']),
                 self::PROMETHEUS_PREFIX . Gauge::TYPE . self::PROMETHEUS_METRIC_KEYS_SUFFIX,
                 $data['value'],
                 serialize($metaData),
@@ -409,6 +409,20 @@ LUA
         }
 
         return array_values($groupedGauges);
+    }
+
+    private function getRedisCommand($cmd)
+    {
+        switch ($cmd) {
+            case Adapter::COMMAND_INCREMENT_INTEGER:
+                return 'hIncrBy';
+            case Adapter::COMMAND_INCREMENT_FLOAT:
+                return 'hIncrByFloat';
+            case Adapter::COMMAND_SET:
+                return 'hSet';
+            default:
+                throw new \InvalidArgumentException("Unknown command");
+        }
     }
 
 }

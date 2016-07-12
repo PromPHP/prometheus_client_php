@@ -7,9 +7,9 @@ use Prometheus\Sample;
 
 interface Adapter
 {
-    const COMMAND_INCREMENT_INTEGER = 'hIncrBy';
-    const COMMAND_INCREMENT_FLOAT = 'hIncrByFloat';
-    const COMMAND_SET = 'hSet';
+    const COMMAND_INCREMENT_INTEGER = 1;
+    const COMMAND_INCREMENT_FLOAT = 2;
+    const COMMAND_SET = 3;
 
     /**
      * @return MetricFamilySamples[]
