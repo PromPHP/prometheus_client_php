@@ -30,7 +30,6 @@ class Redis implements Adapter
 
     private $options;
     private $redis;
-    private $metricTypes;
 
     public function __construct(array $options = array())
     {
@@ -54,11 +53,6 @@ class Redis implements Adapter
 
         $this->options = array_merge(self::$defaultOptions, $options);
         $this->redis = new \Redis();
-        $this->metricTypes = array(
-            Gauge::TYPE,
-            Counter::TYPE,
-            Histogram::TYPE,
-        );
     }
 
     /**
@@ -82,21 +76,9 @@ class Redis implements Adapter
     public function collect()
     {
         $this->openConnection();
-        $metrics = array();
-
         $metrics = $this->collectHistograms();
-
-        array_multisort($metrics);
-        return array_map(
-            function (array $metric) {
-                return new MetricFamilySamples($metric);
-            },
-            $metrics
-        );
-
-        foreach ($this->metricTypes as $metricType) {
-            $metrics = array_merge($metrics, $this->fetchMetricsByType($metricType));
-        }
+        $metrics = array_merge($metrics, $this->fetchMetricsByType(Gauge::TYPE));
+        $metrics = array_merge($metrics, $this->fetchMetricsByType(Counter::TYPE));
         array_multisort($metrics);
         return array_map(
             function (array $metric) {
