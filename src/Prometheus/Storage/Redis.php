@@ -167,25 +167,28 @@ LUA
         $this->openConnection();
         $metaData = $data;
         unset($metaData['value']);
+        unset($metaData['labelValues']);
         unset($metaData['command']);
-        $args = array(
-            $this->toMetricKey($data),
-            $this->getRedisCommand($data['command']),
-            self::PROMETHEUS_PREFIX . Counter::TYPE . self::PROMETHEUS_METRIC_KEYS_SUFFIX,
-            $data['value'],
-            serialize($metaData),
-        );
+        $key = implode(':', array(self::PROMETHEUS_PREFIX, $data['type'], $data['name']));
+
         $result = $this->redis->eval(<<<LUA
-local result = redis.call(KEYS[2], KEYS[1], 'value', ARGV[1])
+local result = redis.call(KEYS[2], KEYS[1], KEYS[4], ARGV[1])
 if result == tonumber(ARGV[1]) then
-    redis.call('hMSet', KEYS[1], 'metaData', ARGV[2])
+    redis.call('hMSet', KEYS[1], '__meta', ARGV[2])
     redis.call('sAdd', KEYS[3], KEYS[1])
 end
 return result
 LUA
             ,
-            $args,
-            3
+            array(
+                $key,
+                $this->getRedisCommand($data['command']),
+                self::PROMETHEUS_PREFIX . Counter::TYPE . self::PROMETHEUS_METRIC_KEYS_SUFFIX,
+                json_encode($data['labelValues']),
+                $data['value'],
+                json_encode($metaData),
+            ),
+            4
         );
         return $result;
     }
@@ -298,33 +301,20 @@ LUA
         $counters = array();
         foreach ($keys as $key) {
             $raw = $this->redis->hGetAll($key);
-            $counter = unserialize($raw['metaData']);
-            $counter['value'] = $raw['value'];
-            $counters[] = $counter;
-        }
-
-        // group metrics by name
-        $groupedCounters = array();
-        foreach ($counters as $counter) {
-            $groupingKey = $counter['name'] . serialize($counter['labelNames']);
-            if (!isset($groupedCounters[$groupingKey])) {
-                $groupedCounters[$groupingKey] = array(
+            $counter = json_decode($raw['__meta'], true);
+            unset($raw['__meta']);
+            $counter['samples'] = array();
+            foreach ($raw as $k => $value) {
+                $counter['samples'][] = array(
                     'name' => $counter['name'],
-                    'type' => $counter['type'],
-                    'help' => $counter['help'],
-                    'labelNames' => $counter['labelNames'],
-                    'samples' => array(),
+                    'labelNames' => array(),
+                    'labelValues' => json_decode($k),
+                    'value' => $value
                 );
             }
-            $groupedCounters[$groupingKey]['samples'][] = array(
-                'name' => $counter['name'],
-                'labelNames' => array(),
-                'labelValues' => $counter['labelValues'],
-                'value' => $counter['value'],
-            );
+            $counters[] = $counter;
         }
-
-        return array_values($groupedCounters);
+        return $counters;
     }
 
     private function getRedisCommand($cmd)
