@@ -130,31 +130,35 @@ LUA
         $this->openConnection();
         $metaData = $data;
         unset($metaData['value']);
+        unset($metaData['labelValues']);
         unset($metaData['command']);
+        $key = implode(':', array(self::PROMETHEUS_PREFIX, $data['type'], $data['name']));
+
         $this->redis->eval(<<<LUA
-local result = redis.call(KEYS[2], KEYS[1], 'value', ARGV[1])
+local result = redis.call(KEYS[2], KEYS[1], KEYS[4], ARGV[1])
 
 if KEYS[2] == 'hSet' then
     if result == 1 then
-        redis.call('hMSet', KEYS[1], 'metaData', ARGV[2])
+        redis.call('hSet', KEYS[1], '__meta', ARGV[2])
         redis.call('sAdd', KEYS[3], KEYS[1])
     end
 else
     if result == ARGV[1] then
-        redis.call('hMSet', KEYS[1], 'metaData', ARGV[2])
+        redis.call('hSet', KEYS[1], '__meta', ARGV[2])
         redis.call('sAdd', KEYS[3], KEYS[1])
     end
 end
 LUA
             ,
             array(
-                $this->toMetricKey($data),
+                $key,
                 $this->getRedisCommand($data['command']),
                 self::PROMETHEUS_PREFIX . Gauge::TYPE . self::PROMETHEUS_METRIC_KEYS_SUFFIX,
+                json_encode($data['labelValues']),
                 $data['value'],
-                serialize($metaData),
+                json_encode($metaData),
             ),
-            3
+            4
         );
     }
 
@@ -271,33 +275,20 @@ LUA
         $gauges = array();
         foreach ($keys as $key) {
             $raw = $this->redis->hGetAll($key);
-            $gauge = unserialize($raw['metaData']);
-            $gauge['value'] = $raw['value'];
-            $gauges[] = $gauge;
-        }
-
-        // group metrics by name
-        $groupedGauges = array();
-        foreach ($gauges as $gauge) {
-            $groupingKey = $gauge['name'] . serialize($gauge['labelNames']);
-            if (!isset($groupedGauges[$groupingKey])) {
-                $groupedGauges[$groupingKey] = array(
+            $gauge = json_decode($raw['__meta'], true);
+            unset($raw['__meta']);
+            $gauge['samples'] = array();
+            foreach ($raw as $k => $value) {
+                $gauge['samples'][] = array(
                     'name' => $gauge['name'],
-                    'type' => $gauge['type'],
-                    'help' => $gauge['help'],
-                    'labelNames' => $gauge['labelNames'],
-                    'samples' => array(),
+                    'labelNames' => array(),
+                    'labelValues' => json_decode($k),
+                    'value' => $value
                 );
             }
-            $groupedGauges[$groupingKey]['samples'][] = array(
-                'name' => $gauge['name'],
-                'labelNames' => array(),
-                'labelValues' => $gauge['labelValues'],
-                'value' => $gauge['value'],
-            );
+            $gauges[] = $gauge;
         }
-
-        return array_values($groupedGauges);
+        return $gauges;
     }
 
     private function collectCounters()
