@@ -106,8 +106,6 @@ class Redis implements Adapter
         $metaData = $data;
         unset($metaData['value']);
         unset($metaData['labelValues']);
-        $key = implode(':', array(self::PROMETHEUS_PREFIX, $data['type'], $data['name']));
-
         $this->redis->eval(<<<LUA
 local increment = redis.call('hIncrByFloat', KEYS[1], KEYS[2], ARGV[1])
 redis.call('hIncrBy', KEYS[1], KEYS[3], 1)
@@ -118,7 +116,7 @@ end
 LUA
             ,
             array(
-                $key,
+                $this->toMetricKey($data),
                 json_encode(array('b' => 'sum', 'labelValues' => $data['labelValues'])),
                 json_encode(array('b' => $bucketToIncrease, 'labelValues' => $data['labelValues'])),
                 self::PROMETHEUS_PREFIX . Histogram::TYPE . self::PROMETHEUS_METRIC_KEYS_SUFFIX,
@@ -136,8 +134,6 @@ LUA
         unset($metaData['value']);
         unset($metaData['labelValues']);
         unset($metaData['command']);
-        $key = implode(':', array(self::PROMETHEUS_PREFIX, $data['type'], $data['name']));
-
         $this->redis->eval(<<<LUA
 local result = redis.call(KEYS[2], KEYS[1], KEYS[4], ARGV[1])
 
@@ -155,7 +151,7 @@ end
 LUA
             ,
             array(
-                $key,
+                $this->toMetricKey($data),
                 $this->getRedisCommand($data['command']),
                 self::PROMETHEUS_PREFIX . Gauge::TYPE . self::PROMETHEUS_METRIC_KEYS_SUFFIX,
                 json_encode($data['labelValues']),
@@ -173,8 +169,6 @@ LUA
         unset($metaData['value']);
         unset($metaData['labelValues']);
         unset($metaData['command']);
-        $key = implode(':', array(self::PROMETHEUS_PREFIX, $data['type'], $data['name']));
-
         $result = $this->redis->eval(<<<LUA
 local result = redis.call(KEYS[2], KEYS[1], KEYS[4], ARGV[1])
 if result == tonumber(ARGV[1]) then
@@ -185,7 +179,7 @@ return result
 LUA
             ,
             array(
-                $key,
+                $this->toMetricKey($data),
                 $this->getRedisCommand($data['command']),
                 self::PROMETHEUS_PREFIX . Counter::TYPE . self::PROMETHEUS_METRIC_KEYS_SUFFIX,
                 json_encode($data['labelValues']),
@@ -337,7 +331,7 @@ LUA
      */
     private function toMetricKey(array $data)
     {
-        return implode(':', array_merge(array(self::PROMETHEUS_PREFIX, $data['type'], $data['name']), $data['labelValues']));
+        return implode(':', array(self::PROMETHEUS_PREFIX, $data['type'], $data['name']));
     }
 
 }
