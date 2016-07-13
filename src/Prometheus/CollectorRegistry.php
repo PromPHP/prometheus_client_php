@@ -4,6 +4,7 @@
 namespace Prometheus;
 
 
+use Prometheus\Exception\MetricsRegistrationException;
 use Prometheus\Storage\Adapter;
 use Prometheus\Storage\Redis;
 
@@ -56,14 +57,18 @@ class CollectorRegistry
      */
     public function registerGauge($namespace, $name, $help, $labels = array())
     {
-        $this->gauges[self::metricIdentifier($namespace, $name, $labels)] = new Gauge(
+        $metricIdentifier = self::metricIdentifier($namespace, $name);
+        if (isset($this->gauges[$metricIdentifier])) {
+            throw new MetricsRegistrationException("Metric already registered");
+        }
+        $this->gauges[$metricIdentifier] = new Gauge(
             $this->storageAdapter,
             $namespace,
             $name,
             $help,
             $labels
         );
-        return $this->gauges[self::metricIdentifier($namespace, $name, $labels)];
+        return $this->gauges[$metricIdentifier];
     }
 
     /**
@@ -74,7 +79,7 @@ class CollectorRegistry
      */
     public function getGauge($namespace, $name, $labels = array())
     {
-        return $this->gauges[self::metricIdentifier($namespace, $name, $labels)];
+        return $this->gauges[self::metricIdentifier($namespace, $name)];
     }
 
     /**
@@ -93,7 +98,7 @@ class CollectorRegistry
      */
     public function getCounter($namespace, $name, $labels = array())
     {
-        return $this->counters[self::metricIdentifier($namespace, $name, $labels)];
+        return $this->counters[self::metricIdentifier($namespace, $name)];
     }
 
     /**
@@ -105,14 +110,18 @@ class CollectorRegistry
      */
     public function registerCounter($namespace, $name, $help, $labels = array())
     {
-        $this->counters[self::metricIdentifier($namespace, $name, $labels)] = new Counter(
+        $metricIdentifier = self::metricIdentifier($namespace, $name);
+        if (isset($this->counters[$metricIdentifier])) {
+            throw new MetricsRegistrationException("Metric already registered");
+        }
+        $this->counters[$metricIdentifier] = new Counter(
             $this->storageAdapter,
             $namespace,
             $name,
             $help,
             $labels
         );
-        return $this->counters[self::metricIdentifier($namespace, $name, $labels)];
+        return $this->counters[self::metricIdentifier($namespace, $name)];
     }
 
     /**
@@ -125,7 +134,11 @@ class CollectorRegistry
      */
     public function registerHistogram($namespace, $name, $help, $labels = array(), $buckets = null)
     {
-        $this->histograms[self::metricIdentifier($namespace, $name, $labels)] = new Histogram(
+        $metricIdentifier = self::metricIdentifier($namespace, $name);
+        if (isset($this->histograms[$metricIdentifier])) {
+            throw new MetricsRegistrationException("Metric already registered");
+        }
+        $this->histograms[$metricIdentifier] = new Histogram(
             $this->storageAdapter,
             $namespace,
             $name,
@@ -133,7 +146,7 @@ class CollectorRegistry
             $labels,
             $buckets
         );
-        return $this->histograms[self::metricIdentifier($namespace, $name, $labels)];
+        return $this->histograms[$metricIdentifier];
     }
 
     /**
@@ -144,11 +157,11 @@ class CollectorRegistry
      */
     public function getHistogram($namespace, $name, $labels = array())
     {
-        return $this->histograms[self::metricIdentifier($namespace, $name, $labels)];
+        return $this->histograms[self::metricIdentifier($namespace, $name)];
     }
 
-    private static function metricIdentifier($namespace, $name, $labels)
+    private static function metricIdentifier($namespace, $name)
     {
-        return $namespace . $name . implode('_', $labels);
+        return $namespace . $name;
     }
 }

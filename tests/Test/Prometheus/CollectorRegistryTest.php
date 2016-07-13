@@ -6,6 +6,7 @@ namespace Test\Prometheus;
 
 use PHPUnit_Framework_TestCase;
 use Prometheus\CollectorRegistry;
+use Prometheus\Exception\MetricsRegistrationException;
 use Prometheus\Histogram;
 use Prometheus\RenderTextFormat;
 use Prometheus\Storage\Redis;
@@ -31,16 +32,11 @@ class CollectorRegistryTest extends PHPUnit_Framework_TestCase
     public function itShouldSaveGaugesInRedis()
     {
         $registry = new CollectorRegistry($this->redisAdapter);
-        $metric = $registry->registerGauge('test', 'some_metric', 'this is for testing', array('foo', 'bar'));
-        $metric->set(14, array('lalal', 'lululu'));
-        $registry->getGauge('test', 'some_metric', array('foo', 'bar'))->set(34, array('lalal', 'lululu'));
 
         $g = $registry->registerGauge('test', 'some_metric', 'this is for testing', array('foo'));
         $g->set(32, array('lalal'));
         $g->set(35, array('lalab'));
 
-        $g = $registry->registerGauge('test', 'some_metric', 'this is for testing');
-        $g->dec();
 
         $registry = new CollectorRegistry($this->newRedisAdapter());
         $this->assertThat(
@@ -48,14 +44,8 @@ class CollectorRegistryTest extends PHPUnit_Framework_TestCase
             $this->equalTo(<<<EOF
 # HELP test_some_metric this is for testing
 # TYPE test_some_metric gauge
-test_some_metric -1
-# HELP test_some_metric this is for testing
-# TYPE test_some_metric gauge
 test_some_metric{foo="lalab"} 35
 test_some_metric{foo="lalal"} 32
-# HELP test_some_metric this is for testing
-# TYPE test_some_metric gauge
-test_some_metric{foo="lalal",bar="lululu"} 34
 
 EOF
             )
@@ -97,19 +87,10 @@ EOF
         $registry->getHistogram('test', 'some_metric', array('foo', 'bar'))->observe(7.1, array('lalal', 'lululu'));
         $registry->getHistogram('test', 'some_metric', array('foo', 'bar'))->observe(7.1, array('gnaaha', 'hihihi'));
 
-        $registry->registerHistogram('test', 'some_metric', 'this is for hoeoeoeoe', array('you_got_me'), array(10))
-            ->observe(9, array('yes'));
-
         $registry = new CollectorRegistry($this->redisAdapter);
         $this->assertThat(
             $this->renderer->render($registry->getMetricFamilySamples()),
             $this->equalTo(<<<EOF
-# HELP test_some_metric this is for hoeoeoeoe
-# TYPE test_some_metric histogram
-test_some_metric_bucket{you_got_me="yes",le="10"} 1
-test_some_metric_bucket{you_got_me="yes",le="+Inf"} 1
-test_some_metric_count{you_got_me="yes"} 1
-test_some_metric_sum{you_got_me="yes"} 9
 # HELP test_some_metric this is for testing
 # TYPE test_some_metric histogram
 test_some_metric_bucket{foo="gnaaha",bar="hihihi",le="0.1"} 0
@@ -192,6 +173,72 @@ some_quick_counter 1
 EOF
             )
         );
+    }
+
+    /**
+     * @test
+     * @expectedException \Prometheus\Exception\MetricsRegistrationException
+     */
+    public function itShouldForbidRegisteringTheSameCounterTwice()
+    {
+        $registry = new CollectorRegistry($this->newRedisAdapter());
+        $registry->registerCounter('foo', 'metric', 'help');
+        $registry->registerCounter('foo', 'metric', 'help');
+    }
+
+    /**
+     * @test
+     * @expectedException \Prometheus\Exception\MetricsRegistrationException
+     */
+    public function itShouldForbidRegisteringTheSameCounterWithDifferentLabels()
+    {
+        $registry = new CollectorRegistry($this->newRedisAdapter());
+        $registry->registerCounter('foo', 'metric', 'help', array("foo", "bar"));
+        $registry->registerCounter('foo', 'metric', 'help', array("spam", "eggs"));
+    }
+
+    /**
+     * @test
+     * @expectedException \Prometheus\Exception\MetricsRegistrationException
+     */
+    public function itShouldForbidRegisteringTheSameHistogramTwice()
+    {
+        $registry = new CollectorRegistry($this->newRedisAdapter());
+        $registry->registerHistogram('foo', 'metric', 'help');
+        $registry->registerHistogram('foo', 'metric', 'help');
+    }
+
+    /**
+     * @test
+     * @expectedException \Prometheus\Exception\MetricsRegistrationException
+     */
+    public function itShouldForbidRegisteringTheSameHistogramWithDifferentLabels()
+    {
+        $registry = new CollectorRegistry($this->newRedisAdapter());
+        $registry->registerCounter('foo', 'metric', 'help', array("foo", "bar"));
+        $registry->registerCounter('foo', 'metric', 'help', array("spam", "eggs"));
+    }
+
+    /**
+     * @test
+     * @expectedException \Prometheus\Exception\MetricsRegistrationException
+     */
+    public function itShouldForbidRegisteringTheSameGaugeTwice()
+    {
+        $registry = new CollectorRegistry($this->newRedisAdapter());
+        $registry->registerGauge('foo', 'metric', 'help');
+        $registry->registerGauge('foo', 'metric', 'help');
+    }
+
+    /**
+     * @test
+     * @expectedException \Prometheus\Exception\MetricsRegistrationException
+     */
+    public function itShouldForbidRegisteringTheSameGaugeWithDifferentLabels()
+    {
+        $registry = new CollectorRegistry($this->newRedisAdapter());
+        $registry->registerGauge('foo', 'metric', 'help', array("foo", "bar"));
+        $registry->registerGauge('foo', 'metric', 'help', array("spam", "eggs"));
     }
 
     private function newRedisAdapter()

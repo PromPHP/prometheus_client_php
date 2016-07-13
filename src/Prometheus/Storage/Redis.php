@@ -96,32 +96,34 @@ class Redis implements Adapter
     public function updateHistogram(array $data)
     {
         $this->openConnection();
-        $bucketToIncrease = 'le_+Inf';
+        $bucketToIncrease = '+Inf';
         foreach ($data['buckets'] as $bucket) {
             if ($data['value'] <= $bucket) {
-                $bucketToIncrease = 'le_' . $bucket;
+                $bucketToIncrease = $bucket;
                 break;
             }
         }
         $metaData = $data;
         unset($metaData['value']);
+        unset($metaData['labelValues']);
         $this->redis->eval(<<<LUA
-local increment = redis.call('hIncrByFloat', KEYS[1], 'sum', ARGV[1])
-redis.call('hIncrBy', KEYS[1], KEYS[2], 1)
+local increment = redis.call('hIncrByFloat', KEYS[1], KEYS[2], ARGV[1])
+redis.call('hIncrBy', KEYS[1], KEYS[3], 1)
 if increment == ARGV[1] then
-    redis.call('hMSet', KEYS[1], 'metaData', ARGV[2])
-    redis.call('sAdd', KEYS[3], KEYS[1])
+    redis.call('hSet', KEYS[1], '__meta', ARGV[2])
+    redis.call('sAdd', KEYS[4], KEYS[1])
 end
 LUA
             ,
             array(
                 $this->toMetricKey($data),
-                $bucketToIncrease,
+                json_encode(array('b' => 'sum', 'labelValues' => $data['labelValues'])),
+                json_encode(array('b' => $bucketToIncrease, 'labelValues' => $data['labelValues'])),
                 self::PROMETHEUS_PREFIX . Histogram::TYPE . self::PROMETHEUS_METRIC_KEYS_SUFFIX,
                 $data['value'],
-                serialize($metaData),
+                json_encode($metaData),
             ),
-            3
+            4
         );
     }
 
@@ -130,18 +132,19 @@ LUA
         $this->openConnection();
         $metaData = $data;
         unset($metaData['value']);
+        unset($metaData['labelValues']);
         unset($metaData['command']);
         $this->redis->eval(<<<LUA
-local result = redis.call(KEYS[2], KEYS[1], 'value', ARGV[1])
+local result = redis.call(KEYS[2], KEYS[1], KEYS[4], ARGV[1])
 
 if KEYS[2] == 'hSet' then
     if result == 1 then
-        redis.call('hMSet', KEYS[1], 'metaData', ARGV[2])
+        redis.call('hSet', KEYS[1], '__meta', ARGV[2])
         redis.call('sAdd', KEYS[3], KEYS[1])
     end
 else
     if result == ARGV[1] then
-        redis.call('hMSet', KEYS[1], 'metaData', ARGV[2])
+        redis.call('hSet', KEYS[1], '__meta', ARGV[2])
         redis.call('sAdd', KEYS[3], KEYS[1])
     end
 end
@@ -151,10 +154,11 @@ LUA
                 $this->toMetricKey($data),
                 $this->getRedisCommand($data['command']),
                 self::PROMETHEUS_PREFIX . Gauge::TYPE . self::PROMETHEUS_METRIC_KEYS_SUFFIX,
+                json_encode($data['labelValues']),
                 $data['value'],
-                serialize($metaData),
+                json_encode($metaData),
             ),
-            3
+            4
         );
     }
 
@@ -163,25 +167,26 @@ LUA
         $this->openConnection();
         $metaData = $data;
         unset($metaData['value']);
+        unset($metaData['labelValues']);
         unset($metaData['command']);
-        $args = array(
-            $this->toMetricKey($data),
-            $this->getRedisCommand($data['command']),
-            self::PROMETHEUS_PREFIX . Counter::TYPE . self::PROMETHEUS_METRIC_KEYS_SUFFIX,
-            $data['value'],
-            serialize($metaData),
-        );
         $result = $this->redis->eval(<<<LUA
-local result = redis.call(KEYS[2], KEYS[1], 'value', ARGV[1])
+local result = redis.call(KEYS[2], KEYS[1], KEYS[4], ARGV[1])
 if result == tonumber(ARGV[1]) then
-    redis.call('hMSet', KEYS[1], 'metaData', ARGV[2])
+    redis.call('hMSet', KEYS[1], '__meta', ARGV[2])
     redis.call('sAdd', KEYS[3], KEYS[1])
 end
 return result
 LUA
             ,
-            $args,
-            3
+            array(
+                $this->toMetricKey($data),
+                $this->getRedisCommand($data['command']),
+                self::PROMETHEUS_PREFIX . Counter::TYPE . self::PROMETHEUS_METRIC_KEYS_SUFFIX,
+                json_encode($data['labelValues']),
+                $data['value'],
+                json_encode($metaData),
+            ),
+            4
         );
         return $result;
     }
@@ -193,75 +198,71 @@ LUA
         $histograms = array();
         foreach ($keys as $key) {
             $raw = $this->redis->hGetAll($key);
-            $histogram = unserialize($raw['metaData']);
-
+            $histogram = json_decode($raw['__meta'], true);
+            unset($raw['__meta']);
             $histogram['samples'] = array();
 
-            // Fill up all buckets.
-            // If the bucket doesn't exist fill in values from
-            // the previous one.
-            $acc = 0;
+            // Add the Inf bucket so we can compute it later on
             $histogram['buckets'][] = '+Inf';
-            foreach ($histogram['buckets'] as $bucket) {
-                $bucketKey = 'le_' . $bucket;
-                if (!isset($raw[$bucketKey])) {
-                    $histogram['samples'][] = array(
-                       'name' => $histogram['name'] . '_bucket',
-                       'labelNames' => array('le'),
-                       'labelValues' => array_merge($histogram['labelValues'], array($bucket)),
-                       'value' => $acc
-                   );
-                } else {
-                    $acc += $raw[$bucketKey];
-                    $histogram['samples'][] = array(
-                        'name' => $histogram['name'] . '_bucket',
-                        'labelNames' => array('le'),
-                        'labelValues' => array_merge($histogram['labelValues'], array($bucket)),
-                        'value' => $acc
-                    );
+
+            $allLabelValues = array();
+            foreach (array_keys($raw) as $k) {
+                $d = json_decode($k, true);
+                if ($d['b'] == 'sum') {
+                    continue;
+                }
+                $allLabelValues[] = $d['labelValues'];
+            }
+
+            // We need set semantics.
+            // This is the equivalent of array_unique but for arrays of arrays.
+            $allLabelValues = array_map("unserialize", array_unique(array_map("serialize", $allLabelValues)));
+            sort($allLabelValues);
+
+            foreach ($allLabelValues as $labelValues) {
+                // Fill up all buckets.
+                // If the bucket doesn't exist fill in values from
+                // the previous one.
+                $acc = 0;
+                foreach ($histogram['buckets'] as $bucket) {
+                    $bucketKey = json_encode(array('b' => $bucket, 'labelValues' => $labelValues));
+                    if (!isset($raw[$bucketKey])) {
+                        $histogram['samples'][] = array(
+                            'name' => $histogram['name'] . '_bucket',
+                            'labelNames' => array('le'),
+                            'labelValues' => array_merge($labelValues, array($bucket)),
+                            'value' => $acc
+                        );
+                    } else {
+                        $acc += $raw[$bucketKey];
+                        $histogram['samples'][] = array(
+                            'name' => $histogram['name'] . '_bucket',
+                            'labelNames' => array('le'),
+                            'labelValues' => array_merge($labelValues, array($bucket)),
+                            'value' => $acc
+                        );
+                    }
                 }
 
-            }
+                // Add the count
+                $histogram['samples'][] = array(
+                    'name' => $histogram['name'] . '_count',
+                    'labelNames' => array(),
+                    'labelValues' => $labelValues,
+                    'value' => $acc
+                );
 
-            // Add the count
-            $histogram['samples'][] = array(
-                'name' => $histogram['name'] . '_count',
-                'labelNames' => array(),
-                'labelValues' => $histogram['labelValues'],
-                'value' => $acc
-            );
-
-            // Add the sum
-            $histogram['samples'][] = array(
-                'name' => $histogram['name'] . '_sum',
-                'labelNames' => array(),
-                'labelValues' => $histogram['labelValues'],
-                'value' => $raw['sum']
-            );
-
-            $histograms[] = $histogram;
-        }
-
-        // group metrics by name
-        $groupedHistograms = array();
-        foreach ($histograms as $histogram) {
-            $groupingKey = $histogram['name'] . serialize($histogram['labelNames']);
-            if (!isset($groupedHistograms[$groupingKey])) {
-                $groupedHistograms[$groupingKey] = array(
-                    'name' => $histogram['name'],
-                    'type' => $histogram['type'],
-                    'help' => $histogram['help'],
-                    'labelNames' => $histogram['labelNames'],
-                    'samples' => array(),
+                // Add the sum
+                $histogram['samples'][] = array(
+                    'name' => $histogram['name'] . '_sum',
+                    'labelNames' => array(),
+                    'labelValues' => $labelValues,
+                    'value' => $raw[json_encode(array('b' => 'sum', 'labelValues' => $labelValues))]
                 );
             }
-            $groupedHistograms[$groupingKey]['samples'] = array_merge(
-                $groupedHistograms[$groupingKey]['samples'],
-                $histogram['samples']
-            );
+            $histograms[] = $histogram;
         }
-
-        return array_values($groupedHistograms);
+        return $histograms;
     }
 
     private function collectGauges()
@@ -271,33 +272,20 @@ LUA
         $gauges = array();
         foreach ($keys as $key) {
             $raw = $this->redis->hGetAll($key);
-            $gauge = unserialize($raw['metaData']);
-            $gauge['value'] = $raw['value'];
-            $gauges[] = $gauge;
-        }
-
-        // group metrics by name
-        $groupedGauges = array();
-        foreach ($gauges as $gauge) {
-            $groupingKey = $gauge['name'] . serialize($gauge['labelNames']);
-            if (!isset($groupedGauges[$groupingKey])) {
-                $groupedGauges[$groupingKey] = array(
+            $gauge = json_decode($raw['__meta'], true);
+            unset($raw['__meta']);
+            $gauge['samples'] = array();
+            foreach ($raw as $k => $value) {
+                $gauge['samples'][] = array(
                     'name' => $gauge['name'],
-                    'type' => $gauge['type'],
-                    'help' => $gauge['help'],
-                    'labelNames' => $gauge['labelNames'],
-                    'samples' => array(),
+                    'labelNames' => array(),
+                    'labelValues' => json_decode($k),
+                    'value' => $value
                 );
             }
-            $groupedGauges[$groupingKey]['samples'][] = array(
-                'name' => $gauge['name'],
-                'labelNames' => array(),
-                'labelValues' => $gauge['labelValues'],
-                'value' => $gauge['value'],
-            );
+            $gauges[] = $gauge;
         }
-
-        return array_values($groupedGauges);
+        return $gauges;
     }
 
     private function collectCounters()
@@ -307,33 +295,20 @@ LUA
         $counters = array();
         foreach ($keys as $key) {
             $raw = $this->redis->hGetAll($key);
-            $counter = unserialize($raw['metaData']);
-            $counter['value'] = $raw['value'];
-            $counters[] = $counter;
-        }
-
-        // group metrics by name
-        $groupedCounters = array();
-        foreach ($counters as $counter) {
-            $groupingKey = $counter['name'] . serialize($counter['labelNames']);
-            if (!isset($groupedCounters[$groupingKey])) {
-                $groupedCounters[$groupingKey] = array(
+            $counter = json_decode($raw['__meta'], true);
+            unset($raw['__meta']);
+            $counter['samples'] = array();
+            foreach ($raw as $k => $value) {
+                $counter['samples'][] = array(
                     'name' => $counter['name'],
-                    'type' => $counter['type'],
-                    'help' => $counter['help'],
-                    'labelNames' => $counter['labelNames'],
-                    'samples' => array(),
+                    'labelNames' => array(),
+                    'labelValues' => json_decode($k),
+                    'value' => $value
                 );
             }
-            $groupedCounters[$groupingKey]['samples'][] = array(
-                'name' => $counter['name'],
-                'labelNames' => array(),
-                'labelValues' => $counter['labelValues'],
-                'value' => $counter['value'],
-            );
+            $counters[] = $counter;
         }
-
-        return array_values($groupedCounters);
+        return $counters;
     }
 
     private function getRedisCommand($cmd)
@@ -356,7 +331,7 @@ LUA
      */
     private function toMetricKey(array $data)
     {
-        return implode(':', array_merge(array(self::PROMETHEUS_PREFIX, $data['type'], $data['name']), $data['labelValues']));
+        return implode(':', array(self::PROMETHEUS_PREFIX, $data['type'], $data['name']));
     }
 
 }
