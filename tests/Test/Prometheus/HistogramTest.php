@@ -7,6 +7,7 @@ use PHPUnit_Framework_TestCase;
 use Prometheus\Histogram;
 use Prometheus\MetricFamilySamples;
 use Prometheus\Storage\InMemory;
+use Prometheus\Storage\Redis;
 
 /**
  * See https://prometheus.io/docs/instrumenting/exposition_formats/
@@ -14,13 +15,14 @@ use Prometheus\Storage\InMemory;
 class HistogramTest extends PHPUnit_Framework_TestCase
 {
     /**
-     * @var InMemory
+     * @var Redis
      */
     private $storage;
 
     public function setUp()
     {
-        $this->storage = new InMemory();
+        $this->storage = new Redis(array('host' => REDIS_HOST));
+        $this->storage->flushRedis();
     }
 
     /**
@@ -28,7 +30,7 @@ class HistogramTest extends PHPUnit_Framework_TestCase
      */
     public function itShouldObserveWithLabels()
     {
-        $gauge = new Histogram(
+        $histogram = new Histogram(
             $this->storage,
             'test',
             'some_metric',
@@ -36,8 +38,8 @@ class HistogramTest extends PHPUnit_Framework_TestCase
             array('foo', 'bar'),
             array(100, 200, 300)
         );
-        $gauge->observe(123, array('lalal', 'lululu'));
-        $gauge->observe(245, array('lalal', 'lululu'));
+        $histogram->observe(123, array('lalal', 'lululu'));
+        $histogram->observe(245, array('lalal', 'lululu'));
         $this->assertThat(
             $this->storage->collect(),
             $this->equalTo(
@@ -49,12 +51,6 @@ class HistogramTest extends PHPUnit_Framework_TestCase
                             'type' => Histogram::TYPE,
                             'labelNames' => array('foo', 'bar'),
                             'samples' => array(
-                                array(
-                                    'name' => 'test_some_metric_bucket',
-                                    'labelNames' => array('le'),
-                                    'labelValues' => array('lalal', 'lululu', '+Inf'),
-                                    'value' => 2,
-                                ),
                                 array(
                                     'name' => 'test_some_metric_bucket',
                                     'labelNames' => array('le'),
@@ -71,6 +67,12 @@ class HistogramTest extends PHPUnit_Framework_TestCase
                                     'name' => 'test_some_metric_bucket',
                                     'labelNames' => array('le'),
                                     'labelValues' => array('lalal', 'lululu', 300),
+                                    'value' => 2,
+                                ),
+                                array(
+                                    'name' => 'test_some_metric_bucket',
+                                    'labelNames' => array('le'),
+                                    'labelValues' => array('lalal', 'lululu', '+Inf'),
                                     'value' => 2,
                                 ),
                                 array(
@@ -98,7 +100,7 @@ class HistogramTest extends PHPUnit_Framework_TestCase
      */
     public function itShouldObserveWithoutLabelWhenNoLabelsAreDefined()
     {
-        $gauge = new Histogram(
+        $histogram = new Histogram(
             $this->storage,
             'test',
             'some_metric',
@@ -106,7 +108,7 @@ class HistogramTest extends PHPUnit_Framework_TestCase
             array(),
             array(100, 200, 300)
         );
-        $gauge->observe(245);
+        $histogram->observe(245);
         $this->assertThat(
             $this->storage->collect(),
             $this->equalTo(
@@ -118,12 +120,6 @@ class HistogramTest extends PHPUnit_Framework_TestCase
                             'type' => Histogram::TYPE,
                             'labelNames' => array(),
                             'samples' => array(
-                                array(
-                                    'name' => 'test_some_metric_bucket',
-                                    'labelNames' => array('le'),
-                                    'labelValues' => array('+Inf'),
-                                    'value' => 1,
-                                ),
                                 array(
                                     'name' => 'test_some_metric_bucket',
                                     'labelNames' => array('le'),
@@ -140,6 +136,12 @@ class HistogramTest extends PHPUnit_Framework_TestCase
                                     'name' => 'test_some_metric_bucket',
                                     'labelNames' => array('le'),
                                     'labelValues' => array(300),
+                                    'value' => 1,
+                                ),
+                                array(
+                                    'name' => 'test_some_metric_bucket',
+                                    'labelNames' => array('le'),
+                                    'labelValues' => array('+Inf'),
                                     'value' => 1,
                                 ),
                                 array(
@@ -167,7 +169,7 @@ class HistogramTest extends PHPUnit_Framework_TestCase
      */
     public function itShouldObserveValuesOfTypeDouble()
     {
-        $gauge = new Histogram(
+        $histogram = new Histogram(
             $this->storage,
             'test',
             'some_metric',
@@ -175,8 +177,8 @@ class HistogramTest extends PHPUnit_Framework_TestCase
             array(),
             array(0.1, 0.2, 0.3)
         );
-        $gauge->observe(0.11);
-        $gauge->observe(0.3);
+        $histogram->observe(0.11);
+        $histogram->observe(0.3);
         $this->assertThat(
             $this->storage->collect(),
             $this->equalTo(
@@ -188,12 +190,6 @@ class HistogramTest extends PHPUnit_Framework_TestCase
                             'type' => Histogram::TYPE,
                             'labelNames' => array(),
                             'samples' => array(
-                                array(
-                                    'name' => 'test_some_metric_bucket',
-                                    'labelNames' => array('le'),
-                                    'labelValues' => array('+Inf'),
-                                    'value' => 2,
-                                ),
                                 array(
                                     'name' => 'test_some_metric_bucket',
                                     'labelNames' => array('le'),
@@ -210,6 +206,12 @@ class HistogramTest extends PHPUnit_Framework_TestCase
                                     'name' => 'test_some_metric_bucket',
                                     'labelNames' => array('le'),
                                     'labelValues' => array(0.3),
+                                    'value' => 2,
+                                ),
+                                array(
+                                    'name' => 'test_some_metric_bucket',
+                                    'labelNames' => array('le'),
+                                    'labelValues' => array('+Inf'),
                                     'value' => 2,
                                 ),
                                 array(
@@ -239,7 +241,7 @@ class HistogramTest extends PHPUnit_Framework_TestCase
     {
         // .005, .01, .025, .05, .075, .1, .25, .5, .75, 1.0, 2.5, 5.0, 7.5, 10.0
 
-        $gauge = new Histogram(
+        $histogram = new Histogram(
             $this->storage,
             'test',
             'some_metric',
@@ -247,8 +249,8 @@ class HistogramTest extends PHPUnit_Framework_TestCase
             array()
 
         );
-        $gauge->observe(0.11);
-        $gauge->observe(0.03);
+        $histogram->observe(0.11);
+        $histogram->observe(0.03);
         $this->assertThat(
             $this->storage->collect(),
             $this->equalTo(
@@ -260,12 +262,6 @@ class HistogramTest extends PHPUnit_Framework_TestCase
                             'type' => Histogram::TYPE,
                             'labelNames' => array(),
                             'samples' => array(
-                                array(
-                                    'name' => 'test_some_metric_bucket',
-                                    'labelNames' => array('le'),
-                                    'labelValues' => array('+Inf'),
-                                    'value' => 2,
-                                ),
                                 array(
                                     'name' => 'test_some_metric_bucket',
                                     'labelNames' => array('le'),
@@ -348,6 +344,12 @@ class HistogramTest extends PHPUnit_Framework_TestCase
                                     'name' => 'test_some_metric_bucket',
                                     'labelNames' => array('le'),
                                     'labelValues' => array(10),
+                                    'value' => 2,
+                                ),
+                                array(
+                                    'name' => 'test_some_metric_bucket',
+                                    'labelNames' => array('le'),
+                                    'labelValues' => array('+Inf'),
                                     'value' => 2,
                                 ),
                                 array(

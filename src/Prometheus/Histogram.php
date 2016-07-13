@@ -66,69 +66,15 @@ class Histogram extends Collector
     {
         $this->assertLabelsAreDefinedCorrectly($labels);
 
-        foreach ($this->buckets as $bucket) {
-            if ($value <= $bucket) {
-                $this->storageAdapter->store(
-                    Adapter::COMMAND_INCREMENT_INTEGER,
-                    $this,
-                    new Sample(
-                        array(
-                            'name' => $this->getName() . '_bucket',
-                            'labelNames' => array('le'),
-                            'labelValues' => array_merge($labels, array($bucket)),
-                            'value' => 1
-                        )
-                    )
-                );
-            } else {
-                $this->storageAdapter->store(
-                    Adapter::COMMAND_INCREMENT_INTEGER,
-                    $this,
-                    new Sample(
-                        array(
-                            'name' => $this->getName() . '_bucket',
-                            'labelNames' => array('le'),
-                            'labelValues' => array_merge($labels, array($bucket)),
-                            'value' => 0
-                        )
-                    )
-                );
-            }
-        }
-        $this->storageAdapter->store(
-            Adapter::COMMAND_INCREMENT_INTEGER,
-            $this,
-            new Sample(
-                array(
-                    'name' => $this->getName() . '_bucket',
-                    'labelNames' => array('le'),
-                    'labelValues' => array_merge($labels, array('+Inf')),
-                    'value' => 1
-                )
-            )
-        );
-        $this->storageAdapter->store(
-            Adapter::COMMAND_INCREMENT_INTEGER,
-            $this,
-            new Sample(
-                array(
-                    'name' => $this->getName() . '_count',
-                    'labelNames' => array(),
-                    'labelValues' => $labels,
-                    'value' => 1
-                )
-            )
-        );
-        $this->storageAdapter->store(
-            Adapter::COMMAND_INCREMENT_FLOAT,
-            $this,
-            new Sample(
-                array(
-                    'name' => $this->getName() . '_sum',
-                    'labelNames' => array(),
-                    'labelValues' => $labels,
-                    'value' => $value
-                )
+        $this->storageAdapter->updateHistogram(
+            array(
+                'value' => $value,
+                'name' => $this->getName(),
+                'help' => $this->getHelp(),
+                'type' => $this->getType(),
+                'labelNames' => $this->getLabelNames(),
+                'labelValues' => $labels,
+                'buckets' => $this->buckets,
             )
         );
     }

@@ -18,16 +18,15 @@ class Gauge extends Collector
     {
         $this->assertLabelsAreDefinedCorrectly($labels);
 
-        $this->storageAdapter->store(
-            Adapter::COMMAND_SET,
-            $this,
-            new Sample(
-                array(
-                    'name' => $this->getName(),
-                    'labelNames' => array(),
-                    'labelValues' => $labels,
-                    'value' => $value
-                )
+        $this->storageAdapter->updateGauge(
+            array(
+                'name' => $this->getName(),
+                'help' => $this->getHelp(),
+                'type' => $this->getType(),
+                'labelNames' => $this->getLabelNames(),
+                'labelValues' => $labels,
+                'value' => $value,
+                'command' => Adapter::COMMAND_SET
             )
         );
     }
@@ -42,73 +41,33 @@ class Gauge extends Collector
 
     public function inc($labels = array())
     {
-        $this->assertLabelsAreDefinedCorrectly($labels);
-
-        $this->storageAdapter->store(
-            Adapter::COMMAND_INCREMENT_FLOAT,
-            $this,
-            new Sample(
-                array(
-                    'name' => $this->getName(),
-                    'labelNames' => array(),
-                    'labelValues' => $labels,
-                    'value' => 1
-                )
-            )
-        );
+        $this->incBy(1, $labels);
     }
 
     public function incBy($value, $labels = array())
     {
         $this->assertLabelsAreDefinedCorrectly($labels);
 
-        $this->storageAdapter->store(
-            Adapter::COMMAND_INCREMENT_FLOAT,
-            $this,
-            new Sample(
-                array(
-                    'name' => $this->getName(),
-                    'labelNames' => array(),
-                    'labelValues' => $labels,
-                    'value' => $value
-                )
+        $this->storageAdapter->updateGauge(
+            array(
+                'name' => $this->getName(),
+                'help' => $this->getHelp(),
+                'type' => $this->getType(),
+                'labelNames' => $this->getLabelNames(),
+                'labelValues' => $labels,
+                'value' => $value,
+                'command' => Adapter::COMMAND_INCREMENT_FLOAT
             )
         );
     }
 
     public function dec($labels = array())
     {
-        $this->assertLabelsAreDefinedCorrectly($labels);
-
-        $this->storageAdapter->store(
-            Adapter::COMMAND_INCREMENT_FLOAT,
-            $this,
-            new Sample(
-                array(
-                    'name' => $this->getName(),
-                    'labelNames' => array(),
-                    'labelValues' => $labels,
-                    'value' => -1
-                )
-            )
-        );
+        $this->decBy(1, $labels);
     }
 
     public function decBy($value, $labels = array())
     {
-        $this->assertLabelsAreDefinedCorrectly($labels);
-
-        $this->storageAdapter->store(
-            Adapter::COMMAND_INCREMENT_FLOAT,
-            $this,
-            new Sample(
-                array(
-                    'name' => $this->getName(),
-                    'labelNames' => array(),
-                    'labelValues' => $labels,
-                    'value' => -$value
-                )
-            )
-        );
+        $this->incBy(-$value, $labels);
     }
 }

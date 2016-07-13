@@ -8,6 +8,7 @@ use Prometheus\Counter;
 use Prometheus\MetricFamilySamples;
 use Prometheus\Sample;
 use Prometheus\Storage\InMemory;
+use Prometheus\Storage\Redis;
 
 /**
  * See https://prometheus.io/docs/instrumenting/exposition_formats/
@@ -15,13 +16,14 @@ use Prometheus\Storage\InMemory;
 class CounterTest extends PHPUnit_Framework_TestCase
 {
     /**
-     * @var InMemory
+     * @var Redis
      */
     private $storage;
 
     public function setUp()
     {
-        $this->storage = new InMemory();
+        $this->storage = new Redis(array('host' => REDIS_HOST));
+        $this->storage->flushRedis();
     }
 
     /**

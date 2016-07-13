@@ -33,16 +33,15 @@ class Counter extends Collector
     {
         $this->assertLabelsAreDefinedCorrectly($labels);
 
-        $this->storageAdapter->store(
-            Adapter::COMMAND_INCREMENT_INTEGER,
-            $this,
-            new Sample(
-                array(
-                    'name' => $this->getName(),
-                    'labelNames' => array(),
-                    'labelValues' => $labels,
-                    'value' => $count
-                )
+        $this->storageAdapter->updateCounter(
+            array(
+                'name' => $this->getName(),
+                'help' => $this->getHelp(),
+                'type' => $this->getType(),
+                'labelNames' => $this->getLabelNames(),
+                'labelValues' => $labels,
+                'value' => $count,
+                'command' => Adapter::COMMAND_INCREMENT_INTEGER
             )
         );
     }
