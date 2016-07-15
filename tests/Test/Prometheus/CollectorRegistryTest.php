@@ -241,6 +241,16 @@ EOF
         $registry->registerGauge('foo', 'metric', 'help', array("spam", "eggs"));
     }
 
+    /**
+     * @test
+     * @expectedException \Prometheus\Exception\MetricNotFoundException
+     */
+    public function itShouldThrowAnExceptionWhenGettingANonExistentMetric()
+    {
+        $registry = new CollectorRegistry($this->newRedisAdapter());
+        $registry->getGauge("not_here", "go_away");
+    }
+
     private function newRedisAdapter()
     {
         return new Redis(array('host' => REDIS_HOST));
