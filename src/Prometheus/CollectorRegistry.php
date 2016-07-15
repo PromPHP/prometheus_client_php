@@ -4,6 +4,7 @@
 namespace Prometheus;
 
 
+use Prometheus\Exception\MetricNotFoundException;
 use Prometheus\Exception\MetricsRegistrationException;
 use Prometheus\Storage\Adapter;
 use Prometheus\Storage\Redis;
@@ -49,11 +50,20 @@ class CollectorRegistry
     }
 
     /**
+     * @return MetricFamilySamples[]
+     */
+    public function getMetricFamilySamples()
+    {
+        return $this->storageAdapter->collect();
+    }
+
+    /**
      * @param string $namespace e.g. cms
      * @param string $name e.g. duration_seconds
      * @param string $help e.g. The duration something took in seconds.
      * @param array $labels e.g. ['controller', 'action']
      * @return Gauge
+     * @throws MetricsRegistrationException
      */
     public function registerGauge($namespace, $name, $help, $labels = array())
     {
@@ -74,31 +84,16 @@ class CollectorRegistry
     /**
      * @param string $namespace
      * @param string $name
-     * @param array $labels e.g. ['controller', 'action']
      * @return Gauge
+     * @throws MetricNotFoundException
      */
-    public function getGauge($namespace, $name, $labels = array())
+    public function getGauge($namespace, $name)
     {
-        return $this->gauges[self::metricIdentifier($namespace, $name)];
-    }
-
-    /**
-     * @return MetricFamilySamples[]
-     */
-    public function getMetricFamilySamples()
-    {
-        return $this->storageAdapter->collect();
-    }
-
-    /**
-     * @param string $namespace
-     * @param string $name
-     * @param array $labels e.g. ['controller', 'action']
-     * @return Counter
-     */
-    public function getCounter($namespace, $name, $labels = array())
-    {
-        return $this->counters[self::metricIdentifier($namespace, $name)];
+        $metricIdentifier = self::metricIdentifier($namespace, $name);
+        if (!isset($this->gauges[$metricIdentifier])) {
+            throw new MetricNotFoundException("Metric not found:" . $metricIdentifier);
+        }
+        return $this->gauges[$metricIdentifier];
     }
 
     /**
@@ -107,6 +102,7 @@ class CollectorRegistry
      * @param string $help e.g. The number of requests made.
      * @param array $labels e.g. ['controller', 'action']
      * @return Counter
+     * @throws MetricsRegistrationException
      */
     public function registerCounter($namespace, $name, $help, $labels = array())
     {
@@ -125,12 +121,28 @@ class CollectorRegistry
     }
 
     /**
+     * @param string $namespace
+     * @param string $name
+     * @return Counter
+     * @throws MetricNotFoundException
+     */
+    public function getCounter($namespace, $name)
+    {
+        $metricIdentifier = self::metricIdentifier($namespace, $name);
+        if (!isset($this->counters[$metricIdentifier])) {
+            throw new MetricNotFoundException("Metric not found:" . $metricIdentifier);
+        }
+        return $this->counters[self::metricIdentifier($namespace, $name)];
+    }
+
+    /**
      * @param string $namespace e.g. cms
      * @param string $name e.g. duration_seconds
      * @param string $help e.g. A histogram of the duration in seconds.
      * @param array $labels e.g. ['controller', 'action']
      * @param array $buckets e.g. [100, 200, 300]
      * @return Histogram
+     * @throws MetricsRegistrationException
      */
     public function registerHistogram($namespace, $name, $help, $labels = array(), $buckets = null)
     {
@@ -152,16 +164,20 @@ class CollectorRegistry
     /**
      * @param string $namespace
      * @param string $name
-     * @param array $labels e.g. ['controller', 'action']
      * @return Histogram
+     * @throws MetricNotFoundException
      */
-    public function getHistogram($namespace, $name, $labels = array())
+    public function getHistogram($namespace, $name)
     {
+        $metricIdentifier = self::metricIdentifier($namespace, $name);
+        if (!isset($this->histograms[$metricIdentifier])) {
+            throw new MetricNotFoundException("Metric not found:" . $metricIdentifier);
+        }
         return $this->histograms[self::metricIdentifier($namespace, $name)];
     }
 
     private static function metricIdentifier($namespace, $name)
     {
-        return $namespace . $name;
+        return $namespace . ":" . $name;
     }
 }
