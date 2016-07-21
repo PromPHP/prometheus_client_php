@@ -13,7 +13,13 @@ class RenderTextFormat
      */
     public function render(array $metrics)
     {
+        usort($metrics, function(MetricFamilySamples $a, MetricFamilySamples $b)
+        {
+            return strcmp($a->getName(), $b->getName());
+        });
+
         $lines = array();
+
         foreach ($metrics as $metric) {
             $lines[] = "# HELP " . $metric->getName() . " {$metric->getHelp()}";
             $lines[] = "# TYPE " . $metric->getName() . " {$metric->getType()}";

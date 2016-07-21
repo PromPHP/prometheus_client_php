@@ -67,7 +67,6 @@ class Redis implements Adapter
         $metrics = $this->collectHistograms();
         $metrics = array_merge($metrics, $this->collectGauges());
         $metrics = array_merge($metrics, $this->collectCounters());
-        array_multisort($metrics);
         return array_map(
             function (array $metric) {
                 return new MetricFamilySamples($metric);
@@ -283,6 +282,9 @@ LUA
                     'value' => $value
                 );
             }
+            usort($gauge['samples'], function($a, $b){
+                return strcmp(implode("", $a['labelValues']), implode("", $b['labelValues']));
+            });
             $gauges[] = $gauge;
         }
         return $gauges;
@@ -306,6 +308,9 @@ LUA
                     'value' => $value
                 );
             }
+            usort($counter['samples'], function($a, $b){
+                return strcmp(implode("", $a['labelValues']), implode("", $b['labelValues']));
+            });
             $counters[] = $counter;
         }
         return $counters;
