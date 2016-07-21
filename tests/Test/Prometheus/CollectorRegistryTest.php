@@ -61,6 +61,7 @@ EOF
         $metric = $registry->registerCounter('test', 'some_metric', 'this is for testing', array('foo', 'bar'));
         $metric->incBy(2, array('lalal', 'lululu'));
         $registry->getCounter('test', 'some_metric', array('foo', 'bar'))->inc(array('lalal', 'lululu'));
+        $registry->getCounter('test', 'some_metric', array('foo', 'bar'))->inc(array('lalal', 'lvlvlv'));
 
         $registry = new CollectorRegistry($this->newRedisAdapter());
         $this->assertThat(
@@ -69,6 +70,7 @@ EOF
 # HELP test_some_metric this is for testing
 # TYPE test_some_metric counter
 test_some_metric{foo="lalal",bar="lululu"} 3
+test_some_metric{foo="lalal",bar="lvlvlv"} 1
 
 EOF
             )
@@ -83,6 +85,7 @@ EOF
         $registry = new CollectorRegistry($this->redisAdapter);
         $metric = $registry->registerHistogram('test', 'some_metric', 'this is for testing', array('foo', 'bar'), array(0.1, 1, 5, 10));
         $metric->observe(2, array('lalal', 'lululu'));
+        $registry->getHistogram('test', 'some_metric', array('foo', 'bar'))->observe(7.1, array('lalal', 'lvlvlv'));
         $registry->getHistogram('test', 'some_metric', array('foo', 'bar'))->observe(13, array('lalal', 'lululu'));
         $registry->getHistogram('test', 'some_metric', array('foo', 'bar'))->observe(7.1, array('lalal', 'lululu'));
         $registry->getHistogram('test', 'some_metric', array('foo', 'bar'))->observe(7.1, array('gnaaha', 'hihihi'));
@@ -107,6 +110,13 @@ test_some_metric_bucket{foo="lalal",bar="lululu",le="10"} 2
 test_some_metric_bucket{foo="lalal",bar="lululu",le="+Inf"} 3
 test_some_metric_count{foo="lalal",bar="lululu"} 3
 test_some_metric_sum{foo="lalal",bar="lululu"} 22.1
+test_some_metric_bucket{foo="lalal",bar="lvlvlv",le="0.1"} 0
+test_some_metric_bucket{foo="lalal",bar="lvlvlv",le="1"} 0
+test_some_metric_bucket{foo="lalal",bar="lvlvlv",le="5"} 0
+test_some_metric_bucket{foo="lalal",bar="lvlvlv",le="10"} 1
+test_some_metric_bucket{foo="lalal",bar="lvlvlv",le="+Inf"} 1
+test_some_metric_count{foo="lalal",bar="lvlvlv"} 1
+test_some_metric_sum{foo="lalal",bar="lvlvlv"} 7.1
 
 EOF
             )
