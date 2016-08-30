@@ -9,11 +9,16 @@ use Prometheus\CollectorRegistry;
 use Prometheus\Exception\MetricsRegistrationException;
 use Prometheus\Histogram;
 use Prometheus\RenderTextFormat;
+use Prometheus\Storage\Adapter;
 use Prometheus\Storage\Redis;
 
-class CollectorRegistryTest extends PHPUnit_Framework_TestCase
+abstract class AbstractCollectorRegistryTest extends PHPUnit_Framework_TestCase
 {
-    private $redisAdapter;
+    /**
+     * @var Adapter
+     */
+    public $adapter;
+
     /**
      * @var RenderTextFormat
      */
@@ -21,8 +26,7 @@ class CollectorRegistryTest extends PHPUnit_Framework_TestCase
 
     public function setUp()
     {
-        $this->redisAdapter = $this->newRedisAdapter();
-        $this->redisAdapter->flushRedis();
+        $this->configureAdapter();
         $this->renderer = new RenderTextFormat();
     }
 
@@ -31,14 +35,14 @@ class CollectorRegistryTest extends PHPUnit_Framework_TestCase
      */
     public function itShouldSaveGaugesInRedis()
     {
-        $registry = new CollectorRegistry($this->redisAdapter);
+        $registry = new CollectorRegistry($this->adapter);
 
         $g = $registry->registerGauge('test', 'some_metric', 'this is for testing', array('foo'));
         $g->set(32, array('lalal'));
         $g->set(35, array('lalab'));
 
 
-        $registry = new CollectorRegistry($this->newRedisAdapter());
+        $registry = new CollectorRegistry($this->adapter);
         $this->assertThat(
             $this->renderer->render($registry->getMetricFamilySamples()),
             $this->equalTo(<<<EOF
@@ -57,13 +61,13 @@ EOF
      */
     public function itShouldSaveCountersInRedis()
     {
-        $registry = new CollectorRegistry($this->newRedisAdapter());
+        $registry = new CollectorRegistry($this->adapter);
         $metric = $registry->registerCounter('test', 'some_metric', 'this is for testing', array('foo', 'bar'));
         $metric->incBy(2, array('lalal', 'lululu'));
         $registry->getCounter('test', 'some_metric', array('foo', 'bar'))->inc(array('lalal', 'lululu'));
         $registry->getCounter('test', 'some_metric', array('foo', 'bar'))->inc(array('lalal', 'lvlvlv'));
 
-        $registry = new CollectorRegistry($this->newRedisAdapter());
+        $registry = new CollectorRegistry($this->adapter);
         $this->assertThat(
             $this->renderer->render($registry->getMetricFamilySamples()),
             $this->equalTo(<<<EOF
@@ -82,7 +86,7 @@ EOF
      */
     public function itShouldSaveHistogramsInRedis()
     {
-        $registry = new CollectorRegistry($this->redisAdapter);
+        $registry = new CollectorRegistry($this->adapter);
         $metric = $registry->registerHistogram('test', 'some_metric', 'this is for testing', array('foo', 'bar'), array(0.1, 1, 5, 10));
         $metric->observe(2, array('lalal', 'lululu'));
         $registry->getHistogram('test', 'some_metric', array('foo', 'bar'))->observe(7.1, array('lalal', 'lvlvlv'));
@@ -90,7 +94,7 @@ EOF
         $registry->getHistogram('test', 'some_metric', array('foo', 'bar'))->observe(7.1, array('lalal', 'lululu'));
         $registry->getHistogram('test', 'some_metric', array('foo', 'bar'))->observe(7.1, array('gnaaha', 'hihihi'));
 
-        $registry = new CollectorRegistry($this->redisAdapter);
+        $registry = new CollectorRegistry($this->adapter);
         $this->assertThat(
             $this->renderer->render($registry->getMetricFamilySamples()),
             $this->equalTo(<<<EOF
@@ -128,13 +132,13 @@ EOF
      */
     public function itShouldSaveHistogramsWithoutLabels()
     {
-        $registry = new CollectorRegistry($this->redisAdapter);
+        $registry = new CollectorRegistry($this->adapter);
         $metric = $registry->registerHistogram('test', 'some_metric', 'this is for testing');
         $metric->observe(2);
         $registry->getHistogram('test', 'some_metric')->observe(13);
         $registry->getHistogram('test', 'some_metric')->observe(7.1);
 
-        $registry = new CollectorRegistry($this->redisAdapter);
+        $registry = new CollectorRegistry($this->adapter);
         $this->assertThat(
             $this->renderer->render($registry->getMetricFamilySamples()),
             $this->equalTo(<<<EOF
@@ -168,7 +172,7 @@ EOF
      */
     public function itShouldIncreaseACounterWithoutNamespace()
     {
-        $registry = new CollectorRegistry($this->newRedisAdapter());
+        $registry = new CollectorRegistry( $this->adapter);
         $registry
             ->registerCounter('', 'some_quick_counter', 'just a quick measurement')
             ->inc();
@@ -191,7 +195,7 @@ EOF
      */
     public function itShouldForbidRegisteringTheSameCounterTwice()
     {
-        $registry = new CollectorRegistry($this->newRedisAdapter());
+        $registry = new CollectorRegistry( $this->adapter);
         $registry->registerCounter('foo', 'metric', 'help');
         $registry->registerCounter('foo', 'metric', 'help');
     }
@@ -202,7 +206,7 @@ EOF
      */
     public function itShouldForbidRegisteringTheSameCounterWithDifferentLabels()
     {
-        $registry = new CollectorRegistry($this->newRedisAdapter());
+        $registry = new CollectorRegistry( $this->adapter);
         $registry->registerCounter('foo', 'metric', 'help', array("foo", "bar"));
         $registry->registerCounter('foo', 'metric', 'help', array("spam", "eggs"));
     }
@@ -213,7 +217,7 @@ EOF
      */
     public function itShouldForbidRegisteringTheSameHistogramTwice()
     {
-        $registry = new CollectorRegistry($this->newRedisAdapter());
+        $registry = new CollectorRegistry( $this->adapter);
         $registry->registerHistogram('foo', 'metric', 'help');
         $registry->registerHistogram('foo', 'metric', 'help');
     }
@@ -224,7 +228,7 @@ EOF
      */
     public function itShouldForbidRegisteringTheSameHistogramWithDifferentLabels()
     {
-        $registry = new CollectorRegistry($this->newRedisAdapter());
+        $registry = new CollectorRegistry( $this->adapter);
         $registry->registerCounter('foo', 'metric', 'help', array("foo", "bar"));
         $registry->registerCounter('foo', 'metric', 'help', array("spam", "eggs"));
     }
@@ -235,7 +239,7 @@ EOF
      */
     public function itShouldForbidRegisteringTheSameGaugeTwice()
     {
-        $registry = new CollectorRegistry($this->newRedisAdapter());
+        $registry = new CollectorRegistry( $this->adapter);
         $registry->registerGauge('foo', 'metric', 'help');
         $registry->registerGauge('foo', 'metric', 'help');
     }
@@ -246,7 +250,7 @@ EOF
      */
     public function itShouldForbidRegisteringTheSameGaugeWithDifferentLabels()
     {
-        $registry = new CollectorRegistry($this->newRedisAdapter());
+        $registry = new CollectorRegistry( $this->adapter);
         $registry->registerGauge('foo', 'metric', 'help', array("foo", "bar"));
         $registry->registerGauge('foo', 'metric', 'help', array("spam", "eggs"));
     }
@@ -257,12 +261,9 @@ EOF
      */
     public function itShouldThrowAnExceptionWhenGettingANonExistentMetric()
     {
-        $registry = new CollectorRegistry($this->newRedisAdapter());
+        $registry = new CollectorRegistry( $this->adapter);
         $registry->getGauge("not_here", "go_away");
     }
 
-    private function newRedisAdapter()
-    {
-        return new Redis(array('host' => REDIS_HOST));
-    }
+    public abstract function configureAdapter();
 }
