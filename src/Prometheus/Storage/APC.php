@@ -19,27 +19,8 @@ class APC implements Adapter
          * @var MetricFamilySamples[]
          */
         $metrics = array();
-        foreach (new \APCIterator('user', '/^prom:counter:.*:meta/') as $counter) {
-            $metaData = json_decode($counter['value'], true);
-            $data = array(
-                'name' => $metaData['name'],
-                'help' => $metaData['help'],
-                'type' => $metaData['type'],
-                'labelNames' => $metaData['labelNames'],
-            );
-            foreach (new \APCIterator('user', '/^prom:counter:'. $metaData['name'] . ':.*:value/') as $value) {
-                $parts = explode(':',$value['key']);
-                $labelValues = $parts[3];
-                $data['samples'][] = array(
-                    'name' => $metaData['name'],
-                    'labelNames' => array(),
-                    'labelValues' => json_decode($labelValues),
-                    'value' => $value['value']
-                );
-            }
-            $metrics[] = new MetricFamilySamples($data);
-
-        }
+        $metrics = $this->collectGauges();
+        $metrics = array_merge($metrics, $this->collectCounters());
         return $metrics;
     }
 
@@ -50,7 +31,11 @@ class APC implements Adapter
 
     public function updateGauge(array $data)
     {
-        // TODO: Implement updateGauge() method.
+        $new = apc_add($this->valueKey($data), 0);
+        if ($new) {
+            apc_store($this->metaKey($data), json_encode($this->metaData($data)));
+        }
+        apc_inc($this->valueKey($data), $data['value']);
     }
 
     public function updateCounter(array $data)
@@ -96,5 +81,63 @@ class APC implements Adapter
         unset($metricsMetaData['command']);
         unset($metricsMetaData['labelValues']);
         return $metricsMetaData;
+    }
+
+    /**
+     * @return array
+     */
+    private function collectCounters()
+    {
+        $counters = array();
+        foreach (new \APCIterator('user', '/^prom:counter:.*:meta/') as $counter) {
+            $metaData = json_decode($counter['value'], true);
+            $data = array(
+                'name' => $metaData['name'],
+                'help' => $metaData['help'],
+                'type' => $metaData['type'],
+                'labelNames' => $metaData['labelNames'],
+            );
+            foreach (new \APCIterator('user', '/^prom:counter:' . $metaData['name'] . ':.*:value/') as $value) {
+                $parts = explode(':', $value['key']);
+                $labelValues = $parts[3];
+                $data['samples'][] = array(
+                    'name' => $metaData['name'],
+                    'labelNames' => array(),
+                    'labelValues' => json_decode($labelValues),
+                    'value' => $value['value']
+                );
+            }
+            $counters[] = new MetricFamilySamples($data);
+        }
+        return $counters;
+    }
+
+    /**
+     * @return array
+     */
+    private function collectGauges()
+    {
+        $gauges = array();
+        foreach (new \APCIterator('user', '/^prom:gauge:.*:meta/') as $gauge) {
+            $metaData = json_decode($gauge['value'], true);
+            $data = array(
+                'name' => $metaData['name'],
+                'help' => $metaData['help'],
+                'type' => $metaData['type'],
+                'labelNames' => $metaData['labelNames'],
+            );
+            foreach (new \APCIterator('user', '/^prom:gauge:' . $metaData['name'] . ':.*:value/') as $value) {
+                $parts = explode(':', $value['key']);
+                $labelValues = $parts[3];
+                $data['samples'][] = array(
+                    'name' => $metaData['name'],
+                    'labelNames' => array(),
+                    'labelValues' => json_decode($labelValues),
+                    'value' => $value['value']
+                );
+            }
+            $gauges[] = new MetricFamilySamples($data);
+        }
+        return $gauges;
     }
 }
