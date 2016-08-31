@@ -26,14 +26,39 @@ class APC implements Adapter
      */
     public function collect()
     {
-        $metrics = $this->collectGauges();
+        $metrics = $this->collectHistograms();
+        $metrics = array_merge($metrics, $this->collectGauges());
         $metrics = array_merge($metrics, $this->collectCounters());
         return $metrics;
     }
 
     public function updateHistogram(array $data)
     {
-        // TODO: Implement updateHistogram() method.
+        // Initialize the sum
+        $new = apc_add($this->histogramBucketValueKey($data, 'sum'), 0);
+
+        // If sum does not exist, assume a new histogram and store the metadata
+        if ($new) {
+            apc_store($this->metaKey($data), json_encode($this->metaData($data)));
+        }
+
+        // Increment the sum
+        apc_inc($this->histogramBucketValueKey($data, 'sum'), $this->toInteger($data['value']));
+
+        // Figure out in which bucket the observation belongs
+        $bucketToIncrease = '+Inf';
+        foreach ($data['buckets'] as $bucket) {
+            if ($data['value'] <= $bucket) {
+                $bucketToIncrease = $bucket;
+                break;
+            }
+        }
+
+        // Initialize and increment the bucket
+        apc_add($this->histogramBucketValueKey($data, $bucketToIncrease), 0);
+        apc_inc($this->histogramBucketValueKey($data, $bucketToIncrease));
+
+
     }
 
     public function updateGauge(array $data)
@@ -42,7 +67,7 @@ class APC implements Adapter
         if ($new) {
             apc_store($this->metaKey($data), json_encode($this->metaData($data)));
         }
-        apc_inc($this->valueKey($data), (int) ($data['value'] * self::PRECISION_FACTOR));
+        apc_inc($this->valueKey($data), $this->toInteger($data['value']));
     }
 
     public function updateCounter(array $data)
@@ -75,6 +100,15 @@ class APC implements Adapter
     private function valueKey(array $data)
     {
         return implode(':', array(self::PROMETHEUS_PREFIX, $data['type'], $data['name'], json_encode($data['labelValues']), 'value'));
+    }
+
+    /**
+     * @param array $data
+     * @return string
+     */
+    private function histogramBucketValueKey(array $data, $bucket)
+    {
+        return implode(':', array(self::PROMETHEUS_PREFIX, $data['type'], $data['name'], json_encode($data['labelValues']), $bucket, 'value'));
     }
 
     /**
@@ -120,8 +154,8 @@ class APC implements Adapter
     }
 
     /**
-     * @return array
-     */
+ * @return array
+ */
     private function collectGauges()
     {
         $gauges = array();
@@ -146,5 +180,89 @@ class APC implements Adapter
             $gauges[] = new MetricFamilySamples($data);
         }
         return $gauges;
+    }
+
+    /**
+     * @return array
+     */
+    private function collectHistograms()
+    {
+        $histograms = array();
+        foreach (new \APCIterator('user', '/^prom:histogram:.*:meta/') as $histogram) {
+            $metaData = json_decode($histogram['value'], true);
+            $data = array(
+                'name' => $metaData['name'],
+                'help' => $metaData['help'],
+                'type' => $metaData['type'],
+                'labelNames' => $metaData['labelNames'],
+                'buckets' => $metaData['buckets']
+            );
+
+            // Add the Inf bucket so we can compute it later on
+            $data['buckets'][] = '+Inf';
+
+            $histogramBuckets = array();
+            foreach (new \APCIterator('user', '/^prom:histogram:' . $metaData['name'] . ':.*:value/') as $value) {
+                $parts = explode(':', $value['key']);
+                $labelValues = $parts[3];
+                $bucket = $parts[4];
+                // Key by labelValues
+                $histogramBuckets[$labelValues][$bucket] = $value['value'];
+            }
+
+            // Compute all buckets
+            foreach (array_keys($histogramBuckets) as $labelValues) {
+                $acc = 0;
+                $decodedLabelValues = json_decode($labelValues);
+                foreach ($data['buckets'] as $bucket) {
+                    $bucket = (string) $bucket;
+                    if (!isset($histogramBuckets[$labelValues][$bucket])) {
+                        $data['samples'][] = array(
+                            'name' => $metaData['name'] . '_bucket',
+                            'labelNames' => array('le'),
+                            'labelValues' => array_merge($decodedLabelValues, array($bucket)),
+                            'value' => $acc
+                        );
+                    } else {
+                        $acc += $histogramBuckets[$labelValues][$bucket];
+                        $data['samples'][] = array(
+                            'name' => $metaData['name'] . '_' . 'bucket',
+                            'labelNames' => array('le'),
+                            'labelValues' => array_merge($decodedLabelValues, array($bucket)),
+                            'value' => $acc
+                        );
+                    }
+                }
+
+                // Add the count
+                $data['samples'][] = array(
+                    'name' => $metaData['name'] . '_count',
+                    'labelNames' => array(),
+                    'labelValues' => $decodedLabelValues,
+                    'value' => $acc
+                );
+
+                // Add the sum
+                $data['samples'][] = array(
+                    'name' => $metaData['name'] . '_sum',
+                    'labelNames' => array(),
+                    'labelValues' => $decodedLabelValues,
+                    'value' => $histogramBuckets[$labelValues]['sum'] / self::PRECISION_FACTOR
+                );
+
+                $histograms[] = new MetricFamilySamples($data);
+            }
+
+        }
+        return $histograms;
+    }
+
+    /**
+     * @param mixed $val
+     * @return int
+     */
+    private function toInteger($val)
+    {
+        return (int)($val * self::PRECISION_FACTOR);
     }
 }
