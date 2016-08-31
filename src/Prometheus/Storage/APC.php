@@ -10,15 +10,22 @@ class APC implements Adapter
 {
     const PROMETHEUS_PREFIX = 'prom';
 
+    // Multiply floats by this factor so we can use them
+    // with APC.
+    // The number has been picked so we have
+    // approximately 245 years left to
+    // measure time in seconds with 7 digits
+    // of precision.
+    // This effectively limits the largest value
+    // that can be used with Gauges and Histograms
+    // to 9223372036.8547764 (2**63/10**9).
+    const PRECISION_FACTOR = 10**9;
+
     /**
      * @return MetricFamilySamples[]
      */
     public function collect()
     {
-        /**
-         * @var MetricFamilySamples[]
-         */
-        $metrics = array();
         $metrics = $this->collectGauges();
         $metrics = array_merge($metrics, $this->collectCounters());
         return $metrics;
@@ -35,7 +42,7 @@ class APC implements Adapter
         if ($new) {
             apc_store($this->metaKey($data), json_encode($this->metaData($data)));
         }
-        apc_inc($this->valueKey($data), $data['value']);
+        apc_inc($this->valueKey($data), (int) ($data['value'] * self::PRECISION_FACTOR));
     }
 
     public function updateCounter(array $data)
@@ -133,7 +140,7 @@ class APC implements Adapter
                     'name' => $metaData['name'],
                     'labelNames' => array(),
                     'labelValues' => json_decode($labelValues),
-                    'value' => $value['value']
+                    'value' => $value['value'] / self::PRECISION_FACTOR
                 );
             }
             $gauges[] = new MetricFamilySamples($data);
