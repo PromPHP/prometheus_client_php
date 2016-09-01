@@ -259,6 +259,39 @@ abstract class AbstractGaugeTest extends PHPUnit_Framework_TestCase
 
     /**
      * @test
+     */
+    public function itShouldOverwriteWhenSettingTwice()
+    {
+        $gauge = new Gauge($this->adapter, 'test', 'some_metric', 'this is for testing', array('foo', 'bar'));
+        $gauge->set(123, array('lalal', 'lululu'));
+        $gauge->set(321, array('lalal', 'lululu'));
+        $this->assertThat(
+            $this->adapter->collect(),
+            $this->equalTo(
+                array(
+                    new MetricFamilySamples(
+                        array(
+                            'name' => 'test_some_metric',
+                            'help' => 'this is for testing',
+                            'type' => Gauge::TYPE,
+                            'labelNames' => array('foo', 'bar'),
+                            'samples' => array(
+                                array(
+                                    'name' => 'test_some_metric',
+                                    'labelNames' => array(),
+                                    'labelValues' => array('lalal', 'lululu'),
+                                    'value' => 321,
+                                )
+                            )
+                        )
+                    )
+                )
+            )
+        );
+    }
+
+    /**
+     * @test
      * @expectedException \InvalidArgumentException
      */
     public function itShouldRejectInvalidMetricsNames()

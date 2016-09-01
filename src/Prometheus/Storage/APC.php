@@ -63,11 +63,16 @@ class APC implements Adapter
 
     public function updateGauge(array $data)
     {
-        $new = apc_add($this->valueKey($data), 0);
-        if ($new) {
+        if ($data['command'] == Adapter::COMMAND_SET) {
+            apc_store($this->valueKey($data), $this->toInteger($data['value']));
             apc_store($this->metaKey($data), json_encode($this->metaData($data)));
+        } else {
+            $new = apc_add($this->valueKey($data), 0);
+            if ($new) {
+                apc_store($this->metaKey($data), json_encode($this->metaData($data)));
+            }
+            apc_inc($this->valueKey($data), $this->toInteger($data['value']));
         }
-        apc_inc($this->valueKey($data), $this->toInteger($data['value']));
     }
 
     public function updateCounter(array $data)
