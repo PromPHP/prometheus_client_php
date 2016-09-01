@@ -33,7 +33,7 @@ abstract class AbstractCollectorRegistryTest extends PHPUnit_Framework_TestCase
     /**
      * @test
      */
-    public function itShouldSaveGaugesInRedis()
+    public function itShouldSaveGauges()
     {
         $registry = new CollectorRegistry($this->adapter);
 
@@ -59,7 +59,7 @@ EOF
     /**
      * @test
      */
-    public function itShouldSaveCountersInRedis()
+    public function itShouldSaveCounters()
     {
         $registry = new CollectorRegistry($this->adapter);
         $metric = $registry->registerCounter('test', 'some_metric', 'this is for testing', array('foo', 'bar'));
@@ -84,7 +84,7 @@ EOF
     /**
      * @test
      */
-    public function itShouldSaveHistogramsInRedis()
+    public function itShouldSaveHistograms()
     {
         $registry = new CollectorRegistry($this->adapter);
         $metric = $registry->registerHistogram('test', 'some_metric', 'this is for testing', array('foo', 'bar'), array(0.1, 1, 5, 10));
