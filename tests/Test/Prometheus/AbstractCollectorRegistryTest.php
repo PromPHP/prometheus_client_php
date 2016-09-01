@@ -38,8 +38,10 @@ abstract class AbstractCollectorRegistryTest extends PHPUnit_Framework_TestCase
         $registry = new CollectorRegistry($this->adapter);
 
         $g = $registry->registerGauge('test', 'some_metric', 'this is for testing', array('foo'));
-        $g->set(32, array('lalal'));
-        $g->set(35, array('lalab'));
+        $g->set(35, array('bbb'));
+        $g->set(35, array('ddd'));
+        $g->set(35, array('aaa'));
+        $g->set(35, array('ccc'));
 
 
         $registry = new CollectorRegistry($this->adapter);
@@ -48,8 +50,10 @@ abstract class AbstractCollectorRegistryTest extends PHPUnit_Framework_TestCase
             $this->equalTo(<<<EOF
 # HELP test_some_metric this is for testing
 # TYPE test_some_metric gauge
-test_some_metric{foo="lalab"} 35
-test_some_metric{foo="lalal"} 32
+test_some_metric{foo="aaa"} 35
+test_some_metric{foo="bbb"} 35
+test_some_metric{foo="ccc"} 35
+test_some_metric{foo="ddd"} 35
 
 EOF
             )
