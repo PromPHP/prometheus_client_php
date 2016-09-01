@@ -148,6 +148,7 @@ class APC implements Adapter
                     'value' => $value['value']
                 );
             }
+            $this->sortSamples($data['samples']);
             $counters[] = new MetricFamilySamples($data);
         }
         return $counters;
@@ -177,6 +178,8 @@ class APC implements Adapter
                     'value' => $value['value'] / self::PRECISION_FACTOR
                 );
             }
+
+            $this->sortSamples($data['samples']);
             $gauges[] = new MetricFamilySamples($data);
         }
         return $gauges;
@@ -264,5 +267,12 @@ class APC implements Adapter
     private function toInteger($val)
     {
         return (int)($val * self::PRECISION_FACTOR);
+    }
+
+    private function sortSamples(array &$samples)
+    {
+        usort($samples, function($a, $b){
+            return strcmp(implode("", $a['labelValues']), implode("", $b['labelValues']));
+        });
     }
 }
