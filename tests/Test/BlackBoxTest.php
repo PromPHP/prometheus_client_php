@@ -12,10 +12,16 @@ class BlackBoxTest extends PHPUnit_Framework_TestCase
      */
     private $client;
 
+    /**
+     * @var string
+     */
+    private $adapter;
+
     public function setUp()
     {
-        $this->client = new Client(['base_uri' => 'http://localhost:8080/']);
-        $this->client->get('/examples/flush_redis.php');
+        $this->adapter = getenv('ADAPTER');
+        $this->client = new Client(['base_uri' => 'http://192.168.59.100:8080/']);
+        $this->client->get('/examples/flush_adapter.php?adapter=' . $this->adapter);
     }
 
     /**
@@ -25,9 +31,9 @@ class BlackBoxTest extends PHPUnit_Framework_TestCase
     {
         $start = microtime(true);
         $promises = [
-            $this->client->getAsync('/examples/some_gauge.php?c=0'),
-            $this->client->getAsync('/examples/some_gauge.php?c=1'),
-            $this->client->getAsync('/examples/some_gauge.php?c=2'),
+            $this->client->getAsync('/examples/some_gauge.php?c=0&adapter=' . $this->adapter),
+            $this->client->getAsync('/examples/some_gauge.php?c=1&adapter=' . $this->adapter),
+            $this->client->getAsync('/examples/some_gauge.php?c=2&adapter=' . $this->adapter),
 
         ];
 
@@ -35,7 +41,7 @@ class BlackBoxTest extends PHPUnit_Framework_TestCase
         $end = microtime(true);
         echo "\ntime: " . ($end - $start) . "\n";
 
-        $metricsResult = $this->client->get('/examples/metrics.php');
+        $metricsResult = $this->client->get('/examples/metrics.php?adapter=' . $this->adapter);
         $body = (string)$metricsResult->getBody();
         echo "\nbody: " . $body . "\n";
         $this->assertThat(
@@ -57,7 +63,7 @@ class BlackBoxTest extends PHPUnit_Framework_TestCase
         $promises = [];
         $sum = 0;
         for ($i = 0; $i < 1100; $i++) {
-            $promises[] =  $this->client->getAsync('/examples/some_counter.php?c=' . $i);
+            $promises[] =  $this->client->getAsync('/examples/some_counter.php?c=' . $i . '&adapter=' . $this->adapter);
             $sum += $i;
         }
 
@@ -65,7 +71,7 @@ class BlackBoxTest extends PHPUnit_Framework_TestCase
         $end = microtime(true);
         echo "\ntime: " . ($end - $start) . "\n";
 
-        $metricsResult = $this->client->get('/examples/metrics.php');
+        $metricsResult = $this->client->get('/examples/metrics.php?adapter=' . $this->adapter);
         $body = (string)$metricsResult->getBody();
 
         $this->assertThat($body, $this->stringContains('test_some_counter{type="blue"} ' . $sum));
@@ -78,23 +84,23 @@ class BlackBoxTest extends PHPUnit_Framework_TestCase
     {
         $start = microtime(true);
         $promises = [
-            $this->client->getAsync('/examples/some_histogram.php?c=0'),
-            $this->client->getAsync('/examples/some_histogram.php?c=1'),
-            $this->client->getAsync('/examples/some_histogram.php?c=2'),
-            $this->client->getAsync('/examples/some_histogram.php?c=3'),
-            $this->client->getAsync('/examples/some_histogram.php?c=4'),
-            $this->client->getAsync('/examples/some_histogram.php?c=5'),
-            $this->client->getAsync('/examples/some_histogram.php?c=6'),
-            $this->client->getAsync('/examples/some_histogram.php?c=7'),
-            $this->client->getAsync('/examples/some_histogram.php?c=8'),
-            $this->client->getAsync('/examples/some_histogram.php?c=9'),
+            $this->client->getAsync('/examples/some_histogram.php?c=0&adapter=' . $this->adapter),
+            $this->client->getAsync('/examples/some_histogram.php?c=1&adapter=' . $this->adapter),
+            $this->client->getAsync('/examples/some_histogram.php?c=2&adapter=' . $this->adapter),
+            $this->client->getAsync('/examples/some_histogram.php?c=3&adapter=' . $this->adapter),
+            $this->client->getAsync('/examples/some_histogram.php?c=4&adapter=' . $this->adapter),
+            $this->client->getAsync('/examples/some_histogram.php?c=5&adapter=' . $this->adapter),
+            $this->client->getAsync('/examples/some_histogram.php?c=6&adapter=' . $this->adapter),
+            $this->client->getAsync('/examples/some_histogram.php?c=7&adapter=' . $this->adapter),
+            $this->client->getAsync('/examples/some_histogram.php?c=8&adapter=' . $this->adapter),
+            $this->client->getAsync('/examples/some_histogram.php?c=9&adapter=' . $this->adapter),
         ];
 
         Promise\settle($promises)->wait();
         $end = microtime(true);
         echo "\ntime: " . ($end - $start) . "\n";
 
-        $metricsResult = $this->client->get('/examples/metrics.php');
+        $metricsResult = $this->client->get('/examples/metrics.php?adapter=' . $this->adapter);
         $body = (string)$metricsResult->getBody();
 
         $this->assertThat($body, $this->stringContains(<<<EOF
