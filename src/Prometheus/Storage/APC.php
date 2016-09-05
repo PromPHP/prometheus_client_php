@@ -180,7 +180,7 @@ class APC implements Adapter
                     'name' => $metaData['name'],
                     'labelNames' => array(),
                     'labelValues' => json_decode($labelValues),
-                    'value' => $value['value'] / self::PRECISION_FACTOR
+                    'value' => $this->fromInteger($value['value'])
                 );
             }
 
@@ -255,7 +255,7 @@ class APC implements Adapter
                     'name' => $metaData['name'] . '_sum',
                     'labelNames' => array(),
                     'labelValues' => $decodedLabelValues,
-                    'value' => $histogramBuckets[$labelValues]['sum'] / self::PRECISION_FACTOR
+                    'value' => $this->fromInteger($histogramBuckets[$labelValues]['sum'])
                 );
 
                 $histograms[] = new MetricFamilySamples($data);
@@ -272,6 +272,15 @@ class APC implements Adapter
     private function toInteger($val)
     {
         return (int)($val * self::PRECISION_FACTOR);
+    }
+
+    /**
+     * @param mixed $val
+     * @return int
+     */
+    private function fromInteger($val)
+    {
+        return $val / self::PRECISION_FACTOR;
     }
 
     private function sortSamples(array &$samples)
