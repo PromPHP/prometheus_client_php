@@ -4,8 +4,8 @@
 [![Code Climate](https://codeclimate.com/github/Jimdo/prometheus_client_php.png)](https://codeclimate.com/github/Jimdo/prometheus_client_php)
 
 
-This library uses Redis to do the client side aggregation.
-We recommend to run a local Redis instance next to your PHP workers.
+This library uses Redis or APCu to do the client side aggregation.
+If using Redis, we recommend to run a local Redis instance next to your PHP workers.
 
 ## Why Redis?
 
@@ -14,10 +14,6 @@ Usually PHP worker processes don't share any state.
 We decided to use Redis because:
  * It is easy to deploy as a sidecar to the PHP worker processes (see [docker-compose.yml](docker-compose.yml)).
  * It provides us with easy to use concurrency mechanisms we need for the metric aggregation (e.g. `incrByFloat`).
-
-We think this could be implemented with APCu as well and we might do so in the future.
-Of course we would also appreciate a pull-request.
-
 
 ## Usage
 
@@ -73,8 +69,9 @@ Also look at the [examples](examples).
 
 ### Dependencies
 
-* PHP 5.3/5.6 (at least these versions are tested at the moment)
+* PHP 5.6
 * PHP Redis extension
+* PHP APCu extension
 * [Composer](https://getcomposer.org/doc/00-intro.md#installation-linux-unix-osx)
 * Redis
 
