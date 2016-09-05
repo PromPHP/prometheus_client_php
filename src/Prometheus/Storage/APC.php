@@ -10,17 +10,6 @@ class APC implements Adapter
 {
     const PROMETHEUS_PREFIX = 'prom';
 
-    // Multiply floats by this factor so we can use them
-    // with APC.
-    // The number has been picked so we have
-    // approximately 245 years left to
-    // measure time in seconds with 7 digits
-    // of precision.
-    // This effectively limits the largest value
-    // that can be used with Gauges and Histograms
-    // to 9223372036.8547764 (2**63/10**9).
-    const PRECISION_FACTOR = 10**9;
-
     /**
      * @return MetricFamilySamples[]
      */
@@ -35,15 +24,21 @@ class APC implements Adapter
     public function updateHistogram(array $data)
     {
         // Initialize the sum
-        $new = apc_add($this->histogramBucketValueKey($data, 'sum'), 0);
+        $sumKey = $this->histogramBucketValueKey($data, 'sum');
+        $new = apc_add($sumKey, $this->toInteger(0));
 
         // If sum does not exist, assume a new histogram and store the metadata
         if ($new) {
             apc_store($this->metaKey($data), json_encode($this->metaData($data)));
         }
 
-        // Increment the sum
-        apc_inc($this->histogramBucketValueKey($data, 'sum'), $this->toInteger($data['value']));
+        // Atomically increment the sum
+        // Taken from https://github.com/prometheus/client_golang/blob/66058aac3a83021948e5fb12f1f408ff556b9037/prometheus/value.go#L91
+        $done = false;
+        while (!$done) {
+            $old = apc_fetch($sumKey);
+            $done = apc_cas($sumKey, $old, $this->toInteger($this->fromInteger($old) + $data['value']));
+        }
 
         // Figure out in which bucket the observation belongs
         $bucketToIncrease = '+Inf';
@@ -57,21 +52,25 @@ class APC implements Adapter
         // Initialize and increment the bucket
         apc_add($this->histogramBucketValueKey($data, $bucketToIncrease), 0);
         apc_inc($this->histogramBucketValueKey($data, $bucketToIncrease));
-
-
     }
 
     public function updateGauge(array $data)
     {
+        $valueKey = $this->valueKey($data);
         if ($data['command'] == Adapter::COMMAND_SET) {
-            apc_store($this->valueKey($data), $this->toInteger($data['value']));
+            apc_store($valueKey, $this->toInteger($data['value']));
             apc_store($this->metaKey($data), json_encode($this->metaData($data)));
         } else {
-            $new = apc_add($this->valueKey($data), 0);
+            $new = apc_add($valueKey, $this->toInteger(0));
             if ($new) {
                 apc_store($this->metaKey($data), json_encode($this->metaData($data)));
             }
-            apc_inc($this->valueKey($data), $this->toInteger($data['value']));
+            // Taken from https://github.com/prometheus/client_golang/blob/66058aac3a83021948e5fb12f1f408ff556b9037/prometheus/value.go#L91
+            $done = false;
+            while (!$done) {
+                $old = apc_fetch($valueKey);
+                $done = apc_cas($valueKey, $old, $this->toInteger($this->fromInteger($old) + $data['value']));
+            }
         }
     }
 
@@ -271,7 +270,7 @@ class APC implements Adapter
      */
     private function toInteger($val)
     {
-        return (int)($val * self::PRECISION_FACTOR);
+        return unpack('Q', pack('d', $val))[1];
     }
 
     /**
@@ -280,7 +279,7 @@ class APC implements Adapter
      */
     private function fromInteger($val)
     {
-        return $val / self::PRECISION_FACTOR;
+        return unpack('d', pack('Q', $val))[1];
     }
 
     private function sortSamples(array &$samples)
