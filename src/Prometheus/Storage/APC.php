@@ -218,7 +218,9 @@ class APC implements Adapter
             }
 
             // Compute all buckets
-            foreach (array_keys($histogramBuckets) as $labelValues) {
+            $labels = array_keys($histogramBuckets);
+            sort($labels);
+            foreach ($labels as $labelValues) {
                 $acc = 0;
                 $decodedLabelValues = json_decode($labelValues);
                 foreach ($data['buckets'] as $bucket) {
@@ -257,9 +259,8 @@ class APC implements Adapter
                     'value' => $this->fromInteger($histogramBuckets[$labelValues]['sum'])
                 );
 
-                $histograms[] = new MetricFamilySamples($data);
             }
-
+            $histograms[] = new MetricFamilySamples($data);
         }
         return $histograms;
     }
