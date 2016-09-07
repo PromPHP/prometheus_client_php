@@ -7,13 +7,12 @@
 This library uses Redis or APCu to do the client side aggregation.
 If using Redis, we recommend to run a local Redis instance next to your PHP workers.
 
-## Why Redis?
+## How does it work?
 
 Usually PHP worker processes don't share any state.
-
-We decided to use Redis because:
- * It is easy to deploy as a sidecar to the PHP worker processes (see [docker-compose.yml](docker-compose.yml)).
- * It provides us with easy to use concurrency mechanisms we need for the metric aggregation (e.g. `incrByFloat`).
+You can pick from two adapters.
+One uses Redis the other APC.
+While the former needs a separate binary running, the latter just needs the [APC](https://pecl.php.net/package/APCU) extension to be installed.
 
 ## Usage
 
