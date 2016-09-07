@@ -6,23 +6,22 @@ namespace Test\Prometheus;
 use PHPUnit_Framework_TestCase;
 use Prometheus\Histogram;
 use Prometheus\MetricFamilySamples;
-use Prometheus\Storage\InMemory;
-use Prometheus\Storage\Redis;
+use Prometheus\Storage\Adapter;
+
 
 /**
  * See https://prometheus.io/docs/instrumenting/exposition_formats/
  */
-class HistogramTest extends PHPUnit_Framework_TestCase
+abstract class AbstractHistogramTest extends PHPUnit_Framework_TestCase
 {
     /**
-     * @var Redis
+     * @var Adapter
      */
-    private $storage;
+    public $adapter;
 
     public function setUp()
     {
-        $this->storage = new Redis(array('host' => REDIS_HOST));
-        $this->storage->flushRedis();
+        $this->configureAdapter();
     }
 
     /**
@@ -31,7 +30,7 @@ class HistogramTest extends PHPUnit_Framework_TestCase
     public function itShouldObserveWithLabels()
     {
         $histogram = new Histogram(
-            $this->storage,
+            $this->adapter,
             'test',
             'some_metric',
             'this is for testing',
@@ -41,7 +40,7 @@ class HistogramTest extends PHPUnit_Framework_TestCase
         $histogram->observe(123, array('lalal', 'lululu'));
         $histogram->observe(245, array('lalal', 'lululu'));
         $this->assertThat(
-            $this->storage->collect(),
+            $this->adapter->collect(),
             $this->equalTo(
                 array(
                     new MetricFamilySamples(
@@ -101,7 +100,7 @@ class HistogramTest extends PHPUnit_Framework_TestCase
     public function itShouldObserveWithoutLabelWhenNoLabelsAreDefined()
     {
         $histogram = new Histogram(
-            $this->storage,
+            $this->adapter,
             'test',
             'some_metric',
             'this is for testing',
@@ -110,7 +109,7 @@ class HistogramTest extends PHPUnit_Framework_TestCase
         );
         $histogram->observe(245);
         $this->assertThat(
-            $this->storage->collect(),
+            $this->adapter->collect(),
             $this->equalTo(
                 array(
                     new MetricFamilySamples(
@@ -170,7 +169,7 @@ class HistogramTest extends PHPUnit_Framework_TestCase
     public function itShouldObserveValuesOfTypeDouble()
     {
         $histogram = new Histogram(
-            $this->storage,
+            $this->adapter,
             'test',
             'some_metric',
             'this is for testing',
@@ -180,7 +179,7 @@ class HistogramTest extends PHPUnit_Framework_TestCase
         $histogram->observe(0.11);
         $histogram->observe(0.3);
         $this->assertThat(
-            $this->storage->collect(),
+            $this->adapter->collect(),
             $this->equalTo(
                 array(
                     new MetricFamilySamples(
@@ -242,7 +241,7 @@ class HistogramTest extends PHPUnit_Framework_TestCase
         // .005, .01, .025, .05, .075, .1, .25, .5, .75, 1.0, 2.5, 5.0, 7.5, 10.0
 
         $histogram = new Histogram(
-            $this->storage,
+            $this->adapter,
             'test',
             'some_metric',
             'this is for testing',
@@ -252,7 +251,7 @@ class HistogramTest extends PHPUnit_Framework_TestCase
         $histogram->observe(0.11);
         $histogram->observe(0.03);
         $this->assertThat(
-            $this->storage->collect(),
+            $this->adapter->collect(),
             $this->equalTo(
                 array(
                     new MetricFamilySamples(
@@ -378,7 +377,7 @@ class HistogramTest extends PHPUnit_Framework_TestCase
      */
     public function itShouldThrowAnExceptionWhenTheBucketSizesAreNotIncreasing()
     {
-        new Histogram($this->storage, 'test', 'some_metric', 'this is for testing', array(), array(1, 1));
+        new Histogram($this->adapter, 'test', 'some_metric', 'this is for testing', array(), array(1, 1));
     }
 
     /**
@@ -387,7 +386,7 @@ class HistogramTest extends PHPUnit_Framework_TestCase
      */
     public function itShouldThrowAnExceptionWhenThereIsLessThanOneBucket()
     {
-        new Histogram($this->storage, 'test', 'some_metric', 'this is for testing', array(), array());
+        new Histogram($this->adapter, 'test', 'some_metric', 'this is for testing', array(), array());
     }
 
     /**
@@ -396,7 +395,7 @@ class HistogramTest extends PHPUnit_Framework_TestCase
      */
     public function itShouldThrowAnExceptionWhenThereIsALabelNamedLe()
     {
-        new Histogram($this->storage, 'test', 'some_metric', 'this is for testing', array('le'), array());
+        new Histogram($this->adapter, 'test', 'some_metric', 'this is for testing', array('le'), array());
     }
 
     /**
@@ -405,7 +404,7 @@ class HistogramTest extends PHPUnit_Framework_TestCase
      */
     public function itShouldRejectInvalidMetricsNames()
     {
-        new Histogram($this->storage, 'test', 'some invalid metric', 'help', array(), array(1));
+        new Histogram($this->adapter, 'test', 'some invalid metric', 'help', array(), array(1));
     }
 
     /**
@@ -414,6 +413,8 @@ class HistogramTest extends PHPUnit_Framework_TestCase
      */
     public function itShouldRejectInvalidLabelNames()
     {
-        new Histogram($this->storage, 'test', 'some_metric', 'help', array('invalid label'), array(1));
+        new Histogram($this->adapter, 'test', 'some_metric', 'help', array('invalid label'), array(1));
     }
+
+    public abstract function configureAdapter();
 }

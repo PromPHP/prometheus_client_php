@@ -6,24 +6,20 @@ namespace Test\Prometheus;
 use PHPUnit_Framework_TestCase;
 use Prometheus\Counter;
 use Prometheus\MetricFamilySamples;
-use Prometheus\Sample;
-use Prometheus\Storage\InMemory;
-use Prometheus\Storage\Redis;
 
 /**
  * See https://prometheus.io/docs/instrumenting/exposition_formats/
  */
-class CounterTest extends PHPUnit_Framework_TestCase
+abstract class AbstractCounterTest extends PHPUnit_Framework_TestCase
 {
     /**
-     * @var Redis
+     * @var Adapter
      */
-    private $storage;
+    public $adapter;
 
     public function setUp()
     {
-        $this->storage = new Redis(array('host' => REDIS_HOST));
-        $this->storage->flushRedis();
+        $this->configureAdapter();
     }
 
     /**
@@ -31,12 +27,12 @@ class CounterTest extends PHPUnit_Framework_TestCase
      */
     public function itShouldIncreaseWithLabels()
     {
-        $gauge = new Counter($this->storage, 'test', 'some_metric', 'this is for testing', array('foo', 'bar'));
+        $gauge = new Counter($this->adapter, 'test', 'some_metric', 'this is for testing', array('foo', 'bar'));
         $gauge->inc(array('lalal', 'lululu'));
         $gauge->inc(array('lalal', 'lululu'));
         $gauge->inc(array('lalal', 'lululu'));
         $this->assertThat(
-            $this->storage->collect(),
+            $this->adapter->collect(),
             $this->equalTo(
                 array(
                     new MetricFamilySamples(
@@ -65,10 +61,10 @@ class CounterTest extends PHPUnit_Framework_TestCase
      */
     public function itShouldIncreaseWithoutLabelWhenNoLabelsAreDefined()
     {
-        $gauge = new Counter($this->storage, 'test', 'some_metric', 'this is for testing');
+        $gauge = new Counter($this->adapter, 'test', 'some_metric', 'this is for testing');
         $gauge->inc();
         $this->assertThat(
-            $this->storage->collect(),
+            $this->adapter->collect(),
             $this->equalTo(
                 array(
                     new MetricFamilySamples(
@@ -97,11 +93,11 @@ class CounterTest extends PHPUnit_Framework_TestCase
      */
     public function itShouldIncreaseTheCounterByAnArbitraryInteger()
     {
-        $gauge = new Counter($this->storage, 'test', 'some_metric', 'this is for testing', array('foo', 'bar'));
+        $gauge = new Counter($this->adapter, 'test', 'some_metric', 'this is for testing', array('foo', 'bar'));
         $gauge->inc(array('lalal', 'lululu'));
         $gauge->incBy(123, array('lalal', 'lululu'));
         $this->assertThat(
-            $this->storage->collect(),
+            $this->adapter->collect(),
             $this->equalTo(
                 array(
                     new MetricFamilySamples(
@@ -131,7 +127,7 @@ class CounterTest extends PHPUnit_Framework_TestCase
      */
     public function itShouldRejectInvalidMetricsNames()
     {
-        new Counter($this->storage, 'test', 'some metric invalid metric', 'help');
+        new Counter($this->adapter, 'test', 'some metric invalid metric', 'help');
     }
 
     /**
@@ -140,6 +136,8 @@ class CounterTest extends PHPUnit_Framework_TestCase
      */
     public function itShouldRejectInvalidLabelNames()
     {
-        new Counter($this->storage, 'test', 'some_metric', 'help', array('invalid label'));
+        new Counter($this->adapter, 'test', 'some_metric', 'help', array('invalid label'));
     }
+
+    public abstract function configureAdapter();
 }

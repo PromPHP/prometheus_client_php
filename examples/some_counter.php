@@ -7,8 +7,16 @@ use Prometheus\Storage\Redis;
 
 error_log('c='. $_GET['c']);
 
-Redis::setDefaultOptions(array('host' => isset($_SERVER['REDIS_HOST']) ? $_SERVER['REDIS_HOST'] : '127.0.0.1'));
-$registry = CollectorRegistry::getDefault();
+$adapter = $_GET['adapter'];
+
+if ($adapter == 'redis') {
+    Redis::setDefaultOptions(array('host' => isset($_SERVER['REDIS_HOST']) ? $_SERVER['REDIS_HOST'] : '127.0.0.1'));
+    $adapter = new Prometheus\Storage\Redis();
+}
+if ($adapter == 'apc') {
+    $adapter = new Prometheus\Storage\APC();
+}
+$registry = new CollectorRegistry($adapter);
 
 $counter = $registry->registerCounter('test', 'some_counter', 'it increases', ['type']);
 $counter->incBy($_GET['c'], ['blue']);
