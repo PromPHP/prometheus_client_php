@@ -92,7 +92,6 @@ composer install
 
 Just start the nginx, fpm & Redis setup with docker-compose:
 ```
-composer require guzzlehttp/guzzle=~6.0
 docker-compose up
 ```
 Pick the adapter you want to test.
