@@ -8,15 +8,15 @@ use GuzzleHttp\Client;
 
 class PushGateway
 {
-    private $host;
+    private $address;
 
     /**
      * PushGateway constructor.
-     * @param $host string host name of the push gateway
+     * @param $address string host:port of the push gateway
      */
-    public function __construct($host)
+    public function __construct($address)
     {
-        $this->host = $host;
+        $this->address = $address;
     }
 
     /**
@@ -27,7 +27,7 @@ class PushGateway
      */
     public function push(CollectorRegistry $collectorRegistry, $job, $groupingKey = null)
     {
-        $url = "http://" . $this->host . "/metrics/job/" . $job;
+        $url = "http://" . $this->address . "/metrics/job/" . $job;
         if (!empty($groupingKey)) {
             foreach ($groupingKey as $label => $value) {
                 $url .= "/" . $label . "/" . $value;
@@ -46,7 +46,7 @@ class PushGateway
         ));
         $statusCode = $response->getStatusCode();
         if ($statusCode != 202) {
-            $msg = "Unexpected status code " . $statusCode . " received from pushgateway " . $this->host . ": " . $response->getBody();
+            $msg = "Unexpected status code " . $statusCode . " received from pushgateway " . $this->address . ": " . $response->getBody();
             throw new \RuntimeException($msg);
         }
     }
