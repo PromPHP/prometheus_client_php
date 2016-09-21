@@ -20,7 +20,7 @@ class BlackBoxTest extends PHPUnit_Framework_TestCase
     public function setUp()
     {
         $this->adapter = getenv('ADAPTER');
-        $this->client = new Client(['base_uri' => 'http://192.168.59.100:8080/']);
+        $this->client = new Client(['base_uri' => 'http://nginx:80/']);
         $this->client->get('/examples/flush_adapter.php?adapter=' . $this->adapter);
     }
 
