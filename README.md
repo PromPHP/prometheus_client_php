@@ -92,12 +92,11 @@ composer install
 
 Just start the nginx, fpm & Redis setup with docker-compose:
 ```
-composer require guzzlehttp/guzzle=~6.0
 docker-compose up
 ```
 Pick the adapter you want to test.
 
 ```
-ADAPTER=redis vendor/bin/phpunit tests/Test/BlackBoxTest.php
-ADAPTER=apc vendor/bin/phpunit tests/Test/BlackBoxTest.php
+docker-compose run phpunit env ADAPTER=apc vendor/bin/phpunit tests/Test/
+docker-compose run phpunit env ADAPTER=redis vendor/bin/phpunit tests/Test/
 ```
