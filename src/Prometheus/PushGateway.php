@@ -28,7 +28,7 @@ class PushGateway
      */
     public function push(CollectorRegistry $collectorRegistry, $job, $groupingKey = null)
     {
-        $this->doPush($collectorRegistry, $job, $groupingKey, 'put');
+        $this->doRequest($collectorRegistry, $job, $groupingKey, 'put');
     }
 
     /**
@@ -40,7 +40,18 @@ class PushGateway
      */
     public function pushAdd(CollectorRegistry $collectorRegistry, $job, $groupingKey = null)
     {
-        $this->doPush($collectorRegistry, $job, $groupingKey, 'post');
+        $this->doRequest($collectorRegistry, $job, $groupingKey, 'post');
+    }
+
+    /**
+     * Deletes metrics from the Pushgateway.
+     * Uses HTTP POST.
+     * @param $job
+     * @param $groupingKey
+     */
+    public function delete($job, $groupingKey = null)
+    {
+        $this->doRequest(null, $job, $groupingKey, 'delete');
     }
 
     /**
@@ -49,7 +60,7 @@ class PushGateway
      * @param $groupingKey
      * @param $method
      */
-    private function doPush(CollectorRegistry $collectorRegistry, $job, $groupingKey, $method)
+    private function doRequest(CollectorRegistry $collectorRegistry, $job, $groupingKey, $method)
     {
         $url = "http://" . $this->address . "/metrics/job/" . $job;
         if (!empty($groupingKey)) {
@@ -57,17 +68,19 @@ class PushGateway
                 $url .= "/" . $label . "/" . $value;
             }
         }
-        $renderer = new RenderTextFormat();
-        $textData = $renderer->render($collectorRegistry->getMetricFamilySamples());
         $client = new Client();
-        $response = $client->request($method, $url, array(
+        $requestOptions = array(
             'headers' => array(
                 'Content-Type' => RenderTextFormat::MIME_TYPE
             ),
-            'body' => $textData,
             'connect_timeout' => 10,
             'timeout' => 20,
-        ));
+        );
+        if ($method != 'delete') {
+            $renderer = new RenderTextFormat();
+            $requestOptions['body'] = $renderer->render($collectorRegistry->getMetricFamilySamples());
+        }
+        $response = $client->request($method, $url, $requestOptions);
         $statusCode = $response->getStatusCode();
         if ($statusCode != 202) {
             $msg = "Unexpected status code " . $statusCode . " received from pushgateway " . $this->address . ": " . $response->getBody();
