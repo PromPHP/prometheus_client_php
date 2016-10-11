@@ -21,11 +21,35 @@ class PushGateway
 
     /**
      * Pushes all metrics in a Collector, replacing all those with the same job.
+     * Uses HTTP PUT.
      * @param CollectorRegistry $collectorRegistry
      * @param $job
      * @param $groupingKey
      */
     public function push(CollectorRegistry $collectorRegistry, $job, $groupingKey = null)
+    {
+        $this->doPush($collectorRegistry, $job, $groupingKey, 'put');
+    }
+
+    /**
+     * Pushes all metrics in a Collector, replacing only previously pushed metrics of the same name and job.
+     * Uses HTTP POST.
+     * @param CollectorRegistry $collectorRegistry
+     * @param $job
+     * @param $groupingKey
+     */
+    public function pushAdd(CollectorRegistry $collectorRegistry, $job, $groupingKey = null)
+    {
+        $this->doPush($collectorRegistry, $job, $groupingKey, 'post');
+    }
+
+    /**
+     * @param CollectorRegistry $collectorRegistry
+     * @param $job
+     * @param $groupingKey
+     * @param $method
+     */
+    private function doPush(CollectorRegistry $collectorRegistry, $job, $groupingKey, $method)
     {
         $url = "http://" . $this->address . "/metrics/job/" . $job;
         if (!empty($groupingKey)) {
@@ -36,7 +60,7 @@ class PushGateway
         $renderer = new RenderTextFormat();
         $textData = $renderer->render($collectorRegistry->getMetricFamilySamples());
         $client = new Client();
-        $response = $client->post($url, array(
+        $response = $client->request($method, $url, array(
             'headers' => array(
                 'Content-Type' => RenderTextFormat::MIME_TYPE
             ),
