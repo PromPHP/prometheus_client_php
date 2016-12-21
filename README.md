@@ -19,7 +19,7 @@ While the former needs a separate binary running, the latter just needs the [APC
 A simple counter:
 ```php
 \Prometheus\CollectorRegistry::getDefault()
-    ->registerCounter('', 'some_quick_counter', 'just a quick measurement')
+    ->getOrRegisterCounter('', 'some_quick_counter', 'just a quick measurement')
     ->inc();
 ```
 
@@ -27,14 +27,26 @@ Write some enhanced metrics:
 ```php
 $registry = \Prometheus\CollectorRegistry::getDefault();
 
-$counter = $registry->registerCounter('test', 'some_counter', 'it increases', ['type']);
+$counter = $registry->getOrRegisterCounter('test', 'some_counter', 'it increases', ['type']);
 $counter->incBy(3, ['blue']);
 
-$gauge = $registry->registerGauge('test', 'some_gauge', 'it sets', ['type']);
+$gauge = $registry->getOrRegisterGauge('test', 'some_gauge', 'it sets', ['type']);
 $gauge->set(2.5, ['blue']);
 
-$histogram = $registry->registerHistogram('test', 'some_histogram', 'it observes', ['type'], [0.1, 1, 2, 3.5, 4, 5, 6, 7, 8, 9]);
+$histogram = $registry->getOrRegisterHistogram('test', 'some_histogram', 'it observes', ['type'], [0.1, 1, 2, 3.5, 4, 5, 6, 7, 8, 9]);
 $histogram->observe(3.5, ['blue']);
+```
+
+Manually register and retrieve metrics (these steps are combined in the `getOrRegister...` methods):
+```php
+$registry = \Prometheus\CollectorRegistry::getDefault();
+
+$counterA = $registry->registerCounter('test', 'some_counter', 'it increases', ['type']);
+$counterA->incBy(3, ['blue']);
+
+// once a metric is registered, it can be retrieved using e.g. getCounter:
+$counterB = $registry->getCounter('test', 'some_counter')
+$counterB->incBy(2, ['red']);
 ```
 
 Expose the metrics:
