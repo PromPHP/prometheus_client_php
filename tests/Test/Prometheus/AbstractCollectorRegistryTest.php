@@ -269,5 +269,42 @@ EOF
         $registry->getGauge("not_here", "go_away");
     }
 
+    /**
+     * @test
+     */
+    public function itShouldNotRegisterACounterTwice()
+    {
+        $registry = new CollectorRegistry($this->adapter);
+        $counterA = $registry->getOrRegisterCounter("foo", "bar", "Help text");
+        $counterB = $registry->getOrRegisterCounter("foo", "bar", "Help text");
+
+        $this->assertSame($counterA, $counterB);
+    }
+
+    /**
+     * @test
+     */
+    public function itShouldNotRegisterAGaugeTwice()
+    {
+        $registry = new CollectorRegistry($this->adapter);
+        $gaugeA = $registry->getOrRegisterGauge("foo", "bar", "Help text");
+        $gaugeB = $registry->getOrRegisterGauge("foo", "bar", "Help text");
+
+        $this->assertSame($gaugeA, $gaugeB);
+    }
+
+    /**
+     * @test
+     */
+    public function itShouldNotRegisterAHistogramTwice()
+    {
+        $registry = new CollectorRegistry($this->adapter);
+        $histogramA = $registry->getOrRegisterHistogram("foo", "bar", "Help text");
+        $histogramB = $registry->getOrRegisterHistogram("foo", "bar", "Help text");
+
+        $this->assertSame($histogramA, $histogramB);
+    }
+
+
     public abstract function configureAdapter();
 }
