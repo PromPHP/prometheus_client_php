@@ -52,7 +52,6 @@ $counterB->incBy(2, ['red']);
 Expose the metrics:
 ```php
 $registry = \Prometheus\CollectorRegistry::getDefault();
-$registry = CollectorRegistry::getDefault();
 
 $renderer = new RenderTextFormat();
 $result = $renderer->render($registry->getMetricFamilySamples());
