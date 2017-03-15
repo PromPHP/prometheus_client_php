@@ -131,17 +131,6 @@ class InMemory implements Adapter
         return $result;
     }
 
-    /**
-     * @return Sample[]
-     */
-    public function fetchSamples()
-    {
-        return array_map(
-            function ($data) { return new Sample($data); },
-            array_values(array_reduce(array_values($this->samples), 'array_merge', []))
-        );
-    }
-
     public function updateHistogram(array $data)
     {
         // Initialize the sum
