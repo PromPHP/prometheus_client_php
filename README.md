@@ -74,6 +74,17 @@ Change the Redis options (the example shows the defaults):
 );
 ```
 
+Using the InMemory storage:
+```php
+$registry = new CollectorRegistry(new InMemory());
+
+$counter = $registry->registerCounter('test', 'some_counter', 'it increases', ['type']);
+$counter->incBy(3, ['blue']);
+
+$renderer = new RenderTextFormat();
+$result = $renderer->render($registry->getMetricFamilySamples());
+```
+
 Also look at the [examples](examples).
 
 ## Development
