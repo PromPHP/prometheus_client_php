@@ -4,7 +4,6 @@ namespace Prometheus\Storage;
 
 
 use Prometheus\MetricFamilySamples;
-use Prometheus\Sample;
 
 class InMemory implements Adapter
 {
@@ -63,7 +62,7 @@ class InMemory implements Adapter
                 $acc = 0;
                 $decodedLabelValues = json_decode($labelValues);
                 foreach ($data['buckets'] as $bucket) {
-                    $bucket = (string) $bucket;
+                    $bucket = (string)$bucket;
                     if (!isset($histogramBuckets[$labelValues][$bucket])) {
                         $data['samples'][] = [
                             'name' => $metaData['name'] . '_bucket',
