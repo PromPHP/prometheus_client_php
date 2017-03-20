@@ -10,9 +10,9 @@ If using Redis, we recommend to run a local Redis instance next to your PHP work
 ## How does it work?
 
 Usually PHP worker processes don't share any state.
-You can pick from two adapters.
-One uses Redis the other APC.
-While the former needs a separate binary running, the latter just needs the [APC](https://pecl.php.net/package/APCU) extension to be installed.
+You can pick from three adapters.
+Redis, APC or an in memory adapter.
+While the first needs a separate binary running, the second just needs the [APC](https://pecl.php.net/package/APCU) extension to be installed. If you don't need persistent metrics between requests (e.g. a long running cron job or script) the in memory adapter might be suitable to use.
 
 ## Usage
 
