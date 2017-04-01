@@ -283,7 +283,7 @@ LUA
                 $gauge['samples'][] = array(
                     'name' => $gauge['name'],
                     'labelNames' => array(),
-                    'labelValues' => json_decode($k),
+                    'labelValues' => json_decode($k, true),
                     'value' => $value
                 );
             }
@@ -309,7 +309,7 @@ LUA
                 $counter['samples'][] = array(
                     'name' => $counter['name'],
                     'labelNames' => array(),
-                    'labelValues' => json_decode($k),
+                    'labelValues' => json_decode($k, true),
                     'value' => $value
                 );
             }
