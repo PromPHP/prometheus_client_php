@@ -374,6 +374,7 @@ abstract class AbstractHistogramTest extends PHPUnit_Framework_TestCase
     /**
      * @test
      * @expectedException \InvalidArgumentException
+     * @expectedExceptionMessage Histogram buckets must be in increasing order
      */
     public function itShouldThrowAnExceptionWhenTheBucketSizesAreNotIncreasing()
     {
@@ -383,6 +384,7 @@ abstract class AbstractHistogramTest extends PHPUnit_Framework_TestCase
     /**
      * @test
      * @expectedException \InvalidArgumentException
+     * @expectedExceptionMessage Histogram must have at least one bucket
      */
     public function itShouldThrowAnExceptionWhenThereIsLessThanOneBucket()
     {
@@ -392,15 +394,17 @@ abstract class AbstractHistogramTest extends PHPUnit_Framework_TestCase
     /**
      * @test
      * @expectedException \InvalidArgumentException
+     * @expectedExceptionMessage Histogram cannot have a label named
      */
     public function itShouldThrowAnExceptionWhenThereIsALabelNamedLe()
     {
-        new Histogram($this->adapter, 'test', 'some_metric', 'this is for testing', array('le'), array());
+        new Histogram($this->adapter, 'test', 'some_metric', 'this is for testing', array('le'), array(1));
     }
 
     /**
      * @test
      * @expectedException \InvalidArgumentException
+     * @expectedExceptionMessage Invalid metric name
      */
     public function itShouldRejectInvalidMetricsNames()
     {
@@ -410,6 +414,7 @@ abstract class AbstractHistogramTest extends PHPUnit_Framework_TestCase
     /**
      * @test
      * @expectedException \InvalidArgumentException
+     * @expectedExceptionMessage Invalid label name
      */
     public function itShouldRejectInvalidLabelNames()
     {

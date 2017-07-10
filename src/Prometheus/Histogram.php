@@ -39,8 +39,8 @@ class Histogram extends Collector
                 );
             }
         }
-        foreach ($buckets as $bucket) {
-            if ($bucket == 'le') {
+        foreach ($labels as $label) {
+            if ($label === 'le') {
                 throw new \InvalidArgumentException("Histogram cannot have a label named 'le'.");
             }
         }
