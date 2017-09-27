@@ -6,6 +6,7 @@ namespace Test\Prometheus;
 use PHPUnit_Framework_TestCase;
 use Prometheus\Gauge;
 use Prometheus\MetricFamilySamples;
+use Prometheus\Sample;
 use Prometheus\Storage\Adapter;
 
 /**
@@ -306,6 +307,51 @@ abstract class AbstractGaugeTest extends PHPUnit_Framework_TestCase
     public function itShouldRejectInvalidLabelNames()
     {
         new Gauge($this->adapter, 'test', 'some_metric', 'help', array('invalid label'));
+    }
+
+    /**
+     * @test
+     * @dataProvider labelValuesDataProvider
+     *
+     * @param mixed $value The label value
+     */
+    public function isShouldAcceptAnySequenceOfBasicLatinCharactersForLabelValues($value)
+    {
+        $label = 'foo';
+        $histogram = new Gauge($this->adapter, 'test', 'some_metric', 'help', array($label));
+        $histogram->inc(array($value));
+
+        $metrics = $this->adapter->collect();
+        self::assertInternalType('array', $metrics);
+        self::assertCount(1, $metrics);
+        self::assertContainsOnlyInstancesOf(MetricFamilySamples::class, $metrics);
+
+        $metric = reset($metrics);
+        $samples = $metric->getSamples();
+        self::assertContainsOnlyInstancesOf(Sample::class, $samples);
+
+        foreach ($samples as $sample) {
+            $labels = array_combine(
+                array_merge($metric->getLabelNames(), $sample->getLabelNames()),
+                $sample->getLabelValues()
+            );
+            self::assertEquals($value, $labels[$label]);
+        }
+    }
+
+    /**
+     * @see isShouldAcceptArbitraryLabelValues
+     * @return array
+     */
+    public function labelValuesDataProvider()
+    {
+        $cases = [];
+        // Basic Latin
+        // See https://en.wikipedia.org/wiki/List_of_Unicode_characters#Basic_Latin
+        for ($i = 32; $i <= 121; $i++) {
+            $cases['ASCII code ' . $i] = array(chr($i));
+        }
+        return $cases;
     }
 
     public abstract function configureAdapter();
