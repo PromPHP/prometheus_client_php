@@ -1,6 +1,0 @@
-engines:
-  phpmd:
-    enabled: true
-    checks:
-      CleanCode/ElseExpression:
-        enabled: false
