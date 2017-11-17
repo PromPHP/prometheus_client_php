@@ -3,9 +3,13 @@
 
 namespace Test\Prometheus\Redis;
 
+use function class_exists;
 use Prometheus\Storage\Redis;
 use Test\Prometheus\AbstractCollectorRegistryTest;
 
+/**
+ * @requires extension redis
+ */
 class CollectorRegistryTest extends AbstractCollectorRegistryTest
 {
     public function configureAdapter()

@@ -8,10 +8,10 @@ use Test\Prometheus\AbstractGaugeTest;
 
 /**
  * See https://prometheus.io/docs/instrumenting/exposition_formats/
+ * @requires extension redis
  */
 class GaugeTest extends AbstractGaugeTest
 {
-
     public function configureAdapter()
     {
         $this->adapter = new Redis(array('host' => REDIS_HOST));
