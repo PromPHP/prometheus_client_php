@@ -25,19 +25,19 @@ class APC implements Adapter
     {
         // Initialize the sum
         $sumKey = $this->histogramBucketValueKey($data, 'sum');
-        $new = apc_add($sumKey, $this->toInteger(0));
+        $new = apcu_add($sumKey, $this->toInteger(0));
 
         // If sum does not exist, assume a new histogram and store the metadata
         if ($new) {
-            apc_store($this->metaKey($data), json_encode($this->metaData($data)));
+            apcu_store($this->metaKey($data), json_encode($this->metaData($data)));
         }
 
         // Atomically increment the sum
         // Taken from https://github.com/prometheus/client_golang/blob/66058aac3a83021948e5fb12f1f408ff556b9037/prometheus/value.go#L91
         $done = false;
         while (!$done) {
-            $old = apc_fetch($sumKey);
-            $done = apc_cas($sumKey, $old, $this->toInteger($this->fromInteger($old) + $data['value']));
+            $old = apcu_fetch($sumKey);
+            $done = apcu_cas($sumKey, $old, $this->toInteger($this->fromInteger($old) + $data['value']));
         }
 
         // Figure out in which bucket the observation belongs
@@ -50,42 +50,42 @@ class APC implements Adapter
         }
 
         // Initialize and increment the bucket
-        apc_add($this->histogramBucketValueKey($data, $bucketToIncrease), 0);
-        apc_inc($this->histogramBucketValueKey($data, $bucketToIncrease));
+        apcu_add($this->histogramBucketValueKey($data, $bucketToIncrease), 0);
+        apcu_inc($this->histogramBucketValueKey($data, $bucketToIncrease));
     }
 
     public function updateGauge(array $data)
     {
         $valueKey = $this->valueKey($data);
         if ($data['command'] == Adapter::COMMAND_SET) {
-            apc_store($valueKey, $this->toInteger($data['value']));
-            apc_store($this->metaKey($data), json_encode($this->metaData($data)));
+            apcu_store($valueKey, $this->toInteger($data['value']));
+            apcu_store($this->metaKey($data), json_encode($this->metaData($data)));
         } else {
-            $new = apc_add($valueKey, $this->toInteger(0));
+            $new = apcu_add($valueKey, $this->toInteger(0));
             if ($new) {
-                apc_store($this->metaKey($data), json_encode($this->metaData($data)));
+                apcu_store($this->metaKey($data), json_encode($this->metaData($data)));
             }
             // Taken from https://github.com/prometheus/client_golang/blob/66058aac3a83021948e5fb12f1f408ff556b9037/prometheus/value.go#L91
             $done = false;
             while (!$done) {
-                $old = apc_fetch($valueKey);
-                $done = apc_cas($valueKey, $old, $this->toInteger($this->fromInteger($old) + $data['value']));
+                $old = apcu_fetch($valueKey);
+                $done = apcu_cas($valueKey, $old, $this->toInteger($this->fromInteger($old) + $data['value']));
             }
         }
     }
 
     public function updateCounter(array $data)
     {
-        $new = apc_add($this->valueKey($data), 0);
+        $new = apcu_add($this->valueKey($data), 0);
         if ($new) {
-            apc_store($this->metaKey($data), json_encode($this->metaData($data)));
+            apcu_store($this->metaKey($data), json_encode($this->metaData($data)));
         }
-        apc_inc($this->valueKey($data), $data['value']);
+        apcu_inc($this->valueKey($data), $data['value']);
     }
 
     public function flushAPC()
     {
-       apc_clear_cache('user');
+       apcu_clear_cache();
     }
 
     /**
@@ -134,7 +134,7 @@ class APC implements Adapter
     private function collectCounters()
     {
         $counters = array();
-        foreach (new \APCIterator('user', '/^prom:counter:.*:meta/') as $counter) {
+        foreach (new \APCUIterator('/^prom:counter:.*:meta/') as $counter) {
             $metaData = json_decode($counter['value'], true);
             $data = array(
                 'name' => $metaData['name'],
@@ -142,7 +142,7 @@ class APC implements Adapter
                 'type' => $metaData['type'],
                 'labelNames' => $metaData['labelNames'],
             );
-            foreach (new \APCIterator('user', '/^prom:counter:' . $metaData['name'] . ':.*:value/') as $value) {
+            foreach (new \APCUIterator('/^prom:counter:' . $metaData['name'] . ':.*:value/') as $value) {
                 $parts = explode(':', $value['key']);
                 $labelValues = $parts[3];
                 $data['samples'][] = array(
@@ -164,7 +164,7 @@ class APC implements Adapter
     private function collectGauges()
     {
         $gauges = array();
-        foreach (new \APCIterator('user', '/^prom:gauge:.*:meta/') as $gauge) {
+        foreach (new \APCUIterator('/^prom:gauge:.*:meta/') as $gauge) {
             $metaData = json_decode($gauge['value'], true);
             $data = array(
                 'name' => $metaData['name'],
@@ -172,7 +172,7 @@ class APC implements Adapter
                 'type' => $metaData['type'],
                 'labelNames' => $metaData['labelNames'],
             );
-            foreach (new \APCIterator('user', '/^prom:gauge:' . $metaData['name'] . ':.*:value/') as $value) {
+            foreach (new \APCUIterator('/^prom:gauge:' . $metaData['name'] . ':.*:value/') as $value) {
                 $parts = explode(':', $value['key']);
                 $labelValues = $parts[3];
                 $data['samples'][] = array(
@@ -195,7 +195,7 @@ class APC implements Adapter
     private function collectHistograms()
     {
         $histograms = array();
-        foreach (new \APCIterator('user', '/^prom:histogram:.*:meta/') as $histogram) {
+        foreach (new \APCUIterator('/^prom:histogram:.*:meta/') as $histogram) {
             $metaData = json_decode($histogram['value'], true);
             $data = array(
                 'name' => $metaData['name'],
@@ -209,7 +209,7 @@ class APC implements Adapter
             $data['buckets'][] = '+Inf';
 
             $histogramBuckets = array();
-            foreach (new \APCIterator('user', '/^prom:histogram:' . $metaData['name'] . ':.*:value/') as $value) {
+            foreach (new \APCUIterator('/^prom:histogram:' . $metaData['name'] . ':.*:value/') as $value) {
                 $parts = explode(':', $value['key']);
                 $labelValues = $parts[3];
                 $bucket = $parts[4];
