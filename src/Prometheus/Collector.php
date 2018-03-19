@@ -32,7 +32,7 @@ abstract class Collector
         $this->help = $help;
         foreach ($labels as $label) {
             if (!preg_match(self::RE_METRIC_LABEL_NAME, $label)) {
-                throw new \InvalidArgumentException("Invalid label name: '" . $metricName . "'");
+                throw new \InvalidArgumentException("Invalid label name: '" . $label . "'");
             }
         }
         $this->labels = $labels;
