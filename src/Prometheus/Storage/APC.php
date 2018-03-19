@@ -5,6 +5,7 @@ namespace Prometheus\Storage;
 
 
 use Prometheus\MetricFamilySamples;
+use RuntimeException;
 
 class APC implements Adapter
 {
@@ -103,7 +104,13 @@ class APC implements Adapter
      */
     private function valueKey(array $data)
     {
-        return implode(':', array(self::PROMETHEUS_PREFIX, $data['type'], $data['name'], json_encode($data['labelValues']), 'value'));
+        return implode(':', array(
+            self::PROMETHEUS_PREFIX,
+            $data['type'],
+            $data['name'],
+            $this->encodeLabelValues($data['labelValues']),
+            'value'
+        ));
     }
 
     /**
@@ -112,7 +119,14 @@ class APC implements Adapter
      */
     private function histogramBucketValueKey(array $data, $bucket)
     {
-        return implode(':', array(self::PROMETHEUS_PREFIX, $data['type'], $data['name'], json_encode($data['labelValues']), $bucket, 'value'));
+        return implode(':', array(
+            self::PROMETHEUS_PREFIX,
+            $data['type'],
+            $data['name'],
+            $this->encodeLabelValues($data['labelValues']),
+            $bucket,
+            'value'
+        ));
     }
 
     /**
@@ -148,7 +162,7 @@ class APC implements Adapter
                 $data['samples'][] = array(
                     'name' => $metaData['name'],
                     'labelNames' => array(),
-                    'labelValues' => json_decode($labelValues),
+                    'labelValues' => $this->decodeLabelValues($labelValues),
                     'value' => $value['value']
                 );
             }
@@ -159,8 +173,8 @@ class APC implements Adapter
     }
 
     /**
- * @return array
- */
+     * @return array
+     */
     private function collectGauges()
     {
         $gauges = array();
@@ -178,7 +192,7 @@ class APC implements Adapter
                 $data['samples'][] = array(
                     'name' => $metaData['name'],
                     'labelNames' => array(),
-                    'labelValues' => json_decode($labelValues),
+                    'labelValues' => $this->decodeLabelValues($labelValues),
                     'value' => $this->fromInteger($value['value'])
                 );
             }
@@ -222,7 +236,7 @@ class APC implements Adapter
             sort($labels);
             foreach ($labels as $labelValues) {
                 $acc = 0;
-                $decodedLabelValues = json_decode($labelValues);
+                $decodedLabelValues = $this->decodeLabelValues($labelValues);
                 foreach ($data['buckets'] as $bucket) {
                     $bucket = (string) $bucket;
                     if (!isset($histogramBuckets[$labelValues][$bucket])) {
@@ -288,5 +302,37 @@ class APC implements Adapter
         usort($samples, function($a, $b){
             return strcmp(implode("", $a['labelValues']), implode("", $b['labelValues']));
         });
+    }
+
+    /**
+     * @param array $values
+     * @return string
+     * @throws RuntimeException
+     */
+    private function encodeLabelValues(array $values)
+    {
+        $json = json_encode($values);
+        if (false === $json) {
+            throw new RuntimeException(json_last_error_msg());
+        }
+        return base64_encode($json);
+    }
+
+    /**
+     * @param string $values
+     * @return array
+     * @throws RuntimeException
+     */
+    private function decodeLabelValues($values)
+    {
+        $json = base64_decode($values, true);
+        if (false === $json) {
+            throw new RuntimeException('Cannot base64 decode label values');
+        }
+        $decodedValues = json_decode($json, true);
+        if (false === $decodedValues) {
+            throw new RuntimeException(json_last_error_msg());
+        }
+        return $decodedValues;
     }
 }

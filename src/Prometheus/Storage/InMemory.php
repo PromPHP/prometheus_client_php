@@ -4,6 +4,7 @@ namespace Prometheus\Storage;
 
 
 use Prometheus\MetricFamilySamples;
+use RuntimeException;
 
 class InMemory implements Adapter
 {
@@ -60,7 +61,7 @@ class InMemory implements Adapter
             sort($labels);
             foreach ($labels as $labelValues) {
                 $acc = 0;
-                $decodedLabelValues = json_decode($labelValues);
+                $decodedLabelValues = $this->decodeLabelValues($labelValues);
                 foreach ($data['buckets'] as $bucket) {
                     $bucket = (string)$bucket;
                     if (!isset($histogramBuckets[$labelValues][$bucket])) {
@@ -120,7 +121,7 @@ class InMemory implements Adapter
                 $data['samples'][] = [
                     'name' => $metaData['name'],
                     'labelNames' => [],
-                    'labelValues' => json_decode($labelValues),
+                    'labelValues' => $this->decodeLabelValues($labelValues),
                     'value' => $value
                 ];
             }
@@ -215,7 +216,7 @@ class InMemory implements Adapter
         return implode(':', [
             $data['type'],
             $data['name'],
-            json_encode($data['labelValues']),
+            $this->encodeLabelValues($data['labelValues']),
             $bucket
         ]);
     }
@@ -238,7 +239,7 @@ class InMemory implements Adapter
     private function valueKey(array $data)
     {
         return implode(':',
-            [$data['type'], $data['name'], json_encode($data['labelValues']), 'value']);
+            [$data['type'], $data['name'], $this->encodeLabelValues($data['labelValues']), 'value']);
     }
 
     /**
@@ -260,5 +261,37 @@ class InMemory implements Adapter
         usort($samples, function ($a, $b) {
             return strcmp(implode("", $a['labelValues']), implode("", $b['labelValues']));
         });
+    }
+
+    /**
+     * @param array $values
+     * @return string
+     * @throws RuntimeException
+     */
+    private function encodeLabelValues(array $values)
+    {
+        $json = json_encode($values);
+        if (false === $json) {
+            throw new RuntimeException(json_last_error_msg());
+        }
+        return base64_encode($json);
+    }
+
+    /**
+     * @param string $values
+     * @return array
+     * @throws RuntimeException
+     */
+    private function decodeLabelValues($values)
+    {
+        $json = base64_decode($values, true);
+        if (false === $json) {
+            throw new RuntimeException('Cannot base64 decode label values');
+        }
+        $decodedValues = json_decode($json, true);
+        if (false === $decodedValues) {
+            throw new RuntimeException(json_last_error_msg());
+        }
+        return $decodedValues;
     }
 }
