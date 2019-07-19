@@ -1,8 +1,5 @@
 <?php
-
-
 namespace Prometheus\Exception;
-
 
 use Exception;
 

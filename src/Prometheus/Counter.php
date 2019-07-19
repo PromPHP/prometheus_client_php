@@ -1,7 +1,5 @@
 <?php
-
 namespace Prometheus;
-
 
 use Prometheus\Storage\Adapter;
 

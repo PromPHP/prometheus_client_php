@@ -1,8 +1,5 @@
 <?php
-
-
 namespace Prometheus;
-
 
 use Prometheus\Exception\MetricNotFoundException;
 use Prometheus\Exception\MetricsRegistrationException;
@@ -20,19 +17,26 @@ class CollectorRegistry
      * @var Adapter
      */
     private $storageAdapter;
+
     /**
      * @var Gauge[]
      */
     private $gauges = array();
+
     /**
      * @var Counter[]
      */
     private $counters = array();
+
     /**
      * @var Histogram[]
      */
     private $histograms = array();
 
+    /**
+     * CollectorRegistry constructor.
+     * @param Adapter $redisAdapter
+     */
     public function __construct(Adapter $redisAdapter)
     {
         $this->storageAdapter = $redisAdapter;
@@ -102,6 +106,7 @@ class CollectorRegistry
      * @param string $help e.g. The duration something took in seconds.
      * @param array $labels e.g. ['controller', 'action']
      * @return Gauge
+     * @throws MetricsRegistrationException
      */
     public function getOrRegisterGauge($namespace, $name, $help, $labels = array())
     {
@@ -158,6 +163,7 @@ class CollectorRegistry
      * @param string $help e.g. The number of requests made.
      * @param array $labels e.g. ['controller', 'action']
      * @return Counter
+     * @throws MetricsRegistrationException
      */
     public function getOrRegisterCounter($namespace, $name, $help, $labels = array())
     {
@@ -217,6 +223,7 @@ class CollectorRegistry
      * @param array $labels e.g. ['controller', 'action']
      * @param array $buckets e.g. [100, 200, 300]
      * @return Histogram
+     * @throws MetricsRegistrationException
      */
     public function getOrRegisterHistogram($namespace, $name, $help, $labels = array(), $buckets = null)
     {
@@ -228,6 +235,11 @@ class CollectorRegistry
         return $histogram;
     }
 
+    /**
+     * @param $namespace
+     * @param $name
+     * @return string
+     */
     private static function metricIdentifier($namespace, $name)
     {
         return $namespace . ":" . $name;

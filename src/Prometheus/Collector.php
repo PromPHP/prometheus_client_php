@@ -1,7 +1,5 @@
 <?php
-
 namespace Prometheus;
-
 
 use InvalidArgumentException;
 use Prometheus\Storage\Adapter;
@@ -10,9 +8,24 @@ abstract class Collector
 {
     const RE_METRIC_LABEL_NAME = '/^[a-zA-Z_:][a-zA-Z0-9_:]*$/';
 
+    /**
+     * @var Adapter
+     */
     protected $storageAdapter;
+
+    /**
+     * @var string
+     */
     protected $name;
+
+    /**
+     * @var string
+     */
     protected $help;
+
+    /**
+     * @var array
+     */
     protected $labels;
 
     /**
@@ -44,21 +57,33 @@ abstract class Collector
      */
     public abstract function getType();
 
+    /**
+     * @return string
+     */
     public function getName()
     {
         return $this->name;
     }
 
+    /**
+     * @return array
+     */
     public function getLabelNames()
     {
         return $this->labels;
     }
 
+    /**
+     * @return string
+     */
     public function getHelp()
     {
         return $this->help;
     }
 
+    /**
+     * @return string
+     */
     public function getKey()
     {
         return sha1($this->getName() . serialize($this->getLabelNames()));

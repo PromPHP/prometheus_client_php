@@ -2,7 +2,6 @@
 
 namespace Prometheus;
 
-
 use InvalidArgumentException;
 use Prometheus\Storage\Adapter;
 
@@ -10,6 +9,9 @@ class Histogram extends Collector
 {
     const TYPE = 'histogram';
 
+    /**
+     * @var array|null
+     */
     private $buckets;
 
     /**

@@ -4,10 +4,29 @@ namespace Prometheus;
 
 class MetricFamilySamples
 {
+    /**
+     * @var mixed
+     */
     private $name;
+
+    /**
+     * @var string
+     */
     private $type;
+
+    /**
+     * @var string
+     */
     private $help;
+
+    /**
+     * @var array
+     */
     private $labelNames;
+
+    /**
+     * @var array
+     */
     private $samples = array();
 
     /**

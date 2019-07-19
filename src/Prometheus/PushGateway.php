@@ -1,14 +1,15 @@
 <?php
 
-
 namespace Prometheus;
-
 
 use GuzzleHttp\Client;
 use RuntimeException;
 
 class PushGateway
 {
+    /**
+     * @var string
+     */
     private $address;
 
     /**
@@ -26,6 +27,7 @@ class PushGateway
      * @param CollectorRegistry $collectorRegistry
      * @param $job
      * @param $groupingKey
+     * @throws \GuzzleHttp\Exception\GuzzleException
      */
     public function push(CollectorRegistry $collectorRegistry, $job, $groupingKey = null)
     {
@@ -38,6 +40,7 @@ class PushGateway
      * @param CollectorRegistry $collectorRegistry
      * @param $job
      * @param $groupingKey
+     * @throws \GuzzleHttp\Exception\GuzzleException
      */
     public function pushAdd(CollectorRegistry $collectorRegistry, $job, $groupingKey = null)
     {
@@ -49,6 +52,7 @@ class PushGateway
      * Uses HTTP POST.
      * @param $job
      * @param $groupingKey
+     * @throws \GuzzleHttp\Exception\GuzzleException
      */
     public function delete($job, $groupingKey = null)
     {
@@ -57,9 +61,10 @@ class PushGateway
 
     /**
      * @param CollectorRegistry $collectorRegistry
-     * @param $job
-     * @param $groupingKey
-     * @param $method
+     * @param string $job
+     * @param string $groupingKey
+     * @param string $method
+     * @throws \GuzzleHttp\Exception\GuzzleException
      */
     private function doRequest(CollectorRegistry $collectorRegistry, $job, $groupingKey, $method)
     {
@@ -88,5 +93,4 @@ class PushGateway
             throw new RuntimeException($msg);
         }
     }
-
 }

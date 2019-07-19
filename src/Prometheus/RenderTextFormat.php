@@ -2,7 +2,6 @@
 
 namespace Prometheus;
 
-
 class RenderTextFormat
 {
     const MIME_TYPE = 'text/plain; version=0.0.4';
@@ -30,6 +29,11 @@ class RenderTextFormat
         return implode("\n", $lines) . "\n";
     }
 
+    /**
+     * @param MetricFamilySamples $metric
+     * @param Sample $sample
+     * @return string
+     */
     private function renderSample(MetricFamilySamples $metric, Sample $sample)
     {
         $escapedLabels = array();
@@ -45,6 +49,10 @@ class RenderTextFormat
         return $sample->getName() . ' ' . $sample->getValue();
     }
 
+    /**
+     * @param $v
+     * @return mixed
+     */
     private function escapeLabelValue($v)
     {
         $v = str_replace("\\", "\\\\", $v);
