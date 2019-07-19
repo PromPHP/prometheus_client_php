@@ -4,6 +4,7 @@
 namespace Prometheus\Storage;
 
 
+use APCUIterator;
 use Prometheus\MetricFamilySamples;
 use RuntimeException;
 
@@ -148,7 +149,7 @@ class APC implements Adapter
     private function collectCounters()
     {
         $counters = array();
-        foreach (new \APCUIterator('/^prom:counter:.*:meta/') as $counter) {
+        foreach (new APCUIterator('/^prom:counter:.*:meta/') as $counter) {
             $metaData = json_decode($counter['value'], true);
             $data = array(
                 'name' => $metaData['name'],
@@ -156,7 +157,7 @@ class APC implements Adapter
                 'type' => $metaData['type'],
                 'labelNames' => $metaData['labelNames'],
             );
-            foreach (new \APCUIterator('/^prom:counter:' . $metaData['name'] . ':.*:value/') as $value) {
+            foreach (new APCUIterator('/^prom:counter:' . $metaData['name'] . ':.*:value/') as $value) {
                 $parts = explode(':', $value['key']);
                 $labelValues = $parts[3];
                 $data['samples'][] = array(
@@ -178,7 +179,7 @@ class APC implements Adapter
     private function collectGauges()
     {
         $gauges = array();
-        foreach (new \APCUIterator('/^prom:gauge:.*:meta/') as $gauge) {
+        foreach (new APCUIterator('/^prom:gauge:.*:meta/') as $gauge) {
             $metaData = json_decode($gauge['value'], true);
             $data = array(
                 'name' => $metaData['name'],
@@ -186,7 +187,7 @@ class APC implements Adapter
                 'type' => $metaData['type'],
                 'labelNames' => $metaData['labelNames'],
             );
-            foreach (new \APCUIterator('/^prom:gauge:' . $metaData['name'] . ':.*:value/') as $value) {
+            foreach (new APCUIterator('/^prom:gauge:' . $metaData['name'] . ':.*:value/') as $value) {
                 $parts = explode(':', $value['key']);
                 $labelValues = $parts[3];
                 $data['samples'][] = array(
@@ -209,7 +210,7 @@ class APC implements Adapter
     private function collectHistograms()
     {
         $histograms = array();
-        foreach (new \APCUIterator('/^prom:histogram:.*:meta/') as $histogram) {
+        foreach (new APCUIterator('/^prom:histogram:.*:meta/') as $histogram) {
             $metaData = json_decode($histogram['value'], true);
             $data = array(
                 'name' => $metaData['name'],
@@ -223,7 +224,7 @@ class APC implements Adapter
             $data['buckets'][] = '+Inf';
 
             $histogramBuckets = array();
-            foreach (new \APCUIterator('/^prom:histogram:' . $metaData['name'] . ':.*:value/') as $value) {
+            foreach (new APCUIterator('/^prom:histogram:' . $metaData['name'] . ':.*:value/') as $value) {
                 $parts = explode(':', $value['key']);
                 $labelValues = $parts[3];
                 $bucket = $parts[4];

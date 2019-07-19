@@ -3,7 +3,8 @@
 
 namespace Test\Prometheus;
 
-use PHPUnit_Framework_TestCase;
+use InvalidArgumentException;
+use PHPUnit\Framework\TestCase;
 use Prometheus\Histogram;
 use Prometheus\MetricFamilySamples;
 use Prometheus\Sample;
@@ -13,7 +14,7 @@ use Prometheus\Storage\Adapter;
 /**
  * See https://prometheus.io/docs/instrumenting/exposition_formats/
  */
-abstract class AbstractHistogramTest extends PHPUnit_Framework_TestCase
+abstract class AbstractHistogramTest extends TestCase
 {
     /**
      * @var Adapter
@@ -374,7 +375,7 @@ abstract class AbstractHistogramTest extends PHPUnit_Framework_TestCase
 
     /**
      * @test
-     * @expectedException \InvalidArgumentException
+     * @expectedException InvalidArgumentException
      * @expectedExceptionMessage Histogram buckets must be in increasing order
      */
     public function itShouldThrowAnExceptionWhenTheBucketSizesAreNotIncreasing()
@@ -384,7 +385,7 @@ abstract class AbstractHistogramTest extends PHPUnit_Framework_TestCase
 
     /**
      * @test
-     * @expectedException \InvalidArgumentException
+     * @expectedException InvalidArgumentException
      * @expectedExceptionMessage Histogram must have at least one bucket
      */
     public function itShouldThrowAnExceptionWhenThereIsLessThanOneBucket()
@@ -394,7 +395,7 @@ abstract class AbstractHistogramTest extends PHPUnit_Framework_TestCase
 
     /**
      * @test
-     * @expectedException \InvalidArgumentException
+     * @expectedException InvalidArgumentException
      * @expectedExceptionMessage Histogram cannot have a label named
      */
     public function itShouldThrowAnExceptionWhenThereIsALabelNamedLe()
@@ -404,7 +405,7 @@ abstract class AbstractHistogramTest extends PHPUnit_Framework_TestCase
 
     /**
      * @test
-     * @expectedException \InvalidArgumentException
+     * @expectedException InvalidArgumentException
      * @expectedExceptionMessage Invalid metric name
      */
     public function itShouldRejectInvalidMetricsNames()
@@ -414,7 +415,7 @@ abstract class AbstractHistogramTest extends PHPUnit_Framework_TestCase
 
     /**
      * @test
-     * @expectedException \InvalidArgumentException
+     * @expectedException InvalidArgumentException
      * @expectedExceptionMessage Invalid label name
      */
     public function itShouldRejectInvalidLabelNames()

@@ -3,6 +3,7 @@
 namespace Prometheus;
 
 
+use InvalidArgumentException;
 use Prometheus\Storage\Adapter;
 
 class Histogram extends Collector
@@ -28,12 +29,12 @@ class Histogram extends Collector
         }
 
         if (0 == count($buckets)) {
-            throw new \InvalidArgumentException("Histogram must have at least one bucket.");
+            throw new InvalidArgumentException("Histogram must have at least one bucket.");
         }
 
         for ($i = 0; $i < count($buckets) - 1; $i++) {
             if ($buckets[$i] >= $buckets[$i + 1]) {
-                throw new \InvalidArgumentException(
+                throw new InvalidArgumentException(
                     "Histogram buckets must be in increasing order: " .
                     $buckets[$i] . " >= " . $buckets[$i + 1]
                 );
@@ -41,7 +42,7 @@ class Histogram extends Collector
         }
         foreach ($labels as $label) {
             if ($label === 'le') {
-                throw new \InvalidArgumentException("Histogram cannot have a label named 'le'.");
+                throw new InvalidArgumentException("Histogram cannot have a label named 'le'.");
             }
         }
         $this->buckets = $buckets;

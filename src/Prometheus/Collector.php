@@ -3,6 +3,7 @@
 namespace Prometheus;
 
 
+use InvalidArgumentException;
 use Prometheus\Storage\Adapter;
 
 abstract class Collector
@@ -26,13 +27,13 @@ abstract class Collector
         $this->storageAdapter = $storageAdapter;
         $metricName = ($namespace ? $namespace . '_' : '') . $name;
         if (!preg_match(self::RE_METRIC_LABEL_NAME, $metricName)) {
-            throw new \InvalidArgumentException("Invalid metric name: '" . $metricName . "'");
+            throw new InvalidArgumentException("Invalid metric name: '" . $metricName . "'");
         }
         $this->name = $metricName;
         $this->help = $help;
         foreach ($labels as $label) {
             if (!preg_match(self::RE_METRIC_LABEL_NAME, $label)) {
-                throw new \InvalidArgumentException("Invalid label name: '" . $label . "'");
+                throw new InvalidArgumentException("Invalid label name: '" . $label . "'");
             }
         }
         $this->labels = $labels;
@@ -69,7 +70,7 @@ abstract class Collector
     protected function assertLabelsAreDefinedCorrectly($labels)
     {
         if (count($labels) != count($this->labels)) {
-            throw new \InvalidArgumentException(sprintf('Labels are not defined correctly: ', print_r($labels, true)));
+            throw new InvalidArgumentException(sprintf('Labels are not defined correctly: ', print_r($labels, true)));
         }
     }
 }

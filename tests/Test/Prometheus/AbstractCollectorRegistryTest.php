@@ -4,15 +4,16 @@
 namespace Test\Prometheus;
 
 
-use PHPUnit_Framework_TestCase;
+use PHPUnit\Framework\TestCase;
 use Prometheus\CollectorRegistry;
+use Prometheus\Exception\MetricNotFoundException;
 use Prometheus\Exception\MetricsRegistrationException;
 use Prometheus\Histogram;
 use Prometheus\RenderTextFormat;
 use Prometheus\Storage\Adapter;
 use Prometheus\Storage\Redis;
 
-abstract class AbstractCollectorRegistryTest extends PHPUnit_Framework_TestCase
+abstract class AbstractCollectorRegistryTest extends TestCase
 {
     /**
      * @var Adapter
@@ -195,7 +196,7 @@ EOF
 
     /**
      * @test
-     * @expectedException \Prometheus\Exception\MetricsRegistrationException
+     * @expectedException MetricsRegistrationException
      */
     public function itShouldForbidRegisteringTheSameCounterTwice()
     {
@@ -206,7 +207,7 @@ EOF
 
     /**
      * @test
-     * @expectedException \Prometheus\Exception\MetricsRegistrationException
+     * @expectedException MetricsRegistrationException
      */
     public function itShouldForbidRegisteringTheSameCounterWithDifferentLabels()
     {
@@ -217,7 +218,7 @@ EOF
 
     /**
      * @test
-     * @expectedException \Prometheus\Exception\MetricsRegistrationException
+     * @expectedException MetricsRegistrationException
      */
     public function itShouldForbidRegisteringTheSameHistogramTwice()
     {
@@ -228,7 +229,7 @@ EOF
 
     /**
      * @test
-     * @expectedException \Prometheus\Exception\MetricsRegistrationException
+     * @expectedException MetricsRegistrationException
      */
     public function itShouldForbidRegisteringTheSameHistogramWithDifferentLabels()
     {
@@ -239,7 +240,7 @@ EOF
 
     /**
      * @test
-     * @expectedException \Prometheus\Exception\MetricsRegistrationException
+     * @expectedException MetricsRegistrationException
      */
     public function itShouldForbidRegisteringTheSameGaugeTwice()
     {
@@ -250,7 +251,7 @@ EOF
 
     /**
      * @test
-     * @expectedException \Prometheus\Exception\MetricsRegistrationException
+     * @expectedException MetricsRegistrationException
      */
     public function itShouldForbidRegisteringTheSameGaugeWithDifferentLabels()
     {
@@ -261,7 +262,7 @@ EOF
 
     /**
      * @test
-     * @expectedException \Prometheus\Exception\MetricNotFoundException
+     * @expectedException MetricNotFoundException
      */
     public function itShouldThrowAnExceptionWhenGettingANonExistentMetric()
     {

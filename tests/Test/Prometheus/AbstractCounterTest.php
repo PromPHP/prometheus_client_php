@@ -3,7 +3,8 @@
 
 namespace Test\Prometheus;
 
-use PHPUnit_Framework_TestCase;
+use InvalidArgumentException;
+use PHPUnit\Framework\TestCase;
 use Prometheus\Counter;
 use Prometheus\MetricFamilySamples;
 use Prometheus\Sample;
@@ -12,7 +13,7 @@ use Prometheus\Storage\Adapter;
 /**
  * See https://prometheus.io/docs/instrumenting/exposition_formats/
  */
-abstract class AbstractCounterTest extends PHPUnit_Framework_TestCase
+abstract class AbstractCounterTest extends TestCase
 {
     /**
      * @var Adapter
@@ -125,7 +126,7 @@ abstract class AbstractCounterTest extends PHPUnit_Framework_TestCase
 
     /**
      * @test
-     * @expectedException \InvalidArgumentException
+     * @expectedException InvalidArgumentException
      */
     public function itShouldRejectInvalidMetricsNames()
     {
@@ -134,7 +135,7 @@ abstract class AbstractCounterTest extends PHPUnit_Framework_TestCase
 
     /**
      * @test
-     * @expectedException \InvalidArgumentException
+     * @expectedException InvalidArgumentException
      */
     public function itShouldRejectInvalidLabelNames()
     {

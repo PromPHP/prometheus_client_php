@@ -3,11 +3,13 @@
 namespace Prometheus\Storage;
 
 
+use InvalidArgumentException;
 use Prometheus\Counter;
 use Prometheus\Exception\StorageException;
 use Prometheus\Gauge;
 use Prometheus\Histogram;
 use Prometheus\MetricFamilySamples;
+use RedisException;
 
 class Redis implements Adapter
 {
@@ -59,6 +61,9 @@ class Redis implements Adapter
         self::$prefix = $prefix;
     }
 
+    /**
+     * @throws StorageException
+     */
     public function flushRedis()
     {
         $this->openConnection();
@@ -103,7 +108,7 @@ class Redis implements Adapter
 
             $this->redis->setOption(\Redis::OPT_READ_TIMEOUT, $this->options['read_timeout']);
             
-        } catch (\RedisException $e) {
+        } catch (RedisException $e) {
             throw new StorageException("Can't connect to Redis server", 0, $e);
         }
     }
@@ -342,7 +347,7 @@ LUA
             case Adapter::COMMAND_SET:
                 return 'hSet';
             default:
-                throw new \InvalidArgumentException("Unknown command");
+                throw new InvalidArgumentException("Unknown command");
         }
     }
 

@@ -16,14 +16,14 @@
         "symfony/polyfill-apcu": "^1.6"
     },
     "require-dev": {
-        "phpunit/phpunit": "4.1.0"
+        "phpunit/phpunit": "^7.5"
     },
     "suggest": {
         "ext-redis": "Required if using Redis.",
         "ext-apc": "Required if using APCu."
     },
     "autoload": {
-        "psr-0": {
+        "psr-4": {
             "Prometheus\\": "src/"
         }
     },
