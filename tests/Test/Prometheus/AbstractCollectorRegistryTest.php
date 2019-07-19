@@ -196,7 +196,7 @@ EOF
 
     /**
      * @test
-     * @expectedException MetricsRegistrationException
+     * @expectedException \Prometheus\Exception\MetricsRegistrationException
      */
     public function itShouldForbidRegisteringTheSameCounterTwice()
     {
@@ -207,7 +207,7 @@ EOF
 
     /**
      * @test
-     * @expectedException MetricsRegistrationException
+     * @expectedException \Prometheus\Exception\MetricsRegistrationException
      */
     public function itShouldForbidRegisteringTheSameCounterWithDifferentLabels()
     {
@@ -218,7 +218,7 @@ EOF
 
     /**
      * @test
-     * @expectedException MetricsRegistrationException
+     * @expectedException \Prometheus\Exception\MetricsRegistrationException
      */
     public function itShouldForbidRegisteringTheSameHistogramTwice()
     {
@@ -229,7 +229,7 @@ EOF
 
     /**
      * @test
-     * @expectedException MetricsRegistrationException
+     * @expectedException \Prometheus\Exception\MetricsRegistrationException
      */
     public function itShouldForbidRegisteringTheSameHistogramWithDifferentLabels()
     {
@@ -240,7 +240,7 @@ EOF
 
     /**
      * @test
-     * @expectedException MetricsRegistrationException
+     * @expectedException \Prometheus\Exception\MetricsRegistrationException
      */
     public function itShouldForbidRegisteringTheSameGaugeTwice()
     {
@@ -251,7 +251,7 @@ EOF
 
     /**
      * @test
-     * @expectedException MetricsRegistrationException
+     * @expectedException \Prometheus\Exception\MetricsRegistrationException
      */
     public function itShouldForbidRegisteringTheSameGaugeWithDifferentLabels()
     {
@@ -262,7 +262,7 @@ EOF
 
     /**
      * @test
-     * @expectedException MetricNotFoundException
+     * @expectedException \Prometheus\Exception\MetricNotFoundException
      */
     public function itShouldThrowAnExceptionWhenGettingANonExistentMetric()
     {
