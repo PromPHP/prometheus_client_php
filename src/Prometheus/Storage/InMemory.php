@@ -31,6 +31,9 @@ class InMemory implements Adapter
         $this->histograms = [];
     }
 
+    /**
+     * @return array
+     */
     private function collectHistograms()
     {
         $histograms = [];
@@ -104,6 +107,10 @@ class InMemory implements Adapter
         return $histograms;
     }
 
+    /**
+     * @param array $metrics
+     * @return array
+     */
     private function internalCollect(array $metrics)
     {
         $result = [];
@@ -131,6 +138,9 @@ class InMemory implements Adapter
         return $result;
     }
 
+    /**
+     * @param array $data
+     */
     public function updateHistogram(array $data)
     {
         // Initialize the sum
@@ -164,6 +174,9 @@ class InMemory implements Adapter
         $this->histograms[$metaKey]['samples'][$bucketKey] += 1;
     }
 
+    /**
+     * @param array $data
+     */
     public function updateGauge(array $data)
     {
         $metaKey = $this->metaKey($data);
@@ -184,6 +197,9 @@ class InMemory implements Adapter
         }
     }
 
+    /**
+     * @param array $data
+     */
     public function updateCounter(array $data)
     {
         $metaKey = $this->metaKey($data);
@@ -206,9 +222,7 @@ class InMemory implements Adapter
 
     /**
      * @param array $data
-     *
-     * @param       $bucket
-     *
+     * @param string $bucket
      * @return string
      */
     private function histogramBucketValueKey(array $data, $bucket)
@@ -256,6 +270,9 @@ class InMemory implements Adapter
         return $metricsMetaData;
     }
 
+    /**
+     * @param array $samples
+     */
     private function sortSamples(array &$samples)
     {
         usort($samples, function ($a, $b) {

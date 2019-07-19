@@ -3,7 +3,8 @@
 
 namespace Test\Prometheus;
 
-use PHPUnit_Framework_TestCase;
+use InvalidArgumentException;
+use PHPUnit\Framework\TestCase;
 use Prometheus\Gauge;
 use Prometheus\MetricFamilySamples;
 use Prometheus\Sample;
@@ -12,7 +13,7 @@ use Prometheus\Storage\Adapter;
 /**
  * See https://prometheus.io/docs/instrumenting/exposition_formats/
  */
-abstract class AbstractGaugeTest extends PHPUnit_Framework_TestCase
+abstract class AbstractGaugeTest extends TestCase
 {
     /**
      * @var Adapter
@@ -293,7 +294,7 @@ abstract class AbstractGaugeTest extends PHPUnit_Framework_TestCase
 
     /**
      * @test
-     * @expectedException \InvalidArgumentException
+     * @expectedException InvalidArgumentException
      */
     public function itShouldRejectInvalidMetricsNames()
     {
@@ -302,7 +303,7 @@ abstract class AbstractGaugeTest extends PHPUnit_Framework_TestCase
 
     /**
      * @test
-     * @expectedException \InvalidArgumentException
+     * @expectedException InvalidArgumentException
      */
     public function itShouldRejectInvalidLabelNames()
     {

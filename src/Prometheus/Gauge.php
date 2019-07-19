@@ -1,8 +1,6 @@
 <?php
 
-
 namespace Prometheus;
-
 
 use Prometheus\Storage\Adapter;
 
@@ -39,11 +37,18 @@ class Gauge extends Collector
         return self::TYPE;
     }
 
+    /**
+     * @param array $labels
+     */
     public function inc($labels = array())
     {
         $this->incBy(1, $labels);
     }
 
+    /**
+     * @param $value
+     * @param array $labels
+     */
     public function incBy($value, $labels = array())
     {
         $this->assertLabelsAreDefinedCorrectly($labels);
@@ -61,11 +66,18 @@ class Gauge extends Collector
         );
     }
 
+    /**
+     * @param array $labels
+     */
     public function dec($labels = array())
     {
         $this->decBy(1, $labels);
     }
 
+    /**
+     * @param $value
+     * @param array $labels
+     */
     public function decBy($value, $labels = array())
     {
         $this->incBy(-$value, $labels);

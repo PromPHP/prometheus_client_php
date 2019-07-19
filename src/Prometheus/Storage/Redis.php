@@ -1,24 +1,42 @@
 <?php
-
 namespace Prometheus\Storage;
 
-
+use InvalidArgumentException;
 use Prometheus\Counter;
 use Prometheus\Exception\StorageException;
 use Prometheus\Gauge;
 use Prometheus\Histogram;
 use Prometheus\MetricFamilySamples;
+use RedisException;
 
 class Redis implements Adapter
 {
     const PROMETHEUS_METRIC_KEYS_SUFFIX = '_METRIC_KEYS';
 
+    /**
+     * @var array
+     */
     private static $defaultOptions = array();
+
+    /**
+     * @var string
+     */
     private static $prefix = 'PROMETHEUS_';
 
+    /**
+     * @var array
+     */
     private $options;
+
+    /**
+     * @var \Redis
+     */
     private $redis;
 
+    /**
+     * Redis constructor.
+     * @param array $options
+     */
     public function __construct(array $options = array())
     {
         // with php 5.3 we cannot initialize the options directly on the field definition
@@ -54,11 +72,17 @@ class Redis implements Adapter
         self::$defaultOptions = array_merge(self::$defaultOptions, $options);
     }
 
+    /**
+     * @param $prefix
+     */
     public static function setPrefix($prefix)
     {
         self::$prefix = $prefix;
     }
 
+    /**
+     * @throws StorageException
+     */
     public function flushRedis()
     {
         $this->openConnection();
@@ -103,11 +127,15 @@ class Redis implements Adapter
 
             $this->redis->setOption(\Redis::OPT_READ_TIMEOUT, $this->options['read_timeout']);
             
-        } catch (\RedisException $e) {
+        } catch (RedisException $e) {
             throw new StorageException("Can't connect to Redis server", 0, $e);
         }
     }
 
+    /**
+     * @param array $data
+     * @throws StorageException
+     */
     public function updateHistogram(array $data)
     {
         $this->openConnection();
@@ -142,6 +170,10 @@ LUA
         );
     }
 
+    /**
+     * @param array $data
+     * @throws StorageException
+     */
     public function updateGauge(array $data)
     {
         $this->openConnection();
@@ -177,6 +209,11 @@ LUA
         );
     }
 
+    /**
+     * @param array $data
+     * @return mixed
+     * @throws StorageException
+     */
     public function updateCounter(array $data)
     {
         $this->openConnection();
@@ -206,6 +243,9 @@ LUA
         return $result;
     }
 
+    /**
+     * @return array
+     */
     private function collectHistograms()
     {
         $keys = $this->redis->sMembers(self::$prefix . Histogram::TYPE . self::PROMETHEUS_METRIC_KEYS_SUFFIX);
@@ -280,6 +320,9 @@ LUA
         return $histograms;
     }
 
+    /**
+     * @return array
+     */
     private function collectGauges()
     {
         $keys = $this->redis->sMembers(self::$prefix . Gauge::TYPE . self::PROMETHEUS_METRIC_KEYS_SUFFIX);
@@ -306,6 +349,9 @@ LUA
         return $gauges;
     }
 
+    /**
+     * @return array
+     */
     private function collectCounters()
     {
         $keys = $this->redis->sMembers(self::$prefix . Counter::TYPE . self::PROMETHEUS_METRIC_KEYS_SUFFIX);
@@ -332,6 +378,10 @@ LUA
         return $counters;
     }
 
+    /**
+     * @param string $cmd
+     * @return string
+     */
     private function getRedisCommand($cmd)
     {
         switch ($cmd) {
@@ -342,7 +392,7 @@ LUA
             case Adapter::COMMAND_SET:
                 return 'hSet';
             default:
-                throw new \InvalidArgumentException("Unknown command");
+                throw new InvalidArgumentException("Unknown command");
         }
     }
 

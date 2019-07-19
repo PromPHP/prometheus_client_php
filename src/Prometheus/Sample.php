@@ -2,14 +2,32 @@
 
 namespace Prometheus;
 
-
 class Sample
 {
+    /**
+     * @var string
+     */
     private $name;
+
+    /**
+     * @var array
+     */
     private $labelNames;
+
+    /**
+     * @var array
+     */
     private $labelValues;
+
+    /**
+     * @var int|double
+     */
     private $value;
 
+    /**
+     * Sample constructor.
+     * @param array $data
+     */
     public function __construct(array $data)
     {
         $this->name = $data['name'];

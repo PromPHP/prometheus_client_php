@@ -1,17 +1,31 @@
 <?php
-
 namespace Prometheus;
 
-
+use InvalidArgumentException;
 use Prometheus\Storage\Adapter;
 
 abstract class Collector
 {
     const RE_METRIC_LABEL_NAME = '/^[a-zA-Z_:][a-zA-Z0-9_:]*$/';
 
+    /**
+     * @var Adapter
+     */
     protected $storageAdapter;
+
+    /**
+     * @var string
+     */
     protected $name;
+
+    /**
+     * @var string
+     */
     protected $help;
+
+    /**
+     * @var array
+     */
     protected $labels;
 
     /**
@@ -26,13 +40,13 @@ abstract class Collector
         $this->storageAdapter = $storageAdapter;
         $metricName = ($namespace ? $namespace . '_' : '') . $name;
         if (!preg_match(self::RE_METRIC_LABEL_NAME, $metricName)) {
-            throw new \InvalidArgumentException("Invalid metric name: '" . $metricName . "'");
+            throw new InvalidArgumentException("Invalid metric name: '" . $metricName . "'");
         }
         $this->name = $metricName;
         $this->help = $help;
         foreach ($labels as $label) {
             if (!preg_match(self::RE_METRIC_LABEL_NAME, $label)) {
-                throw new \InvalidArgumentException("Invalid label name: '" . $label . "'");
+                throw new InvalidArgumentException("Invalid label name: '" . $label . "'");
             }
         }
         $this->labels = $labels;
@@ -43,21 +57,33 @@ abstract class Collector
      */
     public abstract function getType();
 
+    /**
+     * @return string
+     */
     public function getName()
     {
         return $this->name;
     }
 
+    /**
+     * @return array
+     */
     public function getLabelNames()
     {
         return $this->labels;
     }
 
+    /**
+     * @return string
+     */
     public function getHelp()
     {
         return $this->help;
     }
 
+    /**
+     * @return string
+     */
     public function getKey()
     {
         return sha1($this->getName() . serialize($this->getLabelNames()));
@@ -69,7 +95,7 @@ abstract class Collector
     protected function assertLabelsAreDefinedCorrectly($labels)
     {
         if (count($labels) != count($this->labels)) {
-            throw new \InvalidArgumentException(sprintf('Labels are not defined correctly: ', print_r($labels, true)));
+            throw new InvalidArgumentException(sprintf('Labels are not defined correctly: ', print_r($labels, true)));
         }
     }
 }

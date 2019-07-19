@@ -1,13 +1,15 @@
 <?php
 
-
 namespace Prometheus;
 
-
 use GuzzleHttp\Client;
+use RuntimeException;
 
 class PushGateway
 {
+    /**
+     * @var string
+     */
     private $address;
 
     /**
@@ -25,6 +27,7 @@ class PushGateway
      * @param CollectorRegistry $collectorRegistry
      * @param $job
      * @param $groupingKey
+     * @throws \GuzzleHttp\Exception\GuzzleException
      */
     public function push(CollectorRegistry $collectorRegistry, $job, $groupingKey = null)
     {
@@ -37,6 +40,7 @@ class PushGateway
      * @param CollectorRegistry $collectorRegistry
      * @param $job
      * @param $groupingKey
+     * @throws \GuzzleHttp\Exception\GuzzleException
      */
     public function pushAdd(CollectorRegistry $collectorRegistry, $job, $groupingKey = null)
     {
@@ -44,10 +48,11 @@ class PushGateway
     }
 
     /**
-     * Deletes metrics from the Pushgateway.
+     * Deletes metrics from the Push Gateway.
      * Uses HTTP POST.
      * @param $job
      * @param $groupingKey
+     * @throws \GuzzleHttp\Exception\GuzzleException
      */
     public function delete($job, $groupingKey = null)
     {
@@ -56,9 +61,10 @@ class PushGateway
 
     /**
      * @param CollectorRegistry $collectorRegistry
-     * @param $job
-     * @param $groupingKey
-     * @param $method
+     * @param string $job
+     * @param string $groupingKey
+     * @param string $method
+     * @throws \GuzzleHttp\Exception\GuzzleException
      */
     private function doRequest(CollectorRegistry $collectorRegistry, $job, $groupingKey, $method)
     {
@@ -83,9 +89,8 @@ class PushGateway
         $response = $client->request($method, $url, $requestOptions);
         $statusCode = $response->getStatusCode();
         if ($statusCode != 202) {
-            $msg = "Unexpected status code " . $statusCode . " received from pushgateway " . $this->address . ": " . $response->getBody();
-            throw new \RuntimeException($msg);
+            $msg = "Unexpected status code " . $statusCode . " received from push gateway " . $this->address . ": " . $response->getBody();
+            throw new RuntimeException($msg);
         }
     }
-
 }
