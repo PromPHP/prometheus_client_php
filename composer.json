@@ -23,8 +23,8 @@
         "ext-apc": "Required if using APCu."
     },
     "autoload": {
-        "psr-0": {
-            "Prometheus\\": "src/"
+        "psr-4": {
+            "Prometheus\\": "src/Prometheus/"
         }
     },
     "autoload-dev": {
