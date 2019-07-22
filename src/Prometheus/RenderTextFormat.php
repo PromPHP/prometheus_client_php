@@ -53,7 +53,7 @@ class RenderTextFormat
     }
 
     /**
-     * @param $v
+     * @param string $v
      * @return string
      */
     private function escapeLabelValue($v): string
