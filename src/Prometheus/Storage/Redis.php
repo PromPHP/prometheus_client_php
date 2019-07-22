@@ -9,7 +9,6 @@ use Prometheus\Exception\StorageException;
 use Prometheus\Gauge;
 use Prometheus\Histogram;
 use Prometheus\MetricFamilySamples;
-use RedisException;
 
 class Redis implements Adapter
 {
@@ -18,7 +17,14 @@ class Redis implements Adapter
     /**
      * @var array
      */
-    private static $defaultOptions = [];
+    private static $defaultOptions = [
+        'host' => '127.0.0.1',
+        'port' => 6379,
+        'timeout' => 0.1,
+        'read_timeout' => 10,
+        'persistent_connections' => false,
+        'password' => null,
+    ];
 
     /**
      * @var string
@@ -28,7 +34,7 @@ class Redis implements Adapter
     /**
      * @var array
      */
-    private $options;
+    private $options = [];
 
     /**
      * @var \Redis
@@ -41,27 +47,6 @@ class Redis implements Adapter
      */
     public function __construct(array $options = [])
     {
-        // with php 5.3 we cannot initialize the options directly on the field definition
-        // so we initialize them here for now
-        if (!isset(self::$defaultOptions['host'])) {
-            self::$defaultOptions['host'] = '127.0.0.1';
-        }
-        if (!isset(self::$defaultOptions['port'])) {
-            self::$defaultOptions['port'] = 6379;
-        }
-        if (!isset(self::$defaultOptions['timeout'])) {
-            self::$defaultOptions['timeout'] = 0.1; // in seconds
-        }
-        if (!isset(self::$defaultOptions['read_timeout'])) {
-            self::$defaultOptions['read_timeout'] = 10; // in seconds
-        }
-        if (!isset(self::$defaultOptions['persistent_connections'])) {
-            self::$defaultOptions['persistent_connections'] = false;
-        }
-        if (!isset(self::$defaultOptions['password'])) {
-            self::$defaultOptions['password'] = null;
-        }
-
         $this->options = array_merge(self::$defaultOptions, $options);
         $this->redis = new \Redis();
     }
@@ -122,6 +107,7 @@ class Redis implements Adapter
         if ($this->options['password']) {
             $this->redis->auth($this->options['password']);
         }
+
         if (isset($this->options['database'])) {
             $this->redis->select($this->options['database']);
         }
