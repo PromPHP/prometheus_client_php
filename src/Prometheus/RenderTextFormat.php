@@ -1,4 +1,5 @@
 <?php
+declare(strict_types = 1);
 
 namespace Prometheus;
 
@@ -10,14 +11,16 @@ class RenderTextFormat
      * @param MetricFamilySamples[] $metrics
      * @return string
      */
-    public function render(array $metrics)
+    public function render(array $metrics): string
     {
-        usort($metrics, function(MetricFamilySamples $a, MetricFamilySamples $b)
-        {
-            return strcmp($a->getName(), $b->getName());
-        });
+        usort(
+            $metrics,
+            function (MetricFamilySamples $a, MetricFamilySamples $b) {
+                return strcmp($a->getName(), $b->getName());
+            }
+        );
 
-        $lines = array();
+        $lines = [];
 
         foreach ($metrics as $metric) {
             $lines[] = "# HELP " . $metric->getName() . " {$metric->getHelp()}";
@@ -34,9 +37,9 @@ class RenderTextFormat
      * @param Sample $sample
      * @return string
      */
-    private function renderSample(MetricFamilySamples $metric, Sample $sample)
+    private function renderSample(MetricFamilySamples $metric, Sample $sample): string
     {
-        $escapedLabels = array();
+        $escapedLabels = [];
 
         $labelNames = $metric->getLabelNames();
         if ($metric->hasLabelNames() || $sample->hasLabelNames()) {
@@ -51,9 +54,9 @@ class RenderTextFormat
 
     /**
      * @param $v
-     * @return mixed
+     * @return string
      */
-    private function escapeLabelValue($v)
+    private function escapeLabelValue($v): string
     {
         $v = str_replace("\\", "\\\\", $v);
         $v = str_replace("\n", "\\n", $v);

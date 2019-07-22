@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 namespace Prometheus;
 
 use Prometheus\Exception\MetricNotFoundException;
@@ -21,17 +23,17 @@ class CollectorRegistry
     /**
      * @var Gauge[]
      */
-    private $gauges = array();
+    private $gauges = [];
 
     /**
      * @var Counter[]
      */
-    private $counters = array();
+    private $counters = [];
 
     /**
      * @var Histogram[]
      */
-    private $histograms = array();
+    private $histograms = [];
 
     /**
      * CollectorRegistry constructor.
@@ -45,7 +47,7 @@ class CollectorRegistry
     /**
      * @return CollectorRegistry
      */
-    public static function getDefault()
+    public static function getDefault(): CollectorRegistry
     {
         if (!self::$defaultRegistry) {
             return self::$defaultRegistry = new static(new Redis());
@@ -56,7 +58,7 @@ class CollectorRegistry
     /**
      * @return MetricFamilySamples[]
      */
-    public function getMetricFamilySamples()
+    public function getMetricFamilySamples(): array
     {
         return $this->storageAdapter->collect();
     }
@@ -69,7 +71,7 @@ class CollectorRegistry
      * @return Gauge
      * @throws MetricsRegistrationException
      */
-    public function registerGauge($namespace, $name, $help, $labels = array())
+    public function registerGauge($namespace, $name, $help, $labels = []): Gauge
     {
         $metricIdentifier = self::metricIdentifier($namespace, $name);
         if (isset($this->gauges[$metricIdentifier])) {
@@ -91,7 +93,7 @@ class CollectorRegistry
      * @return Gauge
      * @throws MetricNotFoundException
      */
-    public function getGauge($namespace, $name)
+    public function getGauge($namespace, $name): Gauge
     {
         $metricIdentifier = self::metricIdentifier($namespace, $name);
         if (!isset($this->gauges[$metricIdentifier])) {
@@ -108,7 +110,7 @@ class CollectorRegistry
      * @return Gauge
      * @throws MetricsRegistrationException
      */
-    public function getOrRegisterGauge($namespace, $name, $help, $labels = array())
+    public function getOrRegisterGauge($namespace, $name, $help, $labels = []): Gauge
     {
         try {
             $gauge = $this->getGauge($namespace, $name);
@@ -126,7 +128,7 @@ class CollectorRegistry
      * @return Counter
      * @throws MetricsRegistrationException
      */
-    public function registerCounter($namespace, $name, $help, $labels = array())
+    public function registerCounter($namespace, $name, $help, $labels = []): Counter
     {
         $metricIdentifier = self::metricIdentifier($namespace, $name);
         if (isset($this->counters[$metricIdentifier])) {
@@ -148,7 +150,7 @@ class CollectorRegistry
      * @return Counter
      * @throws MetricNotFoundException
      */
-    public function getCounter($namespace, $name)
+    public function getCounter($namespace, $name): Counter
     {
         $metricIdentifier = self::metricIdentifier($namespace, $name);
         if (!isset($this->counters[$metricIdentifier])) {
@@ -165,7 +167,7 @@ class CollectorRegistry
      * @return Counter
      * @throws MetricsRegistrationException
      */
-    public function getOrRegisterCounter($namespace, $name, $help, $labels = array())
+    public function getOrRegisterCounter($namespace, $name, $help, $labels = []): Counter
     {
         try {
             $counter = $this->getCounter($namespace, $name);
@@ -184,7 +186,7 @@ class CollectorRegistry
      * @return Histogram
      * @throws MetricsRegistrationException
      */
-    public function registerHistogram($namespace, $name, $help, $labels = array(), $buckets = null)
+    public function registerHistogram($namespace, $name, $help, $labels = [], $buckets = null): Histogram
     {
         $metricIdentifier = self::metricIdentifier($namespace, $name);
         if (isset($this->histograms[$metricIdentifier])) {
@@ -207,7 +209,7 @@ class CollectorRegistry
      * @return Histogram
      * @throws MetricNotFoundException
      */
-    public function getHistogram($namespace, $name)
+    public function getHistogram($namespace, $name): Histogram
     {
         $metricIdentifier = self::metricIdentifier($namespace, $name);
         if (!isset($this->histograms[$metricIdentifier])) {
@@ -225,7 +227,7 @@ class CollectorRegistry
      * @return Histogram
      * @throws MetricsRegistrationException
      */
-    public function getOrRegisterHistogram($namespace, $name, $help, $labels = array(), $buckets = null)
+    public function getOrRegisterHistogram($namespace, $name, $help, $labels = [], $buckets = null): Histogram
     {
         try {
             $histogram = $this->getHistogram($namespace, $name);
@@ -240,7 +242,7 @@ class CollectorRegistry
      * @param $name
      * @return string
      */
-    private static function metricIdentifier($namespace, $name)
+    private static function metricIdentifier($namespace, $name): string
     {
         return $namespace . ":" . $name;
     }

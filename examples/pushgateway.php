@@ -8,7 +8,7 @@ use Prometheus\CollectorRegistry;
 $adapter = $_GET['adapter'];
 
 if ($adapter === 'redis') {
-    Redis::setDefaultOptions(array('host' => isset($_SERVER['REDIS_HOST']) ? $_SERVER['REDIS_HOST'] : '127.0.0.1'));
+    Redis::setDefaultOptions(['host' => isset($_SERVER['REDIS_HOST']) ? $_SERVER['REDIS_HOST'] : '127.0.0.1']);
     $adapter = new Prometheus\Storage\Redis();
 } elseif ($adapter === 'apc') {
     $adapter = new Prometheus\Storage\APC();
@@ -22,4 +22,4 @@ $counter = $registry->registerCounter('test', 'some_counter', 'it increases', ['
 $counter->incBy(6, ['blue']);
 
 $pushGateway = new PushGateway('192.168.59.100:9091');
-$pushGateway->push($registry, 'my_job', array('instance'=>'foo'));
+$pushGateway->push($registry, 'my_job', ['instance'=>'foo']);

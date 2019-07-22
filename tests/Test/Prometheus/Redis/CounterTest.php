@@ -14,7 +14,7 @@ class CounterTest extends AbstractCounterTest
 {
     public function configureAdapter()
     {
-        $this->adapter = new Redis(array('host' => REDIS_HOST));
+        $this->adapter = new Redis(['host' => REDIS_HOST]);
         $this->adapter->flushRedis();
     }
 }
