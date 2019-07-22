@@ -345,12 +345,9 @@ LUA
                     'value' => $value,
                 ];
             }
-            usort(
-                $gauge['samples'],
-                function ($a, $b) {
-                    return strcmp(implode("", $a['labelValues']), implode("", $b['labelValues']));
-                }
-            );
+            usort($gauge['samples'], function ($a, $b) {
+                return strcmp(implode("", $a['labelValues']), implode("", $b['labelValues']));
+            });
             $gauges[] = $gauge;
         }
         return $gauges;
@@ -377,12 +374,9 @@ LUA
                     'value' => $value,
                 ];
             }
-            usort(
-                $counter['samples'],
-                function ($a, $b) {
-                    return strcmp(implode("", $a['labelValues']), implode("", $b['labelValues']));
-                }
-            );
+            usort($counter['samples'], function ($a, $b) {
+                return strcmp(implode("", $a['labelValues']), implode("", $b['labelValues']));
+            });
             $counters[] = $counter;
         }
         return $counters;

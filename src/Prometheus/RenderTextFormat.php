@@ -13,12 +13,9 @@ class RenderTextFormat
      */
     public function render(array $metrics): string
     {
-        usort(
-            $metrics,
-            function (MetricFamilySamples $a, MetricFamilySamples $b) {
-                return strcmp($a->getName(), $b->getName());
-            }
-        );
+        usort( $metrics, function (MetricFamilySamples $a, MetricFamilySamples $b) {
+            return strcmp($a->getName(), $b->getName());
+        });
 
         $lines = [];
 

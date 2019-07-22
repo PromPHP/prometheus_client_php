@@ -116,16 +116,13 @@ class APC implements Adapter
      */
     private function valueKey(array $data): string
     {
-        return implode(
-            ':',
-            [
-                self::PROMETHEUS_PREFIX,
-                $data['type'],
-                $data['name'],
-                $this->encodeLabelValues($data['labelValues']),
-                'value',
-            ]
-        );
+        return implode(':', [
+            self::PROMETHEUS_PREFIX,
+            $data['type'],
+            $data['name'],
+            $this->encodeLabelValues($data['labelValues']),
+            'value',
+        ]);
     }
 
     /**
@@ -134,17 +131,14 @@ class APC implements Adapter
      */
     private function histogramBucketValueKey(array $data, $bucket): string
     {
-        return implode(
-            ':',
-            [
-                self::PROMETHEUS_PREFIX,
-                $data['type'],
-                $data['name'],
-                $this->encodeLabelValues($data['labelValues']),
-                $bucket,
-                'value',
-            ]
-        );
+        return implode(':', [
+            self::PROMETHEUS_PREFIX,
+            $data['type'],
+            $data['name'],
+            $this->encodeLabelValues($data['labelValues']),
+            $bucket,
+            'value',
+        ]);
     }
 
     /**
@@ -320,12 +314,9 @@ class APC implements Adapter
      */
     private function sortSamples(array &$samples): void
     {
-        usort(
-            $samples,
-            function ($a, $b) {
-                return strcmp(implode("", $a['labelValues']), implode("", $b['labelValues']));
-            }
-        );
+        usort($samples, function ($a, $b) {
+            return strcmp(implode("", $a['labelValues']), implode("", $b['labelValues']));
+        });
     }
 
     /**
