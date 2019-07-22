@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 namespace Prometheus;
 
 use InvalidArgumentException;
@@ -35,7 +37,7 @@ abstract class Collector
      * @param string $help
      * @param array $labels
      */
-    public function __construct(Adapter $storageAdapter, $namespace, $name, $help, $labels = array())
+    public function __construct(Adapter $storageAdapter, $namespace, $name, $help, $labels = [])
     {
         $this->storageAdapter = $storageAdapter;
         $metricName = ($namespace ? $namespace . '_' : '') . $name;
@@ -60,7 +62,7 @@ abstract class Collector
     /**
      * @return string
      */
-    public function getName()
+    public function getName(): string
     {
         return $this->name;
     }
@@ -68,7 +70,7 @@ abstract class Collector
     /**
      * @return array
      */
-    public function getLabelNames()
+    public function getLabelNames(): array
     {
         return $this->labels;
     }
@@ -76,7 +78,7 @@ abstract class Collector
     /**
      * @return string
      */
-    public function getHelp()
+    public function getHelp(): string
     {
         return $this->help;
     }
@@ -84,7 +86,7 @@ abstract class Collector
     /**
      * @return string
      */
-    public function getKey()
+    public function getKey(): string
     {
         return sha1($this->getName() . serialize($this->getLabelNames()));
     }
@@ -92,7 +94,7 @@ abstract class Collector
     /**
      * @param $labels
      */
-    protected function assertLabelsAreDefinedCorrectly($labels)
+    protected function assertLabelsAreDefinedCorrectly($labels): void
     {
         if (count($labels) != count($this->labels)) {
             throw new InvalidArgumentException(sprintf('Labels are not defined correctly: ', print_r($labels, true)));

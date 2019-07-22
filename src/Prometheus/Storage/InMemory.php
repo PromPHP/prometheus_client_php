@@ -1,7 +1,7 @@
 <?php
+declare(strict_types=1);
 
 namespace Prometheus\Storage;
-
 
 use Prometheus\MetricFamilySamples;
 use RuntimeException;
@@ -16,7 +16,7 @@ class InMemory implements Adapter
     /**
      * @return MetricFamilySamples[]
      */
-    public function collect()
+    public function collect(): array
     {
         $metrics = $this->internalCollect($this->counters);
         $metrics = array_merge($metrics, $this->internalCollect($this->gauges));
@@ -24,7 +24,7 @@ class InMemory implements Adapter
         return $metrics;
     }
 
-    public function flushMemory()
+    public function flushMemory(): void
     {
         $this->counters = [];
         $this->gauges = [];
@@ -34,7 +34,7 @@ class InMemory implements Adapter
     /**
      * @return array
      */
-    private function collectHistograms()
+    private function collectHistograms(): array
     {
         $histograms = [];
         foreach ($this->histograms as $histogram) {
@@ -44,7 +44,7 @@ class InMemory implements Adapter
                 'help' => $metaData['help'],
                 'type' => $metaData['type'],
                 'labelNames' => $metaData['labelNames'],
-                'buckets' => $metaData['buckets']
+                'buckets' => $metaData['buckets'],
             ];
 
             // Add the Inf bucket so we can compute it later on
@@ -72,7 +72,7 @@ class InMemory implements Adapter
                             'name' => $metaData['name'] . '_bucket',
                             'labelNames' => ['le'],
                             'labelValues' => array_merge($decodedLabelValues, [$bucket]),
-                            'value' => $acc
+                            'value' => $acc,
                         ];
                     } else {
                         $acc += $histogramBuckets[$labelValues][$bucket];
@@ -80,7 +80,7 @@ class InMemory implements Adapter
                             'name' => $metaData['name'] . '_' . 'bucket',
                             'labelNames' => ['le'],
                             'labelValues' => array_merge($decodedLabelValues, [$bucket]),
-                            'value' => $acc
+                            'value' => $acc,
                         ];
                     }
                 }
@@ -90,7 +90,7 @@ class InMemory implements Adapter
                     'name' => $metaData['name'] . '_count',
                     'labelNames' => [],
                     'labelValues' => $decodedLabelValues,
-                    'value' => $acc
+                    'value' => $acc,
                 ];
 
                 // Add the sum
@@ -98,7 +98,7 @@ class InMemory implements Adapter
                     'name' => $metaData['name'] . '_sum',
                     'labelNames' => [],
                     'labelValues' => $decodedLabelValues,
-                    'value' => $histogramBuckets[$labelValues]['sum']
+                    'value' => $histogramBuckets[$labelValues]['sum'],
                 ];
 
             }
@@ -111,7 +111,7 @@ class InMemory implements Adapter
      * @param array $metrics
      * @return array
      */
-    private function internalCollect(array $metrics)
+    private function internalCollect(array $metrics): array
     {
         $result = [];
         foreach ($metrics as $metric) {
@@ -129,7 +129,7 @@ class InMemory implements Adapter
                     'name' => $metaData['name'],
                     'labelNames' => [],
                     'labelValues' => $this->decodeLabelValues($labelValues),
-                    'value' => $value
+                    'value' => $value,
                 ];
             }
             $this->sortSamples($data['samples']);
@@ -140,15 +140,16 @@ class InMemory implements Adapter
 
     /**
      * @param array $data
+     * @return void
      */
-    public function updateHistogram(array $data)
+    public function updateHistogram(array $data): void
     {
         // Initialize the sum
         $metaKey = $this->metaKey($data);
         if (array_key_exists($metaKey, $this->histograms) === false) {
             $this->histograms[$metaKey] = [
                 'meta' => $this->metaData($data),
-                'samples' => []
+                'samples' => [],
             ];
         }
         $sumKey = $this->histogramBucketValueKey($data, 'sum');
@@ -177,14 +178,14 @@ class InMemory implements Adapter
     /**
      * @param array $data
      */
-    public function updateGauge(array $data)
+    public function updateGauge(array $data): void
     {
         $metaKey = $this->metaKey($data);
         $valueKey = $this->valueKey($data);
         if (array_key_exists($metaKey, $this->gauges) === false) {
             $this->gauges[$metaKey] = [
                 'meta' => $this->metaData($data),
-                'samples' => []
+                'samples' => [],
             ];
         }
         if (array_key_exists($valueKey, $this->gauges[$metaKey]['samples']) === false) {
@@ -200,14 +201,14 @@ class InMemory implements Adapter
     /**
      * @param array $data
      */
-    public function updateCounter(array $data)
+    public function updateCounter(array $data): void
     {
         $metaKey = $this->metaKey($data);
         $valueKey = $this->valueKey($data);
         if (array_key_exists($metaKey, $this->counters) === false) {
             $this->counters[$metaKey] = [
                 'meta' => $this->metaData($data),
-                'samples' => []
+                'samples' => [],
             ];
         }
         if (array_key_exists($valueKey, $this->counters[$metaKey]['samples']) === false) {
@@ -225,13 +226,13 @@ class InMemory implements Adapter
      * @param string $bucket
      * @return string
      */
-    private function histogramBucketValueKey(array $data, $bucket)
+    private function histogramBucketValueKey(array $data, $bucket): string
     {
         return implode(':', [
             $data['type'],
             $data['name'],
             $this->encodeLabelValues($data['labelValues']),
-            $bucket
+            $bucket,
         ]);
     }
 
@@ -240,9 +241,13 @@ class InMemory implements Adapter
      *
      * @return string
      */
-    private function metaKey(array $data)
+    private function metaKey(array $data): string
     {
-        return implode(':', [$data['type'], $data['name'], 'meta']);
+        return implode(':', [
+            $data['type'],
+            $data['name'],
+            'meta'
+        ]);
     }
 
     /**
@@ -250,10 +255,14 @@ class InMemory implements Adapter
      *
      * @return string
      */
-    private function valueKey(array $data)
+    private function valueKey(array $data): string
     {
-        return implode(':',
-            [$data['type'], $data['name'], $this->encodeLabelValues($data['labelValues']), 'value']);
+        return implode(':', [
+            $data['type'],
+            $data['name'],
+            $this->encodeLabelValues($data['labelValues']),
+            'value'
+        ]);
     }
 
     /**
@@ -261,7 +270,7 @@ class InMemory implements Adapter
      *
      * @return array
      */
-    private function metaData(array $data)
+    private function metaData(array $data): array
     {
         $metricsMetaData = $data;
         unset($metricsMetaData['value']);
@@ -273,7 +282,7 @@ class InMemory implements Adapter
     /**
      * @param array $samples
      */
-    private function sortSamples(array &$samples)
+    private function sortSamples(array &$samples): void
     {
         usort($samples, function ($a, $b) {
             return strcmp(implode("", $a['labelValues']), implode("", $b['labelValues']));
@@ -285,7 +294,7 @@ class InMemory implements Adapter
      * @return string
      * @throws RuntimeException
      */
-    private function encodeLabelValues(array $values)
+    private function encodeLabelValues(array $values): string
     {
         $json = json_encode($values);
         if (false === $json) {
@@ -299,7 +308,7 @@ class InMemory implements Adapter
      * @return array
      * @throws RuntimeException
      */
-    private function decodeLabelValues($values)
+    private function decodeLabelValues($values): array
     {
         $json = base64_decode($values, true);
         if (false === $json) {

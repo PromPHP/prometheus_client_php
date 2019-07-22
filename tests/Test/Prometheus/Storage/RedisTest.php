@@ -12,12 +12,13 @@ class RedisTest extends TestCase
 {
     /**
      * @test
-     * @expectedException StorageException
+     * @expectedException Prometheus\Exception\StorageException
      * @expectedExceptionMessage Can't connect to Redis server
      */
     public function itShouldThrowAnExceptionOnConnectionFailure()
     {
-        $redis = new Redis(['host' => 'completely.fake.example.test']);
+        $redis = new Redis(['host' => '/dev/null']);
+        $redis->collect();
         $redis->flushRedis();
     }
 
