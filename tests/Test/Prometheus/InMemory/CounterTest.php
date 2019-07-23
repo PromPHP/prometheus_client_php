@@ -1,6 +1,5 @@
 <?php
 
-
 namespace Test\Prometheus\InMemory;
 
 use Prometheus\Storage\InMemory;

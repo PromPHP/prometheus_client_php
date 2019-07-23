@@ -1,6 +1,5 @@
 <?php
 
-
 namespace Test\Prometheus\APC;
 
 use Prometheus\Storage\APC;

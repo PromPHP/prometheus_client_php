@@ -1,6 +1,5 @@
 <?php
 
-
 namespace Test\Prometheus\Redis;
 
 use Prometheus\Storage\Redis;
