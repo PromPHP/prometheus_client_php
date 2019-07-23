@@ -3,7 +3,8 @@
 
 namespace Test\Prometheus;
 
-use PHPUnit_Framework_TestCase;
+use InvalidArgumentException;
+use PHPUnit\Framework\TestCase;
 use Prometheus\Counter;
 use Prometheus\MetricFamilySamples;
 use Prometheus\Sample;
@@ -12,7 +13,7 @@ use Prometheus\Storage\Adapter;
 /**
  * See https://prometheus.io/docs/instrumenting/exposition_formats/
  */
-abstract class AbstractCounterTest extends PHPUnit_Framework_TestCase
+abstract class AbstractCounterTest extends TestCase
 {
     /**
      * @var Adapter
@@ -24,36 +25,38 @@ abstract class AbstractCounterTest extends PHPUnit_Framework_TestCase
         $this->configureAdapter();
     }
 
+    public abstract function configureAdapter();
+
     /**
      * @test
      */
     public function itShouldIncreaseWithLabels()
     {
-        $gauge = new Counter($this->adapter, 'test', 'some_metric', 'this is for testing', array('foo', 'bar'));
-        $gauge->inc(array('lalal', 'lululu'));
-        $gauge->inc(array('lalal', 'lululu'));
-        $gauge->inc(array('lalal', 'lululu'));
+        $gauge = new Counter($this->adapter, 'test', 'some_metric', 'this is for testing', ['foo', 'bar']);
+        $gauge->inc(['lalal', 'lululu']);
+        $gauge->inc(['lalal', 'lululu']);
+        $gauge->inc(['lalal', 'lululu']);
         $this->assertThat(
             $this->adapter->collect(),
             $this->equalTo(
-                array(
+                [
                     new MetricFamilySamples(
-                        array(
+                        [
                             'type' => Counter::TYPE,
                             'help' => 'this is for testing',
                             'name' => 'test_some_metric',
-                            'labelNames' => array('foo', 'bar'),
-                            'samples' => array(
-                                array(
-                                    'labelValues' => array('lalal', 'lululu'),
+                            'labelNames' => ['foo', 'bar'],
+                            'samples' => [
+                                [
+                                    'labelValues' => ['lalal', 'lululu'],
                                     'value' => 3,
                                     'name' => 'test_some_metric',
-                                    'labelNames' => array()
-                                ),
-                            )
-                        )
-                    )
-                )
+                                    'labelNames' => [],
+                                ],
+                            ],
+                        ]
+                    ),
+                ]
             )
         );
     }
@@ -68,24 +71,24 @@ abstract class AbstractCounterTest extends PHPUnit_Framework_TestCase
         $this->assertThat(
             $this->adapter->collect(),
             $this->equalTo(
-                array(
+                [
                     new MetricFamilySamples(
-                        array(
+                        [
                             'type' => Counter::TYPE,
                             'help' => 'this is for testing',
                             'name' => 'test_some_metric',
-                            'labelNames' => array(),
-                            'samples' => array(
-                                array(
-                                    'labelValues' => array(),
+                            'labelNames' => [],
+                            'samples' => [
+                                [
+                                    'labelValues' => [],
                                     'value' => 1,
                                     'name' => 'test_some_metric',
-                                    'labelNames' => array()
-                                ),
-                            )
-                        )
-                    )
-                )
+                                    'labelNames' => [],
+                                ],
+                            ],
+                        ]
+                    ),
+                ]
             )
         );
     }
@@ -95,37 +98,37 @@ abstract class AbstractCounterTest extends PHPUnit_Framework_TestCase
      */
     public function itShouldIncreaseTheCounterByAnArbitraryInteger()
     {
-        $gauge = new Counter($this->adapter, 'test', 'some_metric', 'this is for testing', array('foo', 'bar'));
-        $gauge->inc(array('lalal', 'lululu'));
-        $gauge->incBy(123, array('lalal', 'lululu'));
+        $gauge = new Counter($this->adapter, 'test', 'some_metric', 'this is for testing', ['foo', 'bar']);
+        $gauge->inc(['lalal', 'lululu']);
+        $gauge->incBy(123, ['lalal', 'lululu']);
         $this->assertThat(
             $this->adapter->collect(),
             $this->equalTo(
-                array(
+                [
                     new MetricFamilySamples(
-                        array(
+                        [
                             'type' => Counter::TYPE,
                             'help' => 'this is for testing',
                             'name' => 'test_some_metric',
-                            'labelNames' => array('foo', 'bar'),
-                            'samples' => array(
-                                array(
-                                    'labelValues' => array('lalal', 'lululu'),
+                            'labelNames' => ['foo', 'bar'],
+                            'samples' => [
+                                [
+                                    'labelValues' => ['lalal', 'lululu'],
                                     'value' => 124,
                                     'name' => 'test_some_metric',
-                                    'labelNames' => array()
-                                ),
-                            )
-                        )
-                    )
-                )
+                                    'labelNames' => [],
+                                ],
+                            ],
+                        ]
+                    ),
+                ]
             )
         );
     }
 
     /**
      * @test
-     * @expectedException \InvalidArgumentException
+     * @expectedException InvalidArgumentException
      */
     public function itShouldRejectInvalidMetricsNames()
     {
@@ -134,11 +137,11 @@ abstract class AbstractCounterTest extends PHPUnit_Framework_TestCase
 
     /**
      * @test
-     * @expectedException \InvalidArgumentException
+     * @expectedException InvalidArgumentException
      */
     public function itShouldRejectInvalidLabelNames()
     {
-        new Counter($this->adapter, 'test', 'some_metric', 'help', array('invalid label'));
+        new Counter($this->adapter, 'test', 'some_metric', 'help', ['invalid label']);
     }
 
     /**
@@ -150,8 +153,8 @@ abstract class AbstractCounterTest extends PHPUnit_Framework_TestCase
     public function isShouldAcceptAnySequenceOfBasicLatinCharactersForLabelValues($value)
     {
         $label = 'foo';
-        $histogram = new Counter($this->adapter, 'test', 'some_metric', 'help', array($label));
-        $histogram->inc(array($value));
+        $histogram = new Counter($this->adapter, 'test', 'some_metric', 'help', [$label]);
+        $histogram->inc([$value]);
 
         $metrics = $this->adapter->collect();
         self::assertInternalType('array', $metrics);
@@ -172,8 +175,8 @@ abstract class AbstractCounterTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @see isShouldAcceptArbitraryLabelValues
      * @return array
+     * @see isShouldAcceptArbitraryLabelValues
      */
     public function labelValuesDataProvider()
     {
@@ -181,10 +184,8 @@ abstract class AbstractCounterTest extends PHPUnit_Framework_TestCase
         // Basic Latin
         // See https://en.wikipedia.org/wiki/List_of_Unicode_characters#Basic_Latin
         for ($i = 32; $i <= 121; $i++) {
-            $cases['ASCII code ' . $i] = array(chr($i));
+            $cases['ASCII code ' . $i] = [chr($i)];
         }
         return $cases;
     }
-
-    public abstract function configureAdapter();
 }

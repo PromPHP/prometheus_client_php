@@ -1,7 +1,7 @@
 <?php
+declare(strict_types = 1);
 
 namespace Prometheus;
-
 
 use Prometheus\Storage\Adapter;
 
@@ -12,7 +12,7 @@ class Counter extends Collector
     /**
      * @return string
      */
-    public function getType()
+    public function getType(): string
     {
         return self::TYPE;
     }
@@ -20,7 +20,7 @@ class Counter extends Collector
     /**
      * @param array $labels e.g. ['status', 'opcode']
      */
-    public function inc(array $labels = array())
+    public function inc(array $labels = []): void
     {
         $this->incBy(1, $labels);
     }
@@ -29,20 +29,20 @@ class Counter extends Collector
      * @param int $count e.g. 2
      * @param array $labels e.g. ['status', 'opcode']
      */
-    public function incBy($count, array $labels = array())
+    public function incBy($count, array $labels = []): void
     {
         $this->assertLabelsAreDefinedCorrectly($labels);
 
         $this->storageAdapter->updateCounter(
-            array(
+            [
                 'name' => $this->getName(),
                 'help' => $this->getHelp(),
                 'type' => $this->getType(),
                 'labelNames' => $this->getLabelNames(),
                 'labelValues' => $labels,
                 'value' => $count,
-                'command' => Adapter::COMMAND_INCREMENT_INTEGER
-            )
+                'command' => Adapter::COMMAND_INCREMENT_INTEGER,
+            ]
         );
     }
 }
