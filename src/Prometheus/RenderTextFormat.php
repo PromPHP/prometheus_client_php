@@ -1,7 +1,7 @@
 <?php
+declare(strict_types = 1);
 
 namespace Prometheus;
-
 
 class RenderTextFormat
 {
@@ -11,14 +11,13 @@ class RenderTextFormat
      * @param MetricFamilySamples[] $metrics
      * @return string
      */
-    public function render(array $metrics)
+    public function render(array $metrics): string
     {
-        usort($metrics, function(MetricFamilySamples $a, MetricFamilySamples $b)
-        {
+        usort( $metrics, function (MetricFamilySamples $a, MetricFamilySamples $b) {
             return strcmp($a->getName(), $b->getName());
         });
 
-        $lines = array();
+        $lines = [];
 
         foreach ($metrics as $metric) {
             $lines[] = "# HELP " . $metric->getName() . " {$metric->getHelp()}";
@@ -30,9 +29,14 @@ class RenderTextFormat
         return implode("\n", $lines) . "\n";
     }
 
-    private function renderSample(MetricFamilySamples $metric, Sample $sample)
+    /**
+     * @param MetricFamilySamples $metric
+     * @param Sample $sample
+     * @return string
+     */
+    private function renderSample(MetricFamilySamples $metric, Sample $sample): string
     {
-        $escapedLabels = array();
+        $escapedLabels = [];
 
         $labelNames = $metric->getLabelNames();
         if ($metric->hasLabelNames() || $sample->hasLabelNames()) {
@@ -45,7 +49,11 @@ class RenderTextFormat
         return $sample->getName() . ' ' . $sample->getValue();
     }
 
-    private function escapeLabelValue($v)
+    /**
+     * @param string $v
+     * @return string
+     */
+    private function escapeLabelValue($v): string
     {
         $v = str_replace("\\", "\\\\", $v);
         $v = str_replace("\n", "\\n", $v);

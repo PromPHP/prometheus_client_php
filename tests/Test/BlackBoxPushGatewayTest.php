@@ -2,13 +2,13 @@
 namespace Test;
 
 use GuzzleHttp\Client;
-use PHPUnit_Framework_TestCase;
+use PHPUnit\Framework\TestCase;
 
 use Prometheus\CollectorRegistry;
 use Prometheus\PushGateway;
 use Prometheus\Storage\APC;
 
-class BlackBoxPushGatewayTest extends PHPUnit_Framework_TestCase
+class BlackBoxPushGatewayTest extends TestCase
 {
     /**
      * @test
@@ -22,7 +22,7 @@ class BlackBoxPushGatewayTest extends PHPUnit_Framework_TestCase
         $counter->incBy(6, ['blue']);
 
         $pushGateway = new PushGateway('pushgateway:9091');
-        $pushGateway->push($registry, 'my_job', array('instance' => 'foo'));
+        $pushGateway->push($registry, 'my_job', ['instance' => 'foo']);
 
         $httpClient = new Client();
         $metrics = $httpClient->get("http://pushgateway:9091/metrics")->getBody()->getContents();
@@ -33,7 +33,7 @@ test_some_counter{instance="foo",job="my_job",type="blue"} 6',
             $metrics
         );
 
-        $pushGateway->delete('my_job', array('instance' => 'foo'));
+        $pushGateway->delete('my_job', ['instance' => 'foo']);
 
         $httpClient = new Client();
         $metrics = $httpClient->get("http://pushgateway:9091/metrics")->getBody()->getContents();
