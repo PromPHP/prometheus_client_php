@@ -63,6 +63,36 @@ class Histogram extends Collector
     }
 
     /**
+     * @param float $start
+     * @param float $growthFactor
+     * @param int $numberOfBuckets
+     * @return array
+     */
+    public static function exponentialBuckets(float $start, float $growthFactor, int $numberOfBuckets): array
+    {
+        if ($numberOfBuckets < 1) {
+            throw new \InvalidArgumentException('Number of buckets must be a positive integer');
+        }
+
+        if ($start <= 0) {
+            throw new \InvalidArgumentException('The starting position of a set of buckets must be a positive integer');
+        }
+
+        if ($growthFactor <= 1) {
+            throw new \InvalidArgumentException('The growth factor must greater than 1');
+        }
+
+        $buckets = [];
+
+        for ($i = 0; $i < $numberOfBuckets; $i++) {
+            $buckets[$i] = $start;
+            $start *= $growthFactor;
+        }
+
+        return $buckets;
+    }
+
+    /**
      * @param double $value e.g. 123
      * @param array $labels e.g. ['status', 'opcode']
      */
