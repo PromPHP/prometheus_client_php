@@ -83,6 +83,20 @@ $renderer = new RenderTextFormat();
 $result = $renderer->render($registry->getMetricFamilySamples());
 ```
 
+### Advanced Usage
+
+#### Advanced Histogram Usage
+On passing an empty array for the bucket parameter on instantiation, a set of default buckets will be used instead.
+Whilst this is a good base for a typical web application, there is named constructor to assist in the generation of
+exponential / geometric buckets.
+
+Eg:
+```
+Histogram::exponentialBuckets(0.05, 1.5, 10);
+``` 
+
+This will start your buckets with a value of 1.5, grow them by a factor of 1.5 per bucket across a set of 10 buckets. 
+
 Also look at the [examples](examples).
 
 ## Development

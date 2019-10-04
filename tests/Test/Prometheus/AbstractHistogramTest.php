@@ -456,6 +456,37 @@ abstract class AbstractHistogramTest extends TestCase
     }
 
     /**
+     * @test
+     */
+    public function itShouldBeAbleToGenerateExponentialBucketsGivenSpecificBounds()
+    {
+        $start = 0.05;
+        $growthFactor = 1.5;
+        $numberOfbuckets = 14;
+
+        $generatedBuckets = Histogram::exponentialBuckets($start, $growthFactor, $numberOfbuckets);
+
+        $expectedBuckets = [
+            0.05,
+            0.075,
+            0.1125,
+            0.16875,
+            0.253125,
+            0.3796875,
+            0.56953125,
+            0.854296875,
+            1.2814453125,
+            1.92216796875,
+            2.883251953125,
+            4.3248779296875,
+            6.4873168945313,
+            9.7309753417969,
+        ];
+
+        self::assertEquals($generatedBuckets, $expectedBuckets);
+    }
+
+    /**
      * @return array
      * @see isShouldAcceptArbitraryLabelValues
      */

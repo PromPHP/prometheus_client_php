@@ -1,15 +1,7 @@
 {
     "name": "endclothing/prometheus_client_php",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "authors": [
-        {
-            "name": "Joscha",
-            "email": "joscha@schnipseljagd.org"
-        },
-        {
-            "name": "Jan Brauer",
-            "email": "jan.brauer@jimdo.com"
-        },
         {
             "name": "Daniel Noel-Davies",
             "email": "Daniel.Noel-Davies@endclothing.com"
