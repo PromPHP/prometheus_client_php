@@ -8,7 +8,7 @@
         }
     ],
     "require": {
-        "php": "^7.1",
+        "php": "^7.3",
         "ext-json": "*",
         "guzzlehttp/guzzle": "^6.2",
         "symfony/polyfill-apcu": "^1.6"
