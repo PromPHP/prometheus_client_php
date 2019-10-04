@@ -1,5 +1,5 @@
 <?php
-declare(strict_types = 1);
+declare(strict_types=1);
 
 namespace Prometheus;
 
@@ -71,15 +71,15 @@ class Histogram extends Collector
     public static function exponentialBuckets(float $start, float $growthFactor, int $numberOfBuckets): array
     {
         if ($numberOfBuckets < 1) {
-            throw new \InvalidArgumentException('Number of buckets must be a positive integer');
+            throw new InvalidArgumentException('Number of buckets must be a positive integer');
         }
 
         if ($start <= 0) {
-            throw new \InvalidArgumentException('The starting position of a set of buckets must be a positive integer');
+            throw new InvalidArgumentException('The starting position of a set of buckets must be a positive integer');
         }
 
         if ($growthFactor <= 1) {
-            throw new \InvalidArgumentException('The growth factor must greater than 1');
+            throw new InvalidArgumentException('The growth factor must greater than 1');
         }
 
         $buckets = [];
