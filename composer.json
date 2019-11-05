@@ -7,6 +7,9 @@
             "email": "Daniel.Noel-Davies@endclothing.com"
         }
     ],
+    "replace: {
+        "jimdo/prometheus_client_php": "*"
+    },
     "require": {
         "php": "^7.3",
         "ext-json": "*",
