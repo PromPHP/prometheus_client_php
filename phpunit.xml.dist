@@ -7,15 +7,18 @@
          convertNoticesToExceptions="true"
          convertWarningsToExceptions="true"
          processIsolation="false"
+         stopOnError="false"
          stopOnFailure="false">
-<testsuites>
-    <testsuite name="Unit">
-        <directory>./tests/Test/Prometheus</directory>
-    </testsuite>
-</testsuites>
-<filter>
-    <whitelist processUncoveredFilesFromWhitelist="true">
-        <directory suffix=".php">./src/Prometheus</directory>
-    </whitelist>
-</filter>
+
+    <testsuites>
+        <testsuite name="Unit">
+            <directory>./tests/Test/Prometheus</directory>
+        </testsuite>
+    </testsuites>
+
+    <filter>
+        <whitelist processUncoveredFilesFromWhitelist="true">
+            <directory suffix=".php">./src/Prometheus</directory>
+        </whitelist>
+    </filter>
 </phpunit>

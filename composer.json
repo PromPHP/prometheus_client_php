@@ -1,6 +1,8 @@
 {
     "name": "endclothing/prometheus_client_php",
-    "version": "1.0.1",
+    "description": "Prometheus instrumentation library for PHP applications.",
+    "type": "library",
+    "license": "Apache-2.0",
     "authors": [
         {
             "name": "Daniel Noel-Davies",
@@ -33,5 +35,13 @@
             "Test\\Prometheus\\": "tests/"
         }
     },
-    "license": "Apache-2.0"
+    "extra": {
+        "branch-alias": {
+            "dev-master": "1.0-dev"
+        }
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "prefer-stable": true
 }
