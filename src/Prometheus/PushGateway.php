@@ -4,6 +4,7 @@ declare(strict_types = 1);
 namespace Prometheus;
 
 use GuzzleHttp\Client;
+use GuzzleHttp\ClientInterface;
 use GuzzleHttp\Exception\GuzzleException;
 use RuntimeException;
 
@@ -15,12 +16,19 @@ class PushGateway
     private $address;
 
     /**
-     * PushGateway constructor.
-     * @param $address string host:port of the push gateway
+     * @var ClientInterface
      */
-    public function __construct($address)
+    private $client;
+
+    /**
+     * PushGateway constructor.
+     * @param string $address host:port of the push gateway
+     * @param ClientInterface $client
+     */
+    public function __construct($address, ClientInterface $client = null)
     {
         $this->address = $address;
+        $this->client = $client ?? new Client();
     }
 
     /**
@@ -31,7 +39,7 @@ class PushGateway
      * @param array $groupingKey
      * @throws GuzzleException
      */
-    public function push(CollectorRegistry $collectorRegistry, string $job, array $groupingKey = null): void
+    public function push(CollectorRegistry $collectorRegistry, string $job, array $groupingKey = []): void
     {
         $this->doRequest($collectorRegistry, $job, $groupingKey, 'put');
     }
@@ -44,7 +52,7 @@ class PushGateway
      * @param $groupingKey
      * @throws GuzzleException
      */
-    public function pushAdd(CollectorRegistry $collectorRegistry, string $job, array $groupingKey = null): void
+    public function pushAdd(CollectorRegistry $collectorRegistry, string $job, array $groupingKey = []): void
     {
         $this->doRequest($collectorRegistry, $job, $groupingKey, 'post');
     }
@@ -56,7 +64,7 @@ class PushGateway
      * @param array $groupingKey
      * @throws GuzzleException
      */
-    public function delete(string $job, array $groupingKey = null): void
+    public function delete(string $job, array $groupingKey = []): void
     {
         $this->doRequest(null, $job, $groupingKey, 'delete');
     }
@@ -76,7 +84,7 @@ class PushGateway
                 $url .= "/" . $label . "/" . $value;
             }
         }
-        $client = new Client();
+
         $requestOptions = [
             'headers' => [
                 'Content-Type' => RenderTextFormat::MIME_TYPE,
@@ -84,13 +92,14 @@ class PushGateway
             'connect_timeout' => 10,
             'timeout' => 20,
         ];
+
         if ($method != 'delete') {
             $renderer = new RenderTextFormat();
             $requestOptions['body'] = $renderer->render($collectorRegistry->getMetricFamilySamples());
         }
-        $response = $client->request($method, $url, $requestOptions);
+        $response = $this->client->request($method, $url, $requestOptions);
         $statusCode = $response->getStatusCode();
-        if ($statusCode != 202) {
+        if (!in_array($statusCode, [200, 202])) {
             $msg = "Unexpected status code "
                 . $statusCode
                 . " received from push gateway "
