@@ -1,6 +1,5 @@
 <?php
 
-
 namespace Test\Prometheus;
 
 use InvalidArgumentException;
@@ -9,7 +8,6 @@ use Prometheus\Histogram;
 use Prometheus\MetricFamilySamples;
 use Prometheus\Sample;
 use Prometheus\Storage\Adapter;
-
 
 /**
  * See https://prometheus.io/docs/instrumenting/exposition_formats/
@@ -26,7 +24,7 @@ abstract class AbstractHistogramTest extends TestCase
         $this->configureAdapter();
     }
 
-    public abstract function configureAdapter();
+    abstract public function configureAdapter();
 
     /**
      * @test
@@ -250,7 +248,6 @@ abstract class AbstractHistogramTest extends TestCase
             'some_metric',
             'this is for testing',
             []
-
         );
         $histogram->observe(0.11);
         $histogram->observe(0.03);

@@ -17,4 +17,3 @@ class HistogramTest extends AbstractHistogramTest
         $this->adapter->flushAPC();
     }
 }
-

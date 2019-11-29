@@ -6,7 +6,7 @@ use Prometheus\CollectorRegistry;
 use Prometheus\Storage\Redis;
 
 
-error_log('c='. $_GET['c']);
+error_log('c=' . $_GET['c']);
 
 $adapter = $_GET['adapter'];
 

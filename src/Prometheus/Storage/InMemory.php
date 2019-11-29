@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Prometheus\Storage;
@@ -100,7 +101,6 @@ class InMemory implements Adapter
                     'labelValues' => $decodedLabelValues,
                     'value' => $histogramBuckets[$labelValues]['sum'],
                 ];
-
             }
             $histograms[] = new MetricFamilySamples($data);
         }

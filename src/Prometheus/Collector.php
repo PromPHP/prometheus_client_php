@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Prometheus;
@@ -57,7 +58,7 @@ abstract class Collector
     /**
      * @return string
      */
-    public abstract function getType();
+    abstract public function getType();
 
     /**
      * @return string

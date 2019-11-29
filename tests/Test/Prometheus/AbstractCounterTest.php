@@ -1,6 +1,5 @@
 <?php
 
-
 namespace Test\Prometheus;
 
 use InvalidArgumentException;
@@ -25,7 +24,7 @@ abstract class AbstractCounterTest extends TestCase
         $this->configureAdapter();
     }
 
-    public abstract function configureAdapter();
+    abstract public function configureAdapter();
 
     /**
      * @test

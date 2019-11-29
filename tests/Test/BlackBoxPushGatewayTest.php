@@ -1,9 +1,9 @@
 <?php
+
 namespace Test;
 
 use GuzzleHttp\Client;
 use PHPUnit\Framework\TestCase;
-
 use Prometheus\CollectorRegistry;
 use Prometheus\PushGateway;
 use Prometheus\Storage\APC;

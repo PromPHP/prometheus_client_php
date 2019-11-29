@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Prometheus\Storage;
@@ -284,7 +285,6 @@ class APC implements Adapter
                     'labelValues' => $decodedLabelValues,
                     'value' => $this->fromInteger($histogramBuckets[$labelValues]['sum']),
                 ];
-
             }
             $histograms[] = new MetricFamilySamples($data);
         }

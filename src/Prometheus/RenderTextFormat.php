@@ -1,5 +1,6 @@
 <?php
-declare(strict_types = 1);
+
+declare(strict_types=1);
 
 namespace Prometheus;
 
@@ -13,7 +14,7 @@ class RenderTextFormat
      */
     public function render(array $metrics): string
     {
-        usort( $metrics, function (MetricFamilySamples $a, MetricFamilySamples $b) {
+        usort($metrics, function (MetricFamilySamples $a, MetricFamilySamples $b) {
             return strcmp($a->getName(), $b->getName());
         });
 

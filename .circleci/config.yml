@@ -52,6 +52,10 @@ unit-config: &unit-config
         command: dockerize -wait tcp://127.0.0.1:6379 -timeout 30s
 
     - run:
+        name: Run PHP Code Sniffer
+        command: ./vendor/bin/phpcs
+
+    - run:
         name: Run tests
         command: ./vendor/bin/phpunit
 
