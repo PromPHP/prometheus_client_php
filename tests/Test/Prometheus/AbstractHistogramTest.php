@@ -19,7 +19,7 @@ abstract class AbstractHistogramTest extends TestCase
      */
     public $adapter;
 
-    public function setUp()
+    public function setUp(): void
     {
         $this->configureAdapter();
     }
@@ -374,51 +374,51 @@ abstract class AbstractHistogramTest extends TestCase
 
     /**
      * @test
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage Histogram buckets must be in increasing order
      */
     public function itShouldThrowAnExceptionWhenTheBucketSizesAreNotIncreasing()
     {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Histogram buckets must be in increasing order');
         new Histogram($this->adapter, 'test', 'some_metric', 'this is for testing', [], [1, 1]);
     }
 
     /**
      * @test
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage Histogram must have at least one bucket
      */
     public function itShouldThrowAnExceptionWhenThereIsLessThanOneBucket()
     {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Histogram must have at least one bucket');
         new Histogram($this->adapter, 'test', 'some_metric', 'this is for testing', [], []);
     }
 
     /**
      * @test
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage Histogram cannot have a label named
      */
     public function itShouldThrowAnExceptionWhenThereIsALabelNamedLe()
     {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Histogram cannot have a label named');
         new Histogram($this->adapter, 'test', 'some_metric', 'this is for testing', ['le'], [1]);
     }
 
     /**
      * @test
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage Invalid metric name
      */
     public function itShouldRejectInvalidMetricsNames()
     {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Invalid metric name');
         new Histogram($this->adapter, 'test', 'some invalid metric', 'help', [], [1]);
     }
 
     /**
      * @test
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage Invalid label name
      */
     public function itShouldRejectInvalidLabelNames()
     {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Invalid label name');
         new Histogram($this->adapter, 'test', 'some_metric', 'help', ['invalid label'], [1]);
     }
 
@@ -435,20 +435,20 @@ abstract class AbstractHistogramTest extends TestCase
         $histogram->observe(1, [$value]);
 
         $metrics = $this->adapter->collect();
-        self::assertInternalType('array', $metrics);
-        self::assertCount(1, $metrics);
-        self::assertContainsOnlyInstancesOf(MetricFamilySamples::class, $metrics);
+        $this->assertIsArray($metrics);
+        $this->assertCount(1, $metrics);
+        $this->assertContainsOnlyInstancesOf(MetricFamilySamples::class, $metrics);
 
         $metric = reset($metrics);
         $samples = $metric->getSamples();
-        self::assertContainsOnlyInstancesOf(Sample::class, $samples);
+        $this->assertContainsOnlyInstancesOf(Sample::class, $samples);
 
         foreach ($samples as $sample) {
             $labels = array_combine(
                 array_merge($metric->getLabelNames(), $sample->getLabelNames()),
                 $sample->getLabelValues()
             );
-            self::assertEquals($value, $labels[$label]);
+            $this->assertEquals($value, $labels[$label]);
         }
     }
 
@@ -480,7 +480,7 @@ abstract class AbstractHistogramTest extends TestCase
             9.7309753417969,
         ];
 
-        self::assertEquals($generatedBuckets, $expectedBuckets);
+        $this->assertEquals($generatedBuckets, $expectedBuckets);
     }
 
     /**

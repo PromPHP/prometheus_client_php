@@ -1,6 +1,6 @@
 # A prometheus client library written in PHP
 
-[![Build Status](https://travis-ci.org/Jimdo/prometheus_client_php.svg?branch=master)](https://travis-ci.org/Jimdo/prometheus_client_php)
+[![CircleCI](https://circleci.com/gh/endclothing/prometheus_client_php/tree/master.svg?style=shield)](https://circleci.com/gh/endclothing/prometheus_client_php/tree/master)
 
 This library uses Redis or APCu to do the client side aggregation.
 If using Redis, we recommend to run a local Redis instance next to your PHP workers.
@@ -101,9 +101,9 @@ exponential / geometric buckets.
 Eg:
 ```
 Histogram::exponentialBuckets(0.05, 1.5, 10);
-``` 
+```
 
-This will start your buckets with a value of 1.5, grow them by a factor of 1.5 per bucket across a set of 10 buckets. 
+This will start your buckets with a value of 1.5, grow them by a factor of 1.5 per bucket across a set of 10 buckets.
 
 Also look at the [examples](examples).
 

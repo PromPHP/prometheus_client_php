@@ -19,7 +19,7 @@ abstract class AbstractCounterTest extends TestCase
      */
     public $adapter;
 
-    public function setUp()
+    public function setUp(): void
     {
         $this->configureAdapter();
     }
@@ -127,19 +127,19 @@ abstract class AbstractCounterTest extends TestCase
 
     /**
      * @test
-     * @expectedException InvalidArgumentException
      */
     public function itShouldRejectInvalidMetricsNames()
     {
+        $this->expectException(InvalidArgumentException::class);
         new Counter($this->adapter, 'test', 'some metric invalid metric', 'help');
     }
 
     /**
      * @test
-     * @expectedException InvalidArgumentException
      */
     public function itShouldRejectInvalidLabelNames()
     {
+        $this->expectException(InvalidArgumentException::class);
         new Counter($this->adapter, 'test', 'some_metric', 'help', ['invalid label']);
     }
 
@@ -156,20 +156,20 @@ abstract class AbstractCounterTest extends TestCase
         $histogram->inc([$value]);
 
         $metrics = $this->adapter->collect();
-        self::assertInternalType('array', $metrics);
-        self::assertCount(1, $metrics);
-        self::assertContainsOnlyInstancesOf(MetricFamilySamples::class, $metrics);
+        $this->assertIsArray($metrics);
+        $this->assertCount(1, $metrics);
+        $this->assertContainsOnlyInstancesOf(MetricFamilySamples::class, $metrics);
 
         $metric = reset($metrics);
         $samples = $metric->getSamples();
-        self::assertContainsOnlyInstancesOf(Sample::class, $samples);
+        $this->assertContainsOnlyInstancesOf(Sample::class, $samples);
 
         foreach ($samples as $sample) {
             $labels = array_combine(
                 array_merge($metric->getLabelNames(), $sample->getLabelNames()),
                 $sample->getLabelValues()
             );
-            self::assertEquals($value, $labels[$label]);
+            $this->assertEquals($value, $labels[$label]);
         }
     }
 
