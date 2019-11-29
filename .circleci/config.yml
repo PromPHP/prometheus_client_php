@@ -61,6 +61,22 @@ unit-config: &unit-config
 
 version: 2.1
 jobs:
+  php74:
+    <<: *unit-config
+    docker:
+      - image: circleci/php:7.4-cli-node
+      - image: circleci/redis:5-alpine
+    environment:
+      COMPOSER_PREFER_LOWEST: 0
+
+  php74-lowest:
+    <<: *unit-config
+    docker:
+      - image: circleci/php:7.4-cli-node
+      - image: circleci/redis:5-alpine
+    environment:
+      COMPOSER_PREFER_LOWEST: 1
+
   php73:
     <<: *unit-config
     docker:
@@ -81,5 +97,7 @@ workflows:
   version: 2
   units:
     jobs:
+      - php74
+      - php74-lowest
       - php73
       - php73-lowest
