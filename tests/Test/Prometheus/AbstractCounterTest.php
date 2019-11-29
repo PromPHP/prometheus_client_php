@@ -31,10 +31,10 @@ abstract class AbstractCounterTest extends TestCase
      */
     public function itShouldIncreaseWithLabels()
     {
-        $gauge = new Counter($this->adapter, 'test', 'some_metric', 'this is for testing', ['foo', 'bar']);
-        $gauge->inc(['lalal', 'lululu']);
-        $gauge->inc(['lalal', 'lululu']);
-        $gauge->inc(['lalal', 'lululu']);
+        $counter = new Counter($this->adapter, 'test', 'some_metric', 'this is for testing', ['foo', 'bar']);
+        $counter->inc(['lalal', 'lululu']);
+        $counter->inc(['lalal', 'lululu']);
+        $counter->inc(['lalal', 'lululu']);
         $this->assertThat(
             $this->adapter->collect(),
             $this->equalTo(
@@ -65,8 +65,8 @@ abstract class AbstractCounterTest extends TestCase
      */
     public function itShouldIncreaseWithoutLabelWhenNoLabelsAreDefined()
     {
-        $gauge = new Counter($this->adapter, 'test', 'some_metric', 'this is for testing');
-        $gauge->inc();
+        $counter = new Counter($this->adapter, 'test', 'some_metric', 'this is for testing');
+        $counter->inc();
         $this->assertThat(
             $this->adapter->collect(),
             $this->equalTo(
@@ -97,9 +97,9 @@ abstract class AbstractCounterTest extends TestCase
      */
     public function itShouldIncreaseTheCounterByAnArbitraryInteger()
     {
-        $gauge = new Counter($this->adapter, 'test', 'some_metric', 'this is for testing', ['foo', 'bar']);
-        $gauge->inc(['lalal', 'lululu']);
-        $gauge->incBy(123, ['lalal', 'lululu']);
+        $counter = new Counter($this->adapter, 'test', 'some_metric', 'this is for testing', ['foo', 'bar']);
+        $counter->inc(['lalal', 'lululu']);
+        $counter->incBy(123, ['lalal', 'lululu']);
         $this->assertThat(
             $this->adapter->collect(),
             $this->equalTo(
