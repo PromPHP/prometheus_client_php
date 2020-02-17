@@ -1,9 +1,10 @@
 <?php
+
 require __DIR__ . '/../vendor/autoload.php';
 
+use Prometheus\CollectorRegistry;
 use Prometheus\PushGateway;
 use Prometheus\Storage\Redis;
-use Prometheus\CollectorRegistry;
 
 $adapter = $_GET['adapter'];
 
