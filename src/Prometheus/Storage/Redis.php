@@ -22,7 +22,7 @@ class Redis implements Adapter
         'host' => '127.0.0.1',
         'port' => 6379,
         'timeout' => 0.1,
-        'read_timeout' => 10,
+        'read_timeout' => '10',
         'persistent_connections' => false,
         'password' => null,
     ];
