@@ -13,7 +13,7 @@
         "jimdo/prometheus_client_php": "*"
     },
     "require": {
-        "php": "^7.3",
+        "php": "^7.2",
         "ext-json": "*",
         "guzzlehttp/guzzle": "^6.3",
         "symfony/polyfill-apcu": "^1.6"
