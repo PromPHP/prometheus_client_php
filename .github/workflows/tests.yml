@@ -11,7 +11,7 @@ jobs:
         os: [ ubuntu-latest ]
         php: [ 7.2, 7.3, 7.4 ]
         dependency-version: [ prefer-lowest, prefer-stable ]
-        redis-version: [6]
+        redis-version: [ 6 ]
 
     name: P${{ matrix.php }} - ${{ matrix.dependency-version }} - ${{ matrix.os }}
 
@@ -43,5 +43,7 @@ jobs:
         uses: supercharge/redis-github-action@1.1.0
         with:
           redis-version: ${{ matrix.redis-version }}
+      - name: Run PHP Code Sniffer
+        run: ./vendor/bin/phpcs
       - name: Execute tests
         run: vendor/bin/phpunit
