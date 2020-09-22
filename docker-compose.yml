@@ -11,7 +11,6 @@ php-fpm:
     - .:/var/www/html
   links:
     - redis
-    - pushgateway
   environment:
     - REDIS_HOST=redis
 
@@ -20,18 +19,12 @@ redis:
   ports:
       - 6379:6379
 
-pushgateway:
-  image: prom/pushgateway
-  ports:
-    - 9091:9091
-
 phpunit:
   build: php-fpm/
   volumes:
     - .:/var/www/html
   links:
     - redis
-    - pushgateway
     - nginx
   environment:
     - REDIS_HOST=redis
