@@ -1,5 +1,5 @@
 {
-    "name": "lkaemmerling/prometheus_client_php",
+    "name": "promphp/prometheus_client_php",
     "description": "Prometheus instrumentation library for PHP applications.",
     "type": "library",
     "license": "Apache-2.0",
@@ -26,7 +26,7 @@
     "suggest": {
         "ext-redis": "Required if using Redis.",
         "ext-apc": "Required if using APCu.",
-        "lkaemmerling/prometheus_push_gateway_php": "An easy client for using Prometheus PushGateway."
+        "promphp/prometheus_push_gateway_php": "An easy client for using Prometheus PushGateway."
     },
     "autoload": {
         "psr-4": {

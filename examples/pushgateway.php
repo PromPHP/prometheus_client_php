@@ -2,7 +2,7 @@
 
 /***
  * As of v2.0.0 the PushGateway support was moved to a dedicated package.
- * Make sure the run composer require lkaemmerling/prometheus_push_gateway_php before using that example
+ * Make sure the run composer require promphp/push_gateway_php before using that example
  *
  */
 
