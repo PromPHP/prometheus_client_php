@@ -1,6 +1,6 @@
 # A prometheus client library written in PHP
 
-![Tests](https://github.com/lkaemmerling/prometheus_client_php/workflows/Tests/badge.svg)
+![Tests](https://github.com/promphp/prometheus_client_php/workflows/Tests/badge.svg)
 
 This library uses Redis or APCu to do the client side aggregation.
 If using Redis, we recommend running a local Redis instance next to your PHP workers.
@@ -17,7 +17,7 @@ While the first needs a separate binary running, the second just needs the [APC]
 Add as [Composer](https://getcomposer.org/) dependency:
 
 ```sh
-composer require lkaemmerling/prometheus_client_php
+composer require promphp/prometheus_client_php
 ```
 
 ## Usage
@@ -110,7 +110,7 @@ Also look at the [examples](examples).
 #### PushGateway Support
 As of Version 2.0.0 this library doesn't support the Prometheus PushGateway anymore because we want to have this package as small als possible. If you need Prometheus PushGateway support, you could use the companion library:  https://github.com/LKaemmerling/prometheus_push_gateway_php
 ```
-composer require lkaemmerling/prometheus_push_gateway_php
+composer require promphp/prometheus_push_gateway_php
 ```
 
 ## Development
