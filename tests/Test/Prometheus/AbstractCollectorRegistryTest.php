@@ -32,6 +32,45 @@ abstract class AbstractCollectorRegistryTest extends TestCase
     /**
      * @test
      */
+    public function itShouldHaveDefaultMetrics()
+    {
+        $registry = new CollectorRegistry($this->adapter);
+        $expected = <<<EOF
+# HELP php_info Information about the PHP environment.
+# TYPE php_info gauge
+php_info{version="%s"} 1
+
+EOF;
+        $this->assertThat(
+            $this->renderer->render($registry->getMetricFamilySamples()),
+            $this->stringContains(
+                sprintf($expected, phpversion())
+            )
+        );
+    }
+
+    /**
+     * @test
+     */
+    public function itShouldNotHaveDefaultMetricsWhenTheyAreDisabled()
+    {
+        $registry = new CollectorRegistry($this->adapter, false);
+        $expected = <<<EOF
+# HELP php_info Information about the PHP environment.
+# TYPE php_info gauge
+php_info{version="%s"} 1
+
+EOF;
+        $this->assertStringNotContainsString(
+            sprintf($expected, phpversion()),
+            $this->renderer->render($registry->getMetricFamilySamples())
+        );
+    }
+
+
+    /**
+     * @test
+     */
     public function itShouldSaveGauges()
     {
         $registry = new CollectorRegistry($this->adapter);
@@ -46,7 +85,7 @@ abstract class AbstractCollectorRegistryTest extends TestCase
         $registry = new CollectorRegistry($this->adapter);
         $this->assertThat(
             $this->renderer->render($registry->getMetricFamilySamples()),
-            $this->equalTo(
+            $this->stringContains(
                 <<<EOF
 # HELP test_some_metric this is for testing
 # TYPE test_some_metric gauge
@@ -74,7 +113,7 @@ EOF
         $registry = new CollectorRegistry($this->adapter);
         $this->assertThat(
             $this->renderer->render($registry->getMetricFamilySamples()),
-            $this->equalTo(
+            $this->stringContains(
                 <<<EOF
 # HELP test_some_metric this is for testing
 # TYPE test_some_metric counter
@@ -108,7 +147,7 @@ EOF
         $registry = new CollectorRegistry($this->adapter);
         $this->assertThat(
             $this->renderer->render($registry->getMetricFamilySamples()),
-            $this->equalTo(
+            $this->stringContains(
                 <<<EOF
 # HELP test_some_metric this is for testing
 # TYPE test_some_metric histogram
@@ -153,7 +192,7 @@ EOF
         $registry = new CollectorRegistry($this->adapter);
         $this->assertThat(
             $this->renderer->render($registry->getMetricFamilySamples()),
-            $this->equalTo(
+            $this->stringContains(
                 <<<EOF
 # HELP test_some_metric this is for testing
 # TYPE test_some_metric histogram
@@ -188,12 +227,11 @@ EOF
         $registry = new CollectorRegistry($this->adapter);
         $registry
             ->registerCounter('', 'some_quick_counter', 'just a quick measurement')
-            ->inc()
-        ;
+            ->inc();
 
         $this->assertThat(
             $this->renderer->render($registry->getMetricFamilySamples()),
-            $this->equalTo(
+            $this->stringContains(
                 <<<EOF
 # HELP some_quick_counter just a quick measurement
 # TYPE some_quick_counter counter

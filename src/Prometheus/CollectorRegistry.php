@@ -37,12 +37,21 @@ class CollectorRegistry
     private $histograms = [];
 
     /**
+     * @var Gauge[]
+     */
+    private $defaultGauges = [];
+
+    /**
      * CollectorRegistry constructor.
      * @param Adapter $redisAdapter
+     * @param bool $registerDefaultMetrics
      */
-    public function __construct(Adapter $redisAdapter)
+    public function __construct(Adapter $redisAdapter, bool $registerDefaultMetrics = true)
     {
         $this->storageAdapter = $redisAdapter;
+        if ($registerDefaultMetrics) {
+            $this->registerDefaultMetrics();
+        }
     }
 
     /**
@@ -246,5 +255,12 @@ class CollectorRegistry
     private static function metricIdentifier($namespace, $name): string
     {
         return $namespace . ":" . $name;
+    }
+
+    private function registerDefaultMetrics(): void
+    {
+        $this->defaultGauges = ['php_info_gauge' => null];
+        $this->defaultGauges['php_info_gauge'] = $this->getOrRegisterGauge("", "php_info", "Information about the PHP environment.", ["version"]);
+        $this->defaultGauges['php_info_gauge']->set(1, [phpversion()]);
     }
 }

@@ -19,7 +19,6 @@ class RenderTextFormat
         });
 
         $lines = [];
-
         foreach ($metrics as $metric) {
             $lines[] = "# HELP " . $metric->getName() . " {$metric->getHelp()}";
             $lines[] = "# TYPE " . $metric->getName() . " {$metric->getType()}";
