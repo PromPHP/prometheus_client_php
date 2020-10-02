@@ -18,7 +18,7 @@ class BlackBoxTest extends TestCase
      */
     private $adapter;
 
-    public function setUp()
+    public function setUp(): void
     {
         $this->adapter = getenv('ADAPTER');
         $this->client = new Client(['base_uri' => 'http://nginx:80/']);
