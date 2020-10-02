@@ -57,6 +57,11 @@ class Redis implements Adapter
         $this->redis = new \Redis();
     }
 
+    /**
+     * @param \Redis $redis
+     * @return static
+     * @throws StorageException
+     */
     public static function fromExistingConnection(\Redis $redis): self
     {
         if ($redis->isConnected() === false) {
@@ -79,9 +84,9 @@ class Redis implements Adapter
     }
 
     /**
-     * @param $prefix
+     * @param string $prefix
      */
-    public static function setPrefix($prefix): void
+    public static function setPrefix(string $prefix): void
     {
         self::$prefix = $prefix;
     }
@@ -91,7 +96,7 @@ class Redis implements Adapter
      */
     public function flushRedis(): void
     {
-        $this->openConnection();
+        $this->ensureOpenConnection();
         $this->redis->flushAll();
     }
 
@@ -101,7 +106,7 @@ class Redis implements Adapter
      */
     public function collect(): array
     {
-        $this->openConnection();
+        $this->ensureOpenConnection();
         $metrics = $this->collectHistograms();
         $metrics = array_merge($metrics, $this->collectGauges());
         $metrics = array_merge($metrics, $this->collectCounters());
@@ -116,16 +121,13 @@ class Redis implements Adapter
     /**
      * @throws StorageException
      */
-    private function openConnection(): void
+    private function ensureOpenConnection(): void
     {
         if ($this->connectionInitialized === true) {
             return;
         }
 
-        $connectionStatus = $this->connectToServer();
-        if ($connectionStatus === false) {
-            throw new StorageException("Can't connect to Redis server", 0);
-        }
+        $this->connectToServer();
 
         if ($this->options['password']) {
             $this->redis->auth($this->options['password']);
@@ -139,22 +141,26 @@ class Redis implements Adapter
     }
 
     /**
-     * @return bool
+     * @throws StorageException
      */
-    private function connectToServer(): bool
+    private function connectToServer(): void
     {
         try {
+            $connection_successful = false;
             if ($this->options['persistent_connections']) {
-                return $this->redis->pconnect(
+                $connection_successful = $this->redis->pconnect(
                     $this->options['host'],
                     $this->options['port'],
                     $this->options['timeout']
                 );
+            } else {
+                $connection_successful = $this->redis->connect($this->options['host'], $this->options['port'], $this->options['timeout']);
             }
-
-            return $this->redis->connect($this->options['host'], $this->options['port'], $this->options['timeout']);
+            if (!$connection_successful) {
+                throw new StorageException("Can't connect to Redis server", 0);
+            }
         } catch (\RedisException $e) {
-            return false;
+            throw new StorageException("Can't connect to Redis server", 0, $e);
         }
     }
 
@@ -164,7 +170,7 @@ class Redis implements Adapter
      */
     public function updateHistogram(array $data): void
     {
-        $this->openConnection();
+        $this->ensureOpenConnection();
         $bucketToIncrease = '+Inf';
         foreach ($data['buckets'] as $bucket) {
             if ($data['value'] <= $bucket) {
@@ -173,8 +179,7 @@ class Redis implements Adapter
             }
         }
         $metaData = $data;
-        unset($metaData['value']);
-        unset($metaData['labelValues']);
+        unset($metaData['value'], $metaData['labelValues']);
 
         $this->redis->eval(
             <<<LUA
@@ -204,11 +209,9 @@ LUA
      */
     public function updateGauge(array $data): void
     {
-        $this->openConnection();
+        $this->ensureOpenConnection();
         $metaData = $data;
-        unset($metaData['value']);
-        unset($metaData['labelValues']);
-        unset($metaData['command']);
+        unset($metaData['value'], $metaData['labelValues'], $metaData['command']);
         $this->redis->eval(
             <<<LUA
 local result = redis.call(ARGV[1], KEYS[1], ARGV[2], ARGV[3])
@@ -244,11 +247,9 @@ LUA
      */
     public function updateCounter(array $data): void
     {
-        $this->openConnection();
+        $this->ensureOpenConnection();
         $metaData = $data;
-        unset($metaData['value']);
-        unset($metaData['labelValues']);
-        unset($metaData['command']);
+        unset($metaData['value'], $metaData['labelValues'], $metaData['command']);
         $this->redis->eval(
             <<<LUA
 local result = redis.call(ARGV[1], KEYS[1], ARGV[3], ARGV[2])
