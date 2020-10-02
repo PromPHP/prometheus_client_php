@@ -42,7 +42,9 @@ class APC implements Adapter
         $done = false;
         while (!$done) {
             $old = apcu_fetch($sumKey);
-            $done = apcu_cas($sumKey, $old, $this->toInteger($this->fromInteger($old) + $data['value']));
+            if ($old !== false) {
+                $done = apcu_cas($sumKey, $old, $this->toInteger($this->fromInteger($old) + $data['value']));
+            }
         }
 
         // Figure out in which bucket the observation belongs
@@ -77,7 +79,9 @@ class APC implements Adapter
             $done = false;
             while (!$done) {
                 $old = apcu_fetch($valueKey);
-                $done = apcu_cas($valueKey, $old, $this->toInteger($this->fromInteger($old) + $data['value']));
+                if ($old !== false) {
+                    $done = apcu_cas($valueKey, $old, $this->toInteger($this->fromInteger($old) + $data['value']));
+                }
             }
         }
     }
@@ -149,9 +153,7 @@ class APC implements Adapter
     private function metaData(array $data): array
     {
         $metricsMetaData = $data;
-        unset($metricsMetaData['value']);
-        unset($metricsMetaData['command']);
-        unset($metricsMetaData['labelValues']);
+        unset($metricsMetaData['value'], $metricsMetaData['command'], $metricsMetaData['labelValues']);
         return $metricsMetaData;
     }
 
