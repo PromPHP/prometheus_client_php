@@ -45,5 +45,7 @@ jobs:
           redis-version: ${{ matrix.redis-version }}
       - name: Run PHP Code Sniffer
         run: ./vendor/bin/phpcs
+      - name: Run phpstan
+        run: php vendor/bin/phpstan analyse src tests --level 1 --autoload-file tests/bootstrap.php
       - name: Execute tests
         run: vendor/bin/phpunit

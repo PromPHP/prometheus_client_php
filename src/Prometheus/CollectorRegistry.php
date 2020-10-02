@@ -51,7 +51,7 @@ class CollectorRegistry
     public static function getDefault(): CollectorRegistry
     {
         if (!self::$defaultRegistry) {
-            return self::$defaultRegistry = new static(new Redis());
+            return self::$defaultRegistry = new self(new Redis());
         }
         return self::$defaultRegistry;
     }
