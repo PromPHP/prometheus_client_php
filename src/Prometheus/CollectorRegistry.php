@@ -43,12 +43,12 @@ class CollectorRegistry
 
     /**
      * CollectorRegistry constructor.
-     * @param Adapter $redisAdapter
+     * @param Adapter $storageAdapter
      * @param bool $registerDefaultMetrics
      */
-    public function __construct(Adapter $redisAdapter, bool $registerDefaultMetrics = true)
+    public function __construct(Adapter $storageAdapter, bool $registerDefaultMetrics = true)
     {
-        $this->storageAdapter = $redisAdapter;
+        $this->storageAdapter = $storageAdapter;
         if ($registerDefaultMetrics) {
             $this->registerDefaultMetrics();
         }
