@@ -7,7 +7,7 @@ use Test\Prometheus\AbstractGaugeTest;
 
 /**
  * See https://prometheus.io/docs/instrumenting/exposition_formats/
- * @requires extension apc
+ * @requires extension apcu
  */
 class GaugeTest extends AbstractGaugeTest
 {

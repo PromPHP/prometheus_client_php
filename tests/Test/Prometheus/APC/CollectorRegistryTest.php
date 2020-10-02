@@ -6,7 +6,7 @@ use Prometheus\Storage\APC;
 use Test\Prometheus\AbstractCollectorRegistryTest;
 
 /**
- * @requires extension apc
+ * @requires extension apcu
  */
 class CollectorRegistryTest extends AbstractCollectorRegistryTest
 {
