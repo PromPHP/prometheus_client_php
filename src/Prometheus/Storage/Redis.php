@@ -150,11 +150,11 @@ class Redis implements Adapter
             if ($this->options['persistent_connections']) {
                 $connection_successful = $this->redis->pconnect(
                     $this->options['host'],
-                    $this->options['port'],
-                    $this->options['timeout']
+                    (int) $this->options['port'],
+                    (float) $this->options['timeout']
                 );
             } else {
-                $connection_successful = $this->redis->connect($this->options['host'], $this->options['port'], $this->options['timeout']);
+                $connection_successful = $this->redis->connect($this->options['host'], (int) $this->options['port'], (float) $this->options['timeout']);
             }
             if (!$connection_successful) {
                 throw new StorageException("Can't connect to Redis server", 0);
