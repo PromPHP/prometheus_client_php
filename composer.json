@@ -20,7 +20,7 @@
         "symfony/polyfill-apcu": "^1.6"
     },
     "require-dev": {
-        "guzzlehttp/guzzle": "^6.3",
+        "guzzlehttp/guzzle": "^6.3|^7.0",
         "phpstan/phpstan": "^0.12.48",
         "phpunit/phpunit": "^8.4",
         "squizlabs/php_codesniffer": "^3.5"
