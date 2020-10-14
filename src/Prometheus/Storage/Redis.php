@@ -10,6 +10,7 @@ use Prometheus\Exception\StorageException;
 use Prometheus\Gauge;
 use Prometheus\Histogram;
 use Prometheus\MetricFamilySamples;
+use Redis as PHPRedis;
 
 class Redis implements Adapter
 {
@@ -54,7 +55,7 @@ class Redis implements Adapter
     public function __construct(array $options = [])
     {
         $this->options = array_merge(self::$defaultOptions, $options);
-        $this->redis = new \Redis();
+        $this->redis = new PHPRedis();
     }
 
     /**

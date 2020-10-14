@@ -45,7 +45,7 @@ class Histogram extends Collector
             }
         }
         if (in_array('le', $labels, true)) {
-            throw new \InvalidArgumentException("Histogram cannot have a label named 'le'.");
+            throw new InvalidArgumentException("Histogram cannot have a label named 'le'.");
         }
         $this->buckets = $buckets;
     }

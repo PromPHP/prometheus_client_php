@@ -2,17 +2,21 @@
 
 require __DIR__ . '/../vendor/autoload.php';
 
+use Prometheus\Storage\APC;
+use Prometheus\Storage\InMemory;
+use Prometheus\Storage\Redis;
+
 $adapter = $_GET['adapter'];
 
 if ($adapter === 'redis') {
     define('REDIS_HOST', $_SERVER['REDIS_HOST'] ?? '127.0.0.1');
 
-    $redisAdapter = new Prometheus\Storage\Redis(['host' => REDIS_HOST]);
+    $redisAdapter = new Redis(['host' => REDIS_HOST]);
     $redisAdapter->flushRedis();
 } elseif ($adapter === 'apc') {
-    $apcAdapter = new Prometheus\Storage\APC();
+    $apcAdapter = new APC();
     $apcAdapter->flushAPC();
 } elseif ($adapter === 'in-memory') {
-    $inMemoryAdapter = new Prometheus\Storage\InMemory();
+    $inMemoryAdapter = new InMemory();
     $inMemoryAdapter->flushMemory();
 }

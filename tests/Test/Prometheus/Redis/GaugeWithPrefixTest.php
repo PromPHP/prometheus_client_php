@@ -2,7 +2,8 @@
 
 namespace Test\Prometheus\Redis;
 
-use Prometheus\Storage\Redis;
+use Prometheus\Storage\Redis as RedisStorage;
+use Redis;
 use Test\Prometheus\AbstractGaugeTest;
 
 /**
@@ -13,12 +14,12 @@ class GaugeWithPrefixTest extends AbstractGaugeTest
 {
     public function configureAdapter()
     {
-        $connection = new \Redis();
+        $connection = new Redis();
         $connection->connect(REDIS_HOST);
 
-        $connection->setOption(\Redis::OPT_PREFIX, 'prefix:');
+        $connection->setOption(Redis::OPT_PREFIX, 'prefix:');
 
-        $this->adapter = Redis::fromExistingConnection($connection);
+        $this->adapter = RedisStorage::fromExistingConnection($connection);
         $this->adapter->flushRedis();
     }
 }

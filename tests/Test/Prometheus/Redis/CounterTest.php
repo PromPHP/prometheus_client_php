@@ -2,7 +2,7 @@
 
 namespace Test\Prometheus\Redis;
 
-use Prometheus\Storage\Redis;
+use Prometheus\Storage\Redis as RedisStorage;
 use Test\Prometheus\AbstractCounterTest;
 
 /**
@@ -13,7 +13,7 @@ class CounterTest extends AbstractCounterTest
 {
     public function configureAdapter()
     {
-        $this->adapter = new Redis(['host' => REDIS_HOST]);
+        $this->adapter = new RedisStorage(['host' => REDIS_HOST]);
         $this->adapter->flushRedis();
     }
 }

@@ -1,9 +1,11 @@
 <?php
 
-namespace Prometheus\Storage;
+namespace Test\Prometheus\Storage;
 
 use PHPUnit\Framework\TestCase;
 use Prometheus\Exception\StorageException;
+use Prometheus\Storage\Redis as RedisStorage;
+use Redis;
 
 /**
  * @requires extension redis
@@ -15,7 +17,7 @@ class RedisTest extends TestCase
      */
     public function itShouldThrowAnExceptionOnConnectionFailure()
     {
-        $redis = new Redis(['host' => '/dev/null']);
+        $redis = new RedisStorage(['host' => '/dev/null']);
 
         $this->expectException(StorageException::class);
         $this->expectExceptionMessage("Can't connect to Redis server");
@@ -29,11 +31,11 @@ class RedisTest extends TestCase
      */
     public function itShouldThrowExceptionWhenInjectedRedisIsNotConnected()
     {
-        $connection = new \Redis();
+        $connection = new Redis();
 
         $this->expectException(StorageException::class);
         $this->expectExceptionMessage('Connection to Redis server not established');
 
-        Redis::fromExistingConnection($connection);
+        RedisStorage::fromExistingConnection($connection);
     }
 }
