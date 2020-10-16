@@ -1,0 +1,10 @@
+parameters:
+    level: 8
+    paths:
+        - src
+        - tests
+    reportUnmatchedIgnoredErrors: false
+    ignoreErrors:
+        -
+            # REDIS stuff only runs with it available
+            '#Constant REDIS_HOST not found\.#'
