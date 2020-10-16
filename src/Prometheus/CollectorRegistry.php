@@ -43,8 +43,9 @@ class CollectorRegistry implements RegistryInterface
 
     /**
      * CollectorRegistry constructor.
+     *
      * @param Adapter $storageAdapter
-     * @param bool $registerDefaultMetrics
+     * @param bool    $registerDefaultMetrics
      */
     public function __construct(Adapter $storageAdapter, bool $registerDefaultMetrics = true)
     {
@@ -59,10 +60,7 @@ class CollectorRegistry implements RegistryInterface
      */
     public static function getDefault(): CollectorRegistry
     {
-        if (!self::$defaultRegistry) {
-            return self::$defaultRegistry = new self(new Redis());
-        }
-        return self::$defaultRegistry;
+        return self::$defaultRegistry ?? (self::$defaultRegistry = new self(new Redis()));
     }
 
     /**
@@ -74,14 +72,15 @@ class CollectorRegistry implements RegistryInterface
     }
 
     /**
-     * @param string $namespace e.g. cms
-     * @param string $name e.g. duration_seconds
-     * @param string $help e.g. The duration something took in seconds.
-     * @param array $labels e.g. ['controller', 'action']
+     * @param string   $namespace e.g. cms
+     * @param string   $name e.g. duration_seconds
+     * @param string   $help e.g. The duration something took in seconds.
+     * @param string[] $labels e.g. ['controller', 'action']
+     *
      * @return Gauge
      * @throws MetricsRegistrationException
      */
-    public function registerGauge($namespace, $name, $help, $labels = []): Gauge
+    public function registerGauge(string $namespace, string $name, string $help, $labels = []): Gauge
     {
         $metricIdentifier = self::metricIdentifier($namespace, $name);
         if (isset($this->gauges[$metricIdentifier])) {
@@ -100,27 +99,29 @@ class CollectorRegistry implements RegistryInterface
     /**
      * @param string $namespace
      * @param string $name
+     *
      * @return Gauge
      * @throws MetricNotFoundException
      */
-    public function getGauge($namespace, $name): Gauge
+    public function getGauge(string $namespace, string $name): Gauge
     {
         $metricIdentifier = self::metricIdentifier($namespace, $name);
-        if (!isset($this->gauges[$metricIdentifier])) {
+        if (! isset($this->gauges[$metricIdentifier])) {
             throw new MetricNotFoundException("Metric not found:" . $metricIdentifier);
         }
         return $this->gauges[$metricIdentifier];
     }
 
     /**
-     * @param string $namespace e.g. cms
-     * @param string $name e.g. duration_seconds
-     * @param string $help e.g. The duration something took in seconds.
-     * @param array $labels e.g. ['controller', 'action']
+     * @param string   $namespace e.g. cms
+     * @param string   $name e.g. duration_seconds
+     * @param string   $help e.g. The duration something took in seconds.
+     * @param string[] $labels e.g. ['controller', 'action']
+     *
      * @return Gauge
      * @throws MetricsRegistrationException
      */
-    public function getOrRegisterGauge($namespace, $name, $help, $labels = []): Gauge
+    public function getOrRegisterGauge(string $namespace, string $name, string $help, $labels = []): Gauge
     {
         try {
             $gauge = $this->getGauge($namespace, $name);
@@ -131,14 +132,15 @@ class CollectorRegistry implements RegistryInterface
     }
 
     /**
-     * @param string $namespace e.g. cms
-     * @param string $name e.g. requests
-     * @param string $help e.g. The number of requests made.
-     * @param array $labels e.g. ['controller', 'action']
+     * @param string   $namespace e.g. cms
+     * @param string   $name e.g. requests
+     * @param string   $help e.g. The number of requests made.
+     * @param string[] $labels e.g. ['controller', 'action']
+     *
      * @return Counter
      * @throws MetricsRegistrationException
      */
-    public function registerCounter($namespace, $name, $help, $labels = []): Counter
+    public function registerCounter(string $namespace, string $name, string $help, $labels = []): Counter
     {
         $metricIdentifier = self::metricIdentifier($namespace, $name);
         if (isset($this->counters[$metricIdentifier])) {
@@ -157,27 +159,29 @@ class CollectorRegistry implements RegistryInterface
     /**
      * @param string $namespace
      * @param string $name
+     *
      * @return Counter
      * @throws MetricNotFoundException
      */
-    public function getCounter($namespace, $name): Counter
+    public function getCounter(string $namespace, string $name): Counter
     {
         $metricIdentifier = self::metricIdentifier($namespace, $name);
-        if (!isset($this->counters[$metricIdentifier])) {
+        if (! isset($this->counters[$metricIdentifier])) {
             throw new MetricNotFoundException("Metric not found:" . $metricIdentifier);
         }
         return $this->counters[self::metricIdentifier($namespace, $name)];
     }
 
     /**
-     * @param string $namespace e.g. cms
-     * @param string $name e.g. requests
-     * @param string $help e.g. The number of requests made.
-     * @param array $labels e.g. ['controller', 'action']
+     * @param string   $namespace e.g. cms
+     * @param string   $name e.g. requests
+     * @param string   $help e.g. The number of requests made.
+     * @param string[] $labels e.g. ['controller', 'action']
+     *
      * @return Counter
      * @throws MetricsRegistrationException
      */
-    public function getOrRegisterCounter($namespace, $name, $help, $labels = []): Counter
+    public function getOrRegisterCounter(string $namespace, string $name, string $help, $labels = []): Counter
     {
         try {
             $counter = $this->getCounter($namespace, $name);
@@ -188,16 +192,22 @@ class CollectorRegistry implements RegistryInterface
     }
 
     /**
-     * @param string $namespace e.g. cms
-     * @param string $name e.g. duration_seconds
-     * @param string $help e.g. A histogram of the duration in seconds.
-     * @param array $labels e.g. ['controller', 'action']
-     * @param array $buckets e.g. [100, 200, 300]
+     * @param string     $namespace e.g. cms
+     * @param string     $name e.g. duration_seconds
+     * @param string     $help e.g. A histogram of the duration in seconds.
+     * @param string[]   $labels e.g. ['controller', 'action']
+     * @param mixed[]|null $buckets e.g. [100, 200, 300]
+     *
      * @return Histogram
      * @throws MetricsRegistrationException
      */
-    public function registerHistogram($namespace, $name, $help, $labels = [], $buckets = null): Histogram
-    {
+    public function registerHistogram(
+        string $namespace,
+        string $name,
+        string $help,
+        array $labels = [],
+        array $buckets = null
+    ): Histogram {
         $metricIdentifier = self::metricIdentifier($namespace, $name);
         if (isset($this->histograms[$metricIdentifier])) {
             throw new MetricsRegistrationException("Metric already registered");
@@ -216,29 +226,36 @@ class CollectorRegistry implements RegistryInterface
     /**
      * @param string $namespace
      * @param string $name
+     *
      * @return Histogram
      * @throws MetricNotFoundException
      */
-    public function getHistogram($namespace, $name): Histogram
+    public function getHistogram(string $namespace, string $name): Histogram
     {
         $metricIdentifier = self::metricIdentifier($namespace, $name);
-        if (!isset($this->histograms[$metricIdentifier])) {
+        if (! isset($this->histograms[$metricIdentifier])) {
             throw new MetricNotFoundException("Metric not found:" . $metricIdentifier);
         }
         return $this->histograms[self::metricIdentifier($namespace, $name)];
     }
 
     /**
-     * @param string $namespace e.g. cms
-     * @param string $name e.g. duration_seconds
-     * @param string $help e.g. A histogram of the duration in seconds.
-     * @param array $labels e.g. ['controller', 'action']
-     * @param array $buckets e.g. [100, 200, 300]
+     * @param string     $namespace e.g. cms
+     * @param string     $name e.g. duration_seconds
+     * @param string     $help e.g. A histogram of the duration in seconds.
+     * @param string[]      $labels e.g. ['controller', 'action']
+     * @param mixed[]|null $buckets e.g. [100, 200, 300]
+     *
      * @return Histogram
      * @throws MetricsRegistrationException
      */
-    public function getOrRegisterHistogram($namespace, $name, $help, $labels = [], $buckets = null): Histogram
-    {
+    public function getOrRegisterHistogram(
+        string $namespace,
+        string $name,
+        string $help,
+        array $labels = [],
+        array $buckets = null
+    ): Histogram {
         try {
             $histogram = $this->getHistogram($namespace, $name);
         } catch (MetricNotFoundException $e) {
@@ -248,19 +265,24 @@ class CollectorRegistry implements RegistryInterface
     }
 
     /**
-     * @param $namespace
-     * @param $name
+     * @param string $namespace
+     * @param string $name
+     *
      * @return string
      */
-    private static function metricIdentifier($namespace, $name): string
+    private static function metricIdentifier(string $namespace, string $name): string
     {
         return $namespace . ":" . $name;
     }
 
     private function registerDefaultMetrics(): void
     {
-        $this->defaultGauges = ['php_info_gauge' => null];
-        $this->defaultGauges['php_info_gauge'] = $this->getOrRegisterGauge("", "php_info", "Information about the PHP environment.", ["version"]);
-        $this->defaultGauges['php_info_gauge']->set(1, [phpversion()]);
+        $this->defaultGauges['php_info_gauge'] = $this->getOrRegisterGauge(
+            "",
+            "php_info",
+            "Information about the PHP environment.",
+            ["version"]
+        );
+        $this->defaultGauges['php_info_gauge']->set(1, [PHP_VERSION]);
     }
 }

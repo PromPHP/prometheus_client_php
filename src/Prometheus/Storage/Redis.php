@@ -16,7 +16,7 @@ class Redis implements Adapter
     const PROMETHEUS_METRIC_KEYS_SUFFIX = '_METRIC_KEYS';
 
     /**
-     * @var array
+     * @var mixed[]
      */
     private static $defaultOptions = [
         'host' => '127.0.0.1',
@@ -33,7 +33,7 @@ class Redis implements Adapter
     private static $prefix = 'PROMETHEUS_';
 
     /**
-     * @var array
+     * @var mixed[]
      */
     private $options = [];
 
@@ -49,7 +49,7 @@ class Redis implements Adapter
 
     /**
      * Redis constructor.
-     * @param array $options
+     * @param mixed[] $options
      */
     public function __construct(array $options = [])
     {
@@ -59,7 +59,7 @@ class Redis implements Adapter
 
     /**
      * @param \Redis $redis
-     * @return static
+     * @return self
      * @throws StorageException
      */
     public static function fromExistingConnection(\Redis $redis): self
@@ -76,7 +76,7 @@ class Redis implements Adapter
     }
 
     /**
-     * @param array $options
+     * @param mixed[] $options
      */
     public static function setDefaultOptions(array $options): void
     {
@@ -111,7 +111,7 @@ class Redis implements Adapter
         $metrics = array_merge($metrics, $this->collectGauges());
         $metrics = array_merge($metrics, $this->collectCounters());
         return array_map(
-            function (array $metric) {
+            function (array $metric): MetricFamilySamples {
                 return new MetricFamilySamples($metric);
             },
             $metrics
@@ -129,7 +129,7 @@ class Redis implements Adapter
 
         $this->connectToServer();
 
-        if ($this->options['password']) {
+        if ($this->options['password'] !== null) {
             $this->redis->auth($this->options['password']);
         }
 
@@ -147,7 +147,7 @@ class Redis implements Adapter
     {
         try {
             $connection_successful = false;
-            if ($this->options['persistent_connections']) {
+            if ($this->options['persistent_connections'] !== null) {
                 $connection_successful = $this->redis->pconnect(
                     $this->options['host'],
                     (int) $this->options['port'],
@@ -165,7 +165,7 @@ class Redis implements Adapter
     }
 
     /**
-     * @param array $data
+     * @param mixed[] $data
      * @throws StorageException
      */
     public function updateHistogram(array $data): void
@@ -204,7 +204,7 @@ LUA
     }
 
     /**
-     * @param array $data
+     * @param mixed[] $data
      * @throws StorageException
      */
     public function updateGauge(array $data): void
@@ -242,7 +242,7 @@ LUA
     }
 
     /**
-     * @param array $data
+     * @param mixed[] $data
      * @throws StorageException
      */
     public function updateCounter(array $data): void
@@ -273,7 +273,7 @@ LUA
     }
 
     /**
-     * @return array
+     * @return mixed[]
      */
     private function collectHistograms(): array
     {
@@ -350,7 +350,7 @@ LUA
     }
 
     /**
-     * @return array
+     * @return mixed[]
      */
     private function collectGauges(): array
     {
@@ -370,7 +370,7 @@ LUA
                     'value' => $value,
                 ];
             }
-            usort($gauge['samples'], function ($a, $b) {
+            usort($gauge['samples'], function ($a, $b): int {
                 return strcmp(implode("", $a['labelValues']), implode("", $b['labelValues']));
             });
             $gauges[] = $gauge;
@@ -379,7 +379,7 @@ LUA
     }
 
     /**
-     * @return array
+     * @return mixed[]
      */
     private function collectCounters(): array
     {
@@ -399,7 +399,7 @@ LUA
                     'value' => $value,
                 ];
             }
-            usort($counter['samples'], function ($a, $b) {
+            usort($counter['samples'], function ($a, $b): int {
                 return strcmp(implode("", $a['labelValues']), implode("", $b['labelValues']));
             });
             $counters[] = $counter;
@@ -426,7 +426,7 @@ LUA
     }
 
     /**
-     * @param array $data
+     * @param mixed[] $data
      * @return string
      */
     private function toMetricKey(array $data): string

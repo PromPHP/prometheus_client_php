@@ -10,8 +10,19 @@ use RuntimeException;
 class InMemory implements Adapter
 {
 
+    /**
+     * @var mixed[]
+     */
     private $counters = [];
+
+    /**
+     * @var mixed[]
+     */
     private $gauges = [];
+
+    /**
+     * @var mixed[]
+     */
     private $histograms = [];
 
     /**
@@ -33,7 +44,7 @@ class InMemory implements Adapter
     }
 
     /**
-     * @return array
+     * @return MetricFamilySamples[]
      */
     private function collectHistograms(): array
     {
@@ -108,8 +119,8 @@ class InMemory implements Adapter
     }
 
     /**
-     * @param array $metrics
-     * @return array
+     * @param mixed[] $metrics
+     * @return MetricFamilySamples[]
      */
     private function internalCollect(array $metrics): array
     {
@@ -121,6 +132,7 @@ class InMemory implements Adapter
                 'help' => $metaData['help'],
                 'type' => $metaData['type'],
                 'labelNames' => $metaData['labelNames'],
+                'samples' => [],
             ];
             foreach ($metric['samples'] as $key => $value) {
                 $parts = explode(':', $key);
@@ -139,7 +151,7 @@ class InMemory implements Adapter
     }
 
     /**
-     * @param array $data
+     * @param mixed[] $data
      * @return void
      */
     public function updateHistogram(array $data): void
@@ -176,7 +188,7 @@ class InMemory implements Adapter
     }
 
     /**
-     * @param array $data
+     * @param mixed[] $data
      */
     public function updateGauge(array $data): void
     {
@@ -199,7 +211,7 @@ class InMemory implements Adapter
     }
 
     /**
-     * @param array $data
+     * @param mixed[] $data
      */
     public function updateCounter(array $data): void
     {
@@ -222,8 +234,9 @@ class InMemory implements Adapter
     }
 
     /**
-     * @param array $data
-     * @param string $bucket
+     * @param mixed[]    $data
+     * @param string|int $bucket
+     *
      * @return string
      */
     private function histogramBucketValueKey(array $data, $bucket): string
@@ -237,7 +250,7 @@ class InMemory implements Adapter
     }
 
     /**
-     * @param array $data
+     * @param mixed[] $data
      *
      * @return string
      */
@@ -251,7 +264,7 @@ class InMemory implements Adapter
     }
 
     /**
-     * @param array $data
+     * @param mixed[] $data
      *
      * @return string
      */
@@ -266,31 +279,29 @@ class InMemory implements Adapter
     }
 
     /**
-     * @param array $data
+     * @param mixed[] $data
      *
-     * @return array
+     * @return mixed[]
      */
     private function metaData(array $data): array
     {
         $metricsMetaData = $data;
-        unset($metricsMetaData['value']);
-        unset($metricsMetaData['command']);
-        unset($metricsMetaData['labelValues']);
+        unset($metricsMetaData['value'], $metricsMetaData['command'], $metricsMetaData['labelValues']);
         return $metricsMetaData;
     }
 
     /**
-     * @param array $samples
+     * @param mixed[] $samples
      */
     private function sortSamples(array &$samples): void
     {
-        usort($samples, function ($a, $b) {
+        usort($samples, function ($a, $b): int {
             return strcmp(implode("", $a['labelValues']), implode("", $b['labelValues']));
         });
     }
 
     /**
-     * @param array $values
+     * @param mixed[] $values
      * @return string
      * @throws RuntimeException
      */
@@ -305,10 +316,10 @@ class InMemory implements Adapter
 
     /**
      * @param string $values
-     * @return array
+     * @return mixed[]
      * @throws RuntimeException
      */
-    private function decodeLabelValues($values): array
+    private function decodeLabelValues(string $values): array
     {
         $json = base64_decode($values, true);
         if (false === $json) {

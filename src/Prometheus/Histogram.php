@@ -12,27 +12,33 @@ class Histogram extends Collector
     const TYPE = 'histogram';
 
     /**
-     * @var array|null
+     * @var mixed[]|null
      */
     private $buckets;
 
     /**
-     * @param Adapter $adapter
-     * @param string $namespace
-     * @param string $name
-     * @param string $help
-     * @param array $labels
-     * @param array $buckets
+     * @param Adapter    $adapter
+     * @param string     $namespace
+     * @param string     $name
+     * @param string     $help
+     * @param string[]   $labels
+     * @param mixed[]|null $buckets
      */
-    public function __construct(Adapter $adapter, $namespace, $name, $help, $labels = [], $buckets = null)
-    {
+    public function __construct(
+        Adapter $adapter,
+        string $namespace,
+        string $name,
+        string $help,
+        array $labels = [],
+        array $buckets = null
+    ) {
         parent::__construct($adapter, $namespace, $name, $help, $labels);
 
         if (null === $buckets) {
             $buckets = self::getDefaultBuckets();
         }
 
-        if (0 == count($buckets)) {
+        if (0 === count($buckets)) {
             throw new InvalidArgumentException("Histogram must have at least one bucket.");
         }
 
@@ -52,20 +58,35 @@ class Histogram extends Collector
 
     /**
      * List of default buckets suitable for typical web application latency metrics
-     * @return array
+     *
+     * @return mixed[]
      */
     public static function getDefaultBuckets(): array
     {
         return [
-            0.005, 0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 0.75, 1.0, 2.5, 5.0, 7.5, 10.0,
+            0.005,
+            0.01,
+            0.025,
+            0.05,
+            0.075,
+            0.1,
+            0.25,
+            0.5,
+            0.75,
+            1.0,
+            2.5,
+            5.0,
+            7.5,
+            10.0,
         ];
     }
 
     /**
      * @param float $start
      * @param float $growthFactor
-     * @param int $numberOfBuckets
-     * @return array
+     * @param int   $numberOfBuckets
+     *
+     * @return mixed[]
      */
     public static function exponentialBuckets(float $start, float $growthFactor, int $numberOfBuckets): array
     {
@@ -85,7 +106,7 @@ class Histogram extends Collector
 
         for ($i = 0; $i < $numberOfBuckets; $i++) {
             $buckets[$i] = $start;
-            $start *= $growthFactor;
+            $start       *= $growthFactor;
         }
 
         return $buckets;
@@ -93,7 +114,7 @@ class Histogram extends Collector
 
     /**
      * @param double $value e.g. 123
-     * @param array $labels e.g. ['status', 'opcode']
+     * @param string[]  $labels e.g. ['status', 'opcode']
      */
     public function observe(float $value, array $labels = []): void
     {
@@ -101,13 +122,13 @@ class Histogram extends Collector
 
         $this->storageAdapter->updateHistogram(
             [
-                'value' => $value,
-                'name' => $this->getName(),
-                'help' => $this->getHelp(),
-                'type' => $this->getType(),
-                'labelNames' => $this->getLabelNames(),
+                'value'       => $value,
+                'name'        => $this->getName(),
+                'help'        => $this->getHelp(),
+                'type'        => $this->getType(),
+                'labelNames'  => $this->getLabelNames(),
                 'labelValues' => $labels,
-                'buckets' => $this->buckets,
+                'buckets'     => $this->buckets,
             ]
         );
     }

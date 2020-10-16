@@ -22,17 +22,17 @@ class MetricFamilySamples
     private $help;
 
     /**
-     * @var array
+     * @var string[]
      */
     private $labelNames;
 
     /**
-     * @var array
+     * @var Sample[]
      */
     private $samples = [];
 
     /**
-     * @param array $data
+     * @param mixed[] $data
      */
     public function __construct(array $data)
     {
@@ -78,7 +78,7 @@ class MetricFamilySamples
     }
 
     /**
-     * @return array
+     * @return string[]
      */
     public function getLabelNames(): array
     {
@@ -90,6 +90,6 @@ class MetricFamilySamples
      */
     public function hasLabelNames(): bool
     {
-        return !empty($this->labelNames);
+        return $this->labelNames !== [];
     }
 }

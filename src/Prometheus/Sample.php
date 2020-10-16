@@ -12,12 +12,12 @@ class Sample
     private $name;
 
     /**
-     * @var array
+     * @var string[]
      */
     private $labelNames;
 
     /**
-     * @var array
+     * @var mixed[]
      */
     private $labelValues;
 
@@ -28,13 +28,13 @@ class Sample
 
     /**
      * Sample constructor.
-     * @param array $data
+     * @param mixed[] $data
      */
     public function __construct(array $data)
     {
         $this->name = $data['name'];
-        $this->labelNames = $data['labelNames'];
-        $this->labelValues = $data['labelValues'];
+        $this->labelNames = (array) $data['labelNames'];
+        $this->labelValues = (array) $data['labelValues'];
         $this->value = $data['value'];
     }
 
@@ -47,23 +47,23 @@ class Sample
     }
 
     /**
-     * @return array
+     * @return string[]
      */
     public function getLabelNames(): array
     {
-        return (array)$this->labelNames;
+        return $this->labelNames;
     }
 
     /**
-     * @return array
+     * @return mixed[]
      */
     public function getLabelValues(): array
     {
-        return (array)$this->labelValues;
+        return $this->labelValues;
     }
 
     /**
-     * @return int|double
+     * @return string
      */
     public function getValue(): string
     {
@@ -75,6 +75,6 @@ class Sample
      */
     public function hasLabelNames(): bool
     {
-        return !empty($this->labelNames);
+        return $this->labelNames !== [];
     }
 }
