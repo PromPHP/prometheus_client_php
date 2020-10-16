@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Test\Prometheus;
 
 use InvalidArgumentException;
@@ -24,20 +26,20 @@ abstract class AbstractCounterTest extends TestCase
         $this->configureAdapter();
     }
 
-    abstract public function configureAdapter();
+    abstract public function configureAdapter(): void;
 
     /**
      * @test
      */
-    public function itShouldIncreaseWithLabels()
+    public function itShouldIncreaseWithLabels(): void
     {
         $counter = new Counter($this->adapter, 'test', 'some_metric', 'this is for testing', ['foo', 'bar']);
         $counter->inc(['lalal', 'lululu']);
         $counter->inc(['lalal', 'lululu']);
         $counter->inc(['lalal', 'lululu']);
-        $this->assertThat(
+        self::assertThat(
             $this->adapter->collect(),
-            $this->equalTo(
+            self::equalTo(
                 [
                     new MetricFamilySamples(
                         [
@@ -63,13 +65,13 @@ abstract class AbstractCounterTest extends TestCase
     /**
      * @test
      */
-    public function itShouldIncreaseWithoutLabelWhenNoLabelsAreDefined()
+    public function itShouldIncreaseWithoutLabelWhenNoLabelsAreDefined(): void
     {
         $counter = new Counter($this->adapter, 'test', 'some_metric', 'this is for testing');
         $counter->inc();
-        $this->assertThat(
+        self::assertThat(
             $this->adapter->collect(),
-            $this->equalTo(
+            self::equalTo(
                 [
                     new MetricFamilySamples(
                         [
@@ -95,14 +97,14 @@ abstract class AbstractCounterTest extends TestCase
     /**
      * @test
      */
-    public function itShouldIncreaseTheCounterByAnArbitraryInteger()
+    public function itShouldIncreaseTheCounterByAnArbitraryInteger(): void
     {
         $counter = new Counter($this->adapter, 'test', 'some_metric', 'this is for testing', ['foo', 'bar']);
         $counter->inc(['lalal', 'lululu']);
         $counter->incBy(123, ['lalal', 'lululu']);
-        $this->assertThat(
+        self::assertThat(
             $this->adapter->collect(),
-            $this->equalTo(
+            self::equalTo(
                 [
                     new MetricFamilySamples(
                         [
@@ -128,7 +130,7 @@ abstract class AbstractCounterTest extends TestCase
     /**
      * @test
      */
-    public function itShouldRejectInvalidMetricsNames()
+    public function itShouldRejectInvalidMetricsNames(): void
     {
         $this->expectException(InvalidArgumentException::class);
         new Counter($this->adapter, 'test', 'some metric invalid metric', 'help');
@@ -137,7 +139,7 @@ abstract class AbstractCounterTest extends TestCase
     /**
      * @test
      */
-    public function itShouldRejectInvalidLabelNames()
+    public function itShouldRejectInvalidLabelNames(): void
     {
         $this->expectException(InvalidArgumentException::class);
         new Counter($this->adapter, 'test', 'some_metric', 'help', ['invalid label']);
@@ -149,35 +151,36 @@ abstract class AbstractCounterTest extends TestCase
      *
      * @param mixed $value The label value
      */
-    public function isShouldAcceptAnySequenceOfBasicLatinCharactersForLabelValues($value)
+    public function isShouldAcceptAnySequenceOfBasicLatinCharactersForLabelValues($value): void
     {
         $label = 'foo';
         $histogram = new Counter($this->adapter, 'test', 'some_metric', 'help', [$label]);
         $histogram->inc([$value]);
 
         $metrics = $this->adapter->collect();
-        $this->assertIsArray($metrics);
-        $this->assertCount(1, $metrics);
-        $this->assertContainsOnlyInstancesOf(MetricFamilySamples::class, $metrics);
+        self::assertCount(1, $metrics);
+        self::assertContainsOnlyInstancesOf(MetricFamilySamples::class, $metrics);
 
         $metric = reset($metrics);
+        self::assertInstanceOf(MetricFamilySamples::class, $metric);
         $samples = $metric->getSamples();
-        $this->assertContainsOnlyInstancesOf(Sample::class, $samples);
+        self::assertContainsOnlyInstancesOf(Sample::class, $samples);
 
         foreach ($samples as $sample) {
             $labels = array_combine(
                 array_merge($metric->getLabelNames(), $sample->getLabelNames()),
                 $sample->getLabelValues()
             );
-            $this->assertEquals($value, $labels[$label]);
+            self::assertIsArray($labels);
+            self::assertEquals($value, $labels[$label]);
         }
     }
 
     /**
-     * @return array
+     * @return mixed[]
      * @see isShouldAcceptArbitraryLabelValues
      */
-    public function labelValuesDataProvider()
+    public function labelValuesDataProvider(): array
     {
         $cases = [];
         // Basic Latin

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Test;
 
 use GuzzleHttp\Client;
@@ -20,7 +22,12 @@ class BlackBoxTest extends TestCase
 
     public function setUp(): void
     {
-        $this->adapter = getenv('ADAPTER');
+        $adapter = getenv('ADAPTER');
+        if (is_string($adapter) === false) {
+            self::fail('Env var "ADAPTER" not set');
+        }
+
+        $this->adapter = $adapter;
         $this->client = new Client(['base_uri' => 'http://nginx:80/']);
         $this->client->get('/examples/flush_adapter.php?adapter=' . $this->adapter);
     }
@@ -28,7 +35,7 @@ class BlackBoxTest extends TestCase
     /**
      * @test
      */
-    public function gaugesShouldBeOverwritten()
+    public function gaugesShouldBeOverwritten(): void
     {
         $start = microtime(true);
         $promises = [
@@ -45,12 +52,12 @@ class BlackBoxTest extends TestCase
         $metricsResult = $this->client->get('/examples/metrics.php?adapter=' . $this->adapter);
         $body = (string)$metricsResult->getBody();
         echo "\nbody: " . $body . "\n";
-        $this->assertThat(
+        self::assertThat(
             $body,
-            $this->logicalOr(
-                $this->stringContains('test_some_gauge{type="blue"} 0'),
-                $this->stringContains('test_some_gauge{type="blue"} 1'),
-                $this->stringContains('test_some_gauge{type="blue"} 2')
+            self::logicalOr(
+                self::stringContains('test_some_gauge{type="blue"} 0'),
+                self::stringContains('test_some_gauge{type="blue"} 1'),
+                self::stringContains('test_some_gauge{type="blue"} 2')
             )
         );
     }
@@ -58,7 +65,7 @@ class BlackBoxTest extends TestCase
     /**
      * @test
      */
-    public function countersShouldIncrementAtomically()
+    public function countersShouldIncrementAtomically(): void
     {
         $start = microtime(true);
         $promises = [];
@@ -75,13 +82,13 @@ class BlackBoxTest extends TestCase
         $metricsResult = $this->client->get('/examples/metrics.php?adapter=' . $this->adapter);
         $body = (string)$metricsResult->getBody();
 
-        $this->assertThat($body, $this->stringContains('test_some_counter{type="blue"} ' . $sum));
+        self::assertThat($body, self::stringContains('test_some_counter{type="blue"} ' . $sum));
     }
 
     /**
      * @test
      */
-    public function histogramsShouldIncrementAtomically()
+    public function histogramsShouldIncrementAtomically(): void
     {
         $start = microtime(true);
         $promises = [
@@ -104,7 +111,7 @@ class BlackBoxTest extends TestCase
         $metricsResult = $this->client->get('/examples/metrics.php?adapter=' . $this->adapter);
         $body = (string)$metricsResult->getBody();
 
-        $this->assertThat($body, $this->stringContains(<<<EOF
+        self::assertThat($body, self::stringContains(<<<EOF
 test_some_histogram_bucket{type="blue",le="0.1"} 1
 test_some_histogram_bucket{type="blue",le="1"} 2
 test_some_histogram_bucket{type="blue",le="2"} 3

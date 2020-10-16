@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Test\Prometheus;
 
 use InvalidArgumentException;
@@ -24,12 +26,12 @@ abstract class AbstractHistogramTest extends TestCase
         $this->configureAdapter();
     }
 
-    abstract public function configureAdapter();
+    abstract public function configureAdapter(): void;
 
     /**
      * @test
      */
-    public function itShouldObserveWithLabels()
+    public function itShouldObserveWithLabels(): void
     {
         $histogram = new Histogram(
             $this->adapter,
@@ -41,9 +43,9 @@ abstract class AbstractHistogramTest extends TestCase
         );
         $histogram->observe(123, ['lalal', 'lululu']);
         $histogram->observe(245, ['lalal', 'lululu']);
-        $this->assertThat(
+        self::assertThat(
             $this->adapter->collect(),
-            $this->equalTo(
+            self::equalTo(
                 [
                     new MetricFamilySamples(
                         [
@@ -99,7 +101,7 @@ abstract class AbstractHistogramTest extends TestCase
     /**
      * @test
      */
-    public function itShouldObserveWithoutLabelWhenNoLabelsAreDefined()
+    public function itShouldObserveWithoutLabelWhenNoLabelsAreDefined(): void
     {
         $histogram = new Histogram(
             $this->adapter,
@@ -110,9 +112,9 @@ abstract class AbstractHistogramTest extends TestCase
             [100, 200, 300]
         );
         $histogram->observe(245);
-        $this->assertThat(
+        self::assertThat(
             $this->adapter->collect(),
-            $this->equalTo(
+            self::equalTo(
                 [
                     new MetricFamilySamples(
                         [
@@ -168,7 +170,7 @@ abstract class AbstractHistogramTest extends TestCase
     /**
      * @test
      */
-    public function itShouldObserveValuesOfTypeDouble()
+    public function itShouldObserveValuesOfTypeDouble(): void
     {
         $histogram = new Histogram(
             $this->adapter,
@@ -180,9 +182,9 @@ abstract class AbstractHistogramTest extends TestCase
         );
         $histogram->observe(0.11);
         $histogram->observe(0.3);
-        $this->assertThat(
+        self::assertThat(
             $this->adapter->collect(),
-            $this->equalTo(
+            self::equalTo(
                 [
                     new MetricFamilySamples(
                         [
@@ -238,7 +240,7 @@ abstract class AbstractHistogramTest extends TestCase
     /**
      * @test
      */
-    public function itShouldProvideDefaultBuckets()
+    public function itShouldProvideDefaultBuckets(): void
     {
         // .005, .01, .025, .05, .075, .1, .25, .5, .75, 1.0, 2.5, 5.0, 7.5, 10.0
 
@@ -251,9 +253,9 @@ abstract class AbstractHistogramTest extends TestCase
         );
         $histogram->observe(0.11);
         $histogram->observe(0.03);
-        $this->assertThat(
+        self::assertThat(
             $this->adapter->collect(),
-            $this->equalTo(
+            self::equalTo(
                 [
                     new MetricFamilySamples(
                         [
@@ -375,7 +377,7 @@ abstract class AbstractHistogramTest extends TestCase
     /**
      * @test
      */
-    public function itShouldThrowAnExceptionWhenTheBucketSizesAreNotIncreasing()
+    public function itShouldThrowAnExceptionWhenTheBucketSizesAreNotIncreasing(): void
     {
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Histogram buckets must be in increasing order');
@@ -385,7 +387,7 @@ abstract class AbstractHistogramTest extends TestCase
     /**
      * @test
      */
-    public function itShouldThrowAnExceptionWhenThereIsLessThanOneBucket()
+    public function itShouldThrowAnExceptionWhenThereIsLessThanOneBucket(): void
     {
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Histogram must have at least one bucket');
@@ -395,7 +397,7 @@ abstract class AbstractHistogramTest extends TestCase
     /**
      * @test
      */
-    public function itShouldThrowAnExceptionWhenThereIsALabelNamedLe()
+    public function itShouldThrowAnExceptionWhenThereIsALabelNamedLe(): void
     {
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Histogram cannot have a label named');
@@ -405,7 +407,7 @@ abstract class AbstractHistogramTest extends TestCase
     /**
      * @test
      */
-    public function itShouldRejectInvalidMetricsNames()
+    public function itShouldRejectInvalidMetricsNames(): void
     {
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Invalid metric name');
@@ -415,7 +417,7 @@ abstract class AbstractHistogramTest extends TestCase
     /**
      * @test
      */
-    public function itShouldRejectInvalidLabelNames()
+    public function itShouldRejectInvalidLabelNames(): void
     {
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Invalid label name');
@@ -428,34 +430,35 @@ abstract class AbstractHistogramTest extends TestCase
      *
      * @param mixed $value The label value
      */
-    public function isShouldAcceptAnySequenceOfBasicLatinCharactersForLabelValues($value)
+    public function isShouldAcceptAnySequenceOfBasicLatinCharactersForLabelValues($value): void
     {
         $label = 'foo';
         $histogram = new Histogram($this->adapter, 'test', 'some_metric', 'help', [$label], [1]);
         $histogram->observe(1, [$value]);
 
         $metrics = $this->adapter->collect();
-        $this->assertIsArray($metrics);
-        $this->assertCount(1, $metrics);
-        $this->assertContainsOnlyInstancesOf(MetricFamilySamples::class, $metrics);
+        self::assertCount(1, $metrics);
+        self::assertContainsOnlyInstancesOf(MetricFamilySamples::class, $metrics);
 
         $metric = reset($metrics);
+        self::assertInstanceOf(MetricFamilySamples::class, $metric);
         $samples = $metric->getSamples();
-        $this->assertContainsOnlyInstancesOf(Sample::class, $samples);
+        self::assertContainsOnlyInstancesOf(Sample::class, $samples);
 
         foreach ($samples as $sample) {
             $labels = array_combine(
                 array_merge($metric->getLabelNames(), $sample->getLabelNames()),
                 $sample->getLabelValues()
             );
-            $this->assertEquals($value, $labels[$label]);
+            self::assertIsArray($labels);
+            self::assertEquals($value, $labels[$label]);
         }
     }
 
     /**
      * @test
      */
-    public function itShouldBeAbleToGenerateExponentialBucketsGivenSpecificBounds()
+    public function itShouldBeAbleToGenerateExponentialBucketsGivenSpecificBounds(): void
     {
         $start = 0.05;
         $growthFactor = 1.5;
@@ -480,14 +483,14 @@ abstract class AbstractHistogramTest extends TestCase
             9.7309753417969,
         ];
 
-        $this->assertEquals($generatedBuckets, $expectedBuckets);
+        self::assertEquals($generatedBuckets, $expectedBuckets);
     }
 
     /**
-     * @return array
+     * @return mixed[]
      * @see isShouldAcceptArbitraryLabelValues
      */
-    public function labelValuesDataProvider()
+    public function labelValuesDataProvider(): array
     {
         $cases = [];
         // Basic Latin
