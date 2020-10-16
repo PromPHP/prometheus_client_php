@@ -9,7 +9,7 @@ use Prometheus\Exception\MetricsRegistrationException;
 use Prometheus\Storage\Adapter;
 use Prometheus\Storage\Redis;
 
-class CollectorRegistry
+class CollectorRegistry implements RegistryInterface
 {
     /**
      * @var CollectorRegistry

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Prometheus;
 
-class RenderTextFormat
+class RenderTextFormat implements RendererInterface
 {
     const MIME_TYPE = 'text/plain; version=0.0.4';
 
