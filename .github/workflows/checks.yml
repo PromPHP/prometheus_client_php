@@ -1,0 +1,33 @@
+name: Code Checks
+
+on: [ push, pull_request ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+
+    name: Code Checks
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Cache dependencies
+        uses: actions/cache@v2
+        with:
+          path: ~/.composer/cache/files
+          key: dependencies-code-checks
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: 7.4
+          coverage: none
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-interaction --no-suggest
+      - name: Run PHP Code Sniffer
+        run: ./vendor/bin/phpcs
+      - name: Run PHPStan
+        run: php vendor/bin/phpstan analyse --autoload-file tests/bootstrap.php
