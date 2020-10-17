@@ -132,7 +132,7 @@ class APC implements Adapter
 
     /**
      * @param mixed[] $data
-     * @param mixed $bucket
+     * @param string|int $bucket
      * @return string
      */
     private function histogramBucketValueKey(array $data, $bucket): string

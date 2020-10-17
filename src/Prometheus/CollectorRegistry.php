@@ -244,7 +244,7 @@ class CollectorRegistry implements RegistryInterface
      * @param string     $name e.g. duration_seconds
      * @param string     $help e.g. A histogram of the duration in seconds.
      * @param string[]      $labels e.g. ['controller', 'action']
-     * @param mixed[]|null $buckets e.g. [100, 200, 300]
+     * @param float[]|null $buckets e.g. [100, 200, 300]
      *
      * @return Histogram
      * @throws MetricsRegistrationException

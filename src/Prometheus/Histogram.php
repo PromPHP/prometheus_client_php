@@ -12,7 +12,7 @@ class Histogram extends Collector
     const TYPE = 'histogram';
 
     /**
-     * @var mixed[]|null
+     * @var float[]|null
      */
     private $buckets;
 
@@ -22,7 +22,7 @@ class Histogram extends Collector
      * @param string     $name
      * @param string     $help
      * @param string[]   $labels
-     * @param mixed[]|null $buckets
+     * @param float[]|null $buckets
      */
     public function __construct(
         Adapter $adapter,
@@ -59,7 +59,7 @@ class Histogram extends Collector
     /**
      * List of default buckets suitable for typical web application latency metrics
      *
-     * @return mixed[]
+     * @return float[]
      */
     public static function getDefaultBuckets(): array
     {
@@ -86,7 +86,7 @@ class Histogram extends Collector
      * @param float $growthFactor
      * @param int   $numberOfBuckets
      *
-     * @return mixed[]
+     * @return float[]
      */
     public static function exponentialBuckets(float $start, float $growthFactor, int $numberOfBuckets): array
     {
