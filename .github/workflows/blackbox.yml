@@ -1,0 +1,39 @@
+name: BlackBox Tests
+
+on: [ push, pull_request ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+
+    name: Run BlackBox Tests
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Cache dependencies
+        uses: actions/cache@v2
+        with:
+          path: ~/.composer/cache/files
+          key: dependencies-blackbox
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: 7.4
+          coverage: none
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-interaction --no-suggest
+
+      - name: Compose Blackbox environment
+        run: docker-compose up -d
+      - name: Run Blackbox with APC
+        run: docker-compose run phpunit env ADAPTER=apc vendor/bin/phpunit tests/Test/
+      - name: Run Blackbox with Redis
+        run: docker-compose run phpunit env ADAPTER=redis vendor/bin/phpunit tests/Test/
+
+
+
