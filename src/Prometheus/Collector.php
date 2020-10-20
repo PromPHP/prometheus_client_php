@@ -27,28 +27,28 @@ abstract class Collector
     protected $help;
 
     /**
-     * @var array
+     * @var string[]
      */
     protected $labels;
 
     /**
      * @param Adapter $storageAdapter
-     * @param string $namespace
-     * @param string $name
-     * @param string $help
-     * @param array $labels
+     * @param string  $namespace
+     * @param string  $name
+     * @param string  $help
+     * @param string[]   $labels
      */
-    public function __construct(Adapter $storageAdapter, $namespace, $name, $help, $labels = [])
+    public function __construct(Adapter $storageAdapter, string $namespace, string $name, string $help, array $labels = [])
     {
         $this->storageAdapter = $storageAdapter;
-        $metricName = ($namespace ? $namespace . '_' : '') . $name;
-        if (!preg_match(self::RE_METRIC_LABEL_NAME, $metricName)) {
+        $metricName = ($namespace !== '' ? $namespace . '_' : '') . $name;
+        if (preg_match(self::RE_METRIC_LABEL_NAME, $metricName) !== 1) {
             throw new InvalidArgumentException("Invalid metric name: '" . $metricName . "'");
         }
         $this->name = $metricName;
         $this->help = $help;
         foreach ($labels as $label) {
-            if (!preg_match(self::RE_METRIC_LABEL_NAME, $label)) {
+            if (preg_match(self::RE_METRIC_LABEL_NAME, $label) !== 1) {
                 throw new InvalidArgumentException("Invalid label name: '" . $label . "'");
             }
         }
@@ -58,7 +58,7 @@ abstract class Collector
     /**
      * @return string
      */
-    abstract public function getType();
+    abstract public function getType(): string;
 
     /**
      * @return string
@@ -69,7 +69,7 @@ abstract class Collector
     }
 
     /**
-     * @return array
+     * @return string[]
      */
     public function getLabelNames(): array
     {
@@ -93,11 +93,11 @@ abstract class Collector
     }
 
     /**
-     * @param $labels
+     * @param string[] $labels
      */
-    protected function assertLabelsAreDefinedCorrectly($labels): void
+    protected function assertLabelsAreDefinedCorrectly(array $labels): void
     {
-        if (count($labels) != count($this->labels)) {
+        if (count($labels) !== count($this->labels)) {
             throw new InvalidArgumentException(sprintf('Labels are not defined correctly: %s', print_r($labels, true)));
         }
     }

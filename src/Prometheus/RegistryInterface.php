@@ -13,15 +13,15 @@ interface RegistryInterface
     public function getMetricFamilySamples(): array;
 
     /**
-     * @param string $namespace e.g. cms
-     * @param string $name e.g. duration_seconds
-     * @param string $help e.g. The duration something took in seconds.
-     * @param array  $labels e.g. ['controller', 'action']
+     * @param string   $namespace e.g. cms
+     * @param string   $name e.g. duration_seconds
+     * @param string   $help e.g. The duration something took in seconds.
+     * @param string[] $labels e.g. ['controller', 'action']
      *
      * @return Gauge
      * @throws MetricsRegistrationException
      */
-    public function registerGauge($namespace, $name, $help, $labels = []): Gauge;
+    public function registerGauge(string $namespace, string $name, string $help, array $labels = []): Gauge;
 
     /**
      * @param string $namespace
@@ -30,29 +30,29 @@ interface RegistryInterface
      * @return Gauge
      * @throws MetricNotFoundException
      */
-    public function getGauge($namespace, $name): Gauge;
+    public function getGauge(string $namespace, string $name): Gauge;
 
     /**
-     * @param string $namespace e.g. cms
-     * @param string $name e.g. duration_seconds
-     * @param string $help e.g. The duration something took in seconds.
-     * @param array  $labels e.g. ['controller', 'action']
+     * @param string   $namespace e.g. cms
+     * @param string   $name e.g. duration_seconds
+     * @param string   $help e.g. The duration something took in seconds.
+     * @param string[] $labels e.g. ['controller', 'action']
      *
      * @return Gauge
      * @throws MetricsRegistrationException
      */
-    public function getOrRegisterGauge($namespace, $name, $help, $labels = []): Gauge;
+    public function getOrRegisterGauge(string $namespace, string $name, string $help, array $labels = []): Gauge;
 
     /**
-     * @param string $namespace e.g. cms
-     * @param string $name e.g. requests
-     * @param string $help e.g. The number of requests made.
-     * @param array  $labels e.g. ['controller', 'action']
+     * @param string   $namespace e.g. cms
+     * @param string   $name e.g. requests
+     * @param string   $help e.g. The number of requests made.
+     * @param string[] $labels e.g. ['controller', 'action']
      *
      * @return Counter
      * @throws MetricsRegistrationException
      */
-    public function registerCounter($namespace, $name, $help, $labels = []): Counter;
+    public function registerCounter(string $namespace, string $name, string $help, array $labels = []): Counter;
 
     /**
      * @param string $namespace
@@ -61,49 +61,55 @@ interface RegistryInterface
      * @return Counter
      * @throws MetricNotFoundException
      */
-    public function getCounter($namespace, $name): Counter;
+    public function getCounter(string $namespace, string $name): Counter;
 
     /**
-     * @param string $namespace e.g. cms
-     * @param string $name e.g. requests
-     * @param string $help e.g. The number of requests made.
-     * @param array  $labels e.g. ['controller', 'action']
+     * @param string   $namespace e.g. cms
+     * @param string   $name e.g. requests
+     * @param string   $help e.g. The number of requests made.
+     * @param string[] $labels e.g. ['controller', 'action']
      *
      * @return Counter
      * @throws MetricsRegistrationException
      */
-    public function getOrRegisterCounter($namespace, $name, $help, $labels = []): Counter;
+    public function getOrRegisterCounter(string $namespace, string $name, string $help, array $labels = []): Counter;
+
+    /**
+     * @param string   $namespace e.g. cms
+     * @param string   $name e.g. duration_seconds
+     * @param string   $help e.g. A histogram of the duration in seconds.
+     * @param string[] $labels e.g. ['controller', 'action']
+     * @param float[]    $buckets e.g. [100, 200, 300]
+     *
+     * @return Histogram
+     * @throws MetricsRegistrationException
+     */
+    public function registerHistogram(
+        string $namespace,
+        string $name,
+        string $help,
+        array $labels = [],
+        array $buckets = null
+    ): Histogram;
+
+    /**
+     * @param string $namespace
+     * @param string $name
+     *
+     * @return Histogram
+     * @throws MetricNotFoundException
+     */
+    public function getHistogram(string $namespace, string $name): Histogram;
 
     /**
      * @param string $namespace e.g. cms
      * @param string $name e.g. duration_seconds
      * @param string $help e.g. A histogram of the duration in seconds.
-     * @param array  $labels e.g. ['controller', 'action']
-     * @param array  $buckets e.g. [100, 200, 300]
+     * @param string[]  $labels e.g. ['controller', 'action']
+     * @param float[]  $buckets e.g. [100, 200, 300]
      *
      * @return Histogram
      * @throws MetricsRegistrationException
      */
-    public function registerHistogram($namespace, $name, $help, $labels = [], $buckets = null): Histogram;
-
-    /**
-     * @param string $namespace
-     * @param string $name
-     *
-     * @return Histogram
-     * @throws MetricNotFoundException
-     */
-    public function getHistogram($namespace, $name): Histogram;
-
-    /**
-     * @param string $namespace e.g. cms
-     * @param string $name e.g. duration_seconds
-     * @param string $help e.g. A histogram of the duration in seconds.
-     * @param array  $labels e.g. ['controller', 'action']
-     * @param array  $buckets e.g. [100, 200, 300]
-     *
-     * @return Histogram
-     * @throws MetricsRegistrationException
-     */
-    public function getOrRegisterHistogram($namespace, $name, $help, $labels = [], $buckets = null): Histogram;
+    public function getOrRegisterHistogram(string $namespace, string $name, string $help, array $labels = [], array $buckets = null): Histogram;
 }

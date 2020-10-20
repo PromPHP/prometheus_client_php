@@ -15,22 +15,22 @@ interface Adapter
     /**
      * @return MetricFamilySamples[]
      */
-    public function collect();
+    public function collect(): array;
 
     /**
-     * @param array $data
+     * @param mixed[] $data
      * @return void
      */
     public function updateHistogram(array $data): void;
 
     /**
-     * @param array $data
+     * @param mixed[] $data
      * @return void
      */
     public function updateGauge(array $data): void;
 
     /**
-     * @param array $data
+     * @param mixed[] $data
      * @return void
      */
     public function updateCounter(array $data): void;

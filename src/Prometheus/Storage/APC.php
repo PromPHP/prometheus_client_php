@@ -24,7 +24,7 @@ class APC implements Adapter
     }
 
     /**
-     * @param array $data
+     * @param mixed[] $data
      */
     public function updateHistogram(array $data): void
     {
@@ -62,12 +62,12 @@ class APC implements Adapter
     }
 
     /**
-     * @param array $data
+     * @param mixed[] $data
      */
     public function updateGauge(array $data): void
     {
         $valueKey = $this->valueKey($data);
-        if ($data['command'] == Adapter::COMMAND_SET) {
+        if ($data['command'] === Adapter::COMMAND_SET) {
             apcu_store($valueKey, $this->toInteger($data['value']));
             apcu_store($this->metaKey($data), json_encode($this->metaData($data)));
         } else {
@@ -87,7 +87,7 @@ class APC implements Adapter
     }
 
     /**
-     * @param array $data
+     * @param mixed[] $data
      */
     public function updateCounter(array $data): void
     {
@@ -107,7 +107,7 @@ class APC implements Adapter
     }
 
     /**
-     * @param array $data
+     * @param mixed[] $data
      * @return string
      */
     private function metaKey(array $data): string
@@ -116,7 +116,7 @@ class APC implements Adapter
     }
 
     /**
-     * @param array $data
+     * @param mixed[] $data
      * @return string
      */
     private function valueKey(array $data): string
@@ -131,7 +131,8 @@ class APC implements Adapter
     }
 
     /**
-     * @param array $data
+     * @param mixed[] $data
+     * @param string|int $bucket
      * @return string
      */
     private function histogramBucketValueKey(array $data, $bucket): string
@@ -147,8 +148,8 @@ class APC implements Adapter
     }
 
     /**
-     * @param array $data
-     * @return array
+     * @param mixed[] $data
+     * @return mixed[]
      */
     private function metaData(array $data): array
     {
@@ -158,7 +159,7 @@ class APC implements Adapter
     }
 
     /**
-     * @return array
+     * @return MetricFamilySamples[]
      */
     private function collectCounters(): array
     {
@@ -170,6 +171,7 @@ class APC implements Adapter
                 'help' => $metaData['help'],
                 'type' => $metaData['type'],
                 'labelNames' => $metaData['labelNames'],
+                'samples' => [],
             ];
             foreach (new APCUIterator('/^prom:counter:' . $metaData['name'] . ':.*:value/') as $value) {
                 $parts = explode(':', $value['key']);
@@ -188,7 +190,7 @@ class APC implements Adapter
     }
 
     /**
-     * @return array
+     * @return MetricFamilySamples[]
      */
     private function collectGauges(): array
     {
@@ -200,6 +202,7 @@ class APC implements Adapter
                 'help' => $metaData['help'],
                 'type' => $metaData['type'],
                 'labelNames' => $metaData['labelNames'],
+                'samples' => [],
             ];
             foreach (new APCUIterator('/^prom:gauge:' . $metaData['name'] . ':.*:value/') as $value) {
                 $parts = explode(':', $value['key']);
@@ -219,7 +222,7 @@ class APC implements Adapter
     }
 
     /**
-     * @return array
+     * @return MetricFamilySamples[]
      */
     private function collectHistograms(): array
     {
@@ -312,17 +315,17 @@ class APC implements Adapter
     }
 
     /**
-     * @param array $samples
+     * @param mixed[] $samples
      */
     private function sortSamples(array &$samples): void
     {
-        usort($samples, function ($a, $b) {
+        usort($samples, function ($a, $b): int {
             return strcmp(implode("", $a['labelValues']), implode("", $b['labelValues']));
         });
     }
 
     /**
-     * @param array $values
+     * @param mixed[] $values
      * @return string
      * @throws RuntimeException
      */
@@ -337,10 +340,10 @@ class APC implements Adapter
 
     /**
      * @param string $values
-     * @return array
+     * @return mixed[]
      * @throws RuntimeException
      */
-    private function decodeLabelValues($values): array
+    private function decodeLabelValues(string $values): array
     {
         $json = base64_decode($values, true);
         if (false === $json) {
