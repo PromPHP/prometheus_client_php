@@ -91,11 +91,21 @@ class APC implements Adapter
      */
     public function updateCounter(array $data): void
     {
-        $new = apcu_add($this->valueKey($data), 0);
-        if ($new) {
+        $valueKey = $this->valueKey($data);
+        // Check if value key already exists
+        if (apcu_exists($this->valueKey($data)) === false) {
+            apcu_add($this->valueKey($data), 0);
             apcu_store($this->metaKey($data), json_encode($this->metaData($data)));
         }
-        apcu_inc($this->valueKey($data), $data['value']);
+
+        // Taken from https://github.com/prometheus/client_golang/blob/66058aac3a83021948e5fb12f1f408ff556b9037/prometheus/value.go#L91
+        $done = false;
+        while (!$done) {
+            $old = apcu_fetch($valueKey);
+            if ($old !== false) {
+                $done = apcu_cas($valueKey, $old, $this->toInteger($this->fromInteger($old) + $data['value']));
+            }
+        }
     }
 
     /**
@@ -180,7 +190,7 @@ class APC implements Adapter
                     'name' => $metaData['name'],
                     'labelNames' => [],
                     'labelValues' => $this->decodeLabelValues($labelValues),
-                    'value' => $value['value'],
+                    'value' => $this->fromInteger($value['value']),
                 ];
             }
             $this->sortSamples($data['samples']);
