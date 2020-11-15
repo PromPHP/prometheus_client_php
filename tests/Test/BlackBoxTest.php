@@ -37,7 +37,7 @@ class BlackBoxTest extends TestCase
      */
     public function gaugesShouldBeOverwritten(): void
     {
-        $this->assertTrue(false);
+        self::assertSame(false, true);
 
         $start = microtime(true);
         $promises = [
