@@ -37,7 +37,8 @@ class BlackBoxTest extends TestCase
      */
     public function gaugesShouldBeOverwritten(): void
     {
-        die('test');
+        $this->assertTrue(false);
+
         $start = microtime(true);
         $promises = [
             $this->client->getAsync('/examples/some_gauge.php?c=0&adapter=' . $this->adapter),
