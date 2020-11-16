@@ -15,7 +15,7 @@
         "lkaemmerling/prometheus_client_php": "*"
     },
     "require": {
-        "php": "^7.2",
+        "php": "^7.2|^8.0",
         "ext-json": "*",
         "symfony/polyfill-apcu": "^1.6"
     },
@@ -25,7 +25,7 @@
         "phpstan/phpstan": "^0.12.50",
         "phpstan/phpstan-phpunit": "^0.12.16",
         "phpstan/phpstan-strict-rules": "^0.12.5",
-        "phpunit/phpunit": "^8.4",
+        "phpunit/phpunit": "^8.4|^9.4",
         "squizlabs/php_codesniffer": "^3.5"
     },
     "suggest": {
