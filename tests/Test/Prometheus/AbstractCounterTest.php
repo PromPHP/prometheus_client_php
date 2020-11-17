@@ -130,6 +130,40 @@ abstract class AbstractCounterTest extends TestCase
     /**
      * @test
      */
+    public function itShouldIncreaseTheCounterWithAFloat(): void
+    {
+        $counter = new Counter($this->adapter, 'test', 'some_metric', 'this is for testing', ['foo', 'bar']);
+        $counter->inc(['lalal', 'lululu']);
+        $counter->incBy(1.5, ['lalal', 'lululu']);
+        self::assertThat(
+            $this->adapter->collect(),
+            self::equalTo(
+                [
+                    new MetricFamilySamples(
+                        [
+                            'type' => Counter::TYPE,
+                            'help' => 'this is for testing',
+                            'name' => 'test_some_metric',
+                            'labelNames' => ['foo', 'bar'],
+                            'samples' => [
+                                [
+                                    'labelValues' => ['lalal', 'lululu'],
+                                    'value' => 2.5,
+                                    'name' => 'test_some_metric',
+                                    'labelNames' => [],
+                                ],
+                            ],
+                        ]
+                    ),
+                ]
+            )
+        );
+    }
+
+
+    /**
+     * @test
+     */
     public function itShouldRejectInvalidMetricsNames(): void
     {
         $this->expectException(InvalidArgumentException::class);

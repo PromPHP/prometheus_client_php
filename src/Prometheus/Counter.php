@@ -27,10 +27,10 @@ class Counter extends Collector
     }
 
     /**
-     * @param int $count e.g. 2
+     * @param int|float $count e.g. 2
      * @param mixed[] $labels e.g. ['status', 'opcode']
      */
-    public function incBy(int $count, array $labels = []): void
+    public function incBy($count, array $labels = []): void
     {
         $this->assertLabelsAreDefinedCorrectly($labels);
 
@@ -42,7 +42,7 @@ class Counter extends Collector
                 'labelNames' => $this->getLabelNames(),
                 'labelValues' => $labels,
                 'value' => $count,
-                'command' => Adapter::COMMAND_INCREMENT_INTEGER,
+                'command' => is_float($count) ? Adapter::COMMAND_INCREMENT_FLOAT : Adapter::COMMAND_INCREMENT_INTEGER,
             ]
         );
     }

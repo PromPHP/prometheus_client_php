@@ -30,7 +30,7 @@ class APC implements Adapter
     {
         // Initialize the sum
         $sumKey = $this->histogramBucketValueKey($data, 'sum');
-        $new = apcu_add($sumKey, $this->toInteger(0));
+        $new = apcu_add($sumKey, $this->toBinaryRepresentationAsInteger(0));
 
         // If sum does not exist, assume a new histogram and store the metadata
         if ($new) {
@@ -43,7 +43,7 @@ class APC implements Adapter
         while (!$done) {
             $old = apcu_fetch($sumKey);
             if ($old !== false) {
-                $done = apcu_cas($sumKey, $old, $this->toInteger($this->fromInteger($old) + $data['value']));
+                $done = apcu_cas($sumKey, $old, $this->toBinaryRepresentationAsInteger($this->fromBinaryRepresentationAsInteger($old) + $data['value']));
             }
         }
 
@@ -68,10 +68,10 @@ class APC implements Adapter
     {
         $valueKey = $this->valueKey($data);
         if ($data['command'] === Adapter::COMMAND_SET) {
-            apcu_store($valueKey, $this->toInteger($data['value']));
+            apcu_store($valueKey, $this->toBinaryRepresentationAsInteger($data['value']));
             apcu_store($this->metaKey($data), json_encode($this->metaData($data)));
         } else {
-            $new = apcu_add($valueKey, $this->toInteger(0));
+            $new = apcu_add($valueKey, $this->toBinaryRepresentationAsInteger(0));
             if ($new) {
                 apcu_store($this->metaKey($data), json_encode($this->metaData($data)));
             }
@@ -80,7 +80,7 @@ class APC implements Adapter
             while (!$done) {
                 $old = apcu_fetch($valueKey);
                 if ($old !== false) {
-                    $done = apcu_cas($valueKey, $old, $this->toInteger($this->fromInteger($old) + $data['value']));
+                    $done = apcu_cas($valueKey, $old, $this->toBinaryRepresentationAsInteger($this->fromBinaryRepresentationAsInteger($old) + $data['value']));
                 }
             }
         }
@@ -91,11 +91,21 @@ class APC implements Adapter
      */
     public function updateCounter(array $data): void
     {
-        $new = apcu_add($this->valueKey($data), 0);
-        if ($new) {
+        $valueKey = $this->valueKey($data);
+        // Check if value key already exists
+        if (apcu_exists($this->valueKey($data)) === false) {
+            apcu_add($this->valueKey($data), 0);
             apcu_store($this->metaKey($data), json_encode($this->metaData($data)));
         }
-        apcu_inc($this->valueKey($data), $data['value']);
+
+        // Taken from https://github.com/prometheus/client_golang/blob/66058aac3a83021948e5fb12f1f408ff556b9037/prometheus/value.go#L91
+        $done = false;
+        while (!$done) {
+            $old = apcu_fetch($valueKey);
+            if ($old !== false) {
+                $done = apcu_cas($valueKey, $old, $this->toBinaryRepresentationAsInteger($this->fromBinaryRepresentationAsInteger($old) + $data['value']));
+            }
+        }
     }
 
     /**
@@ -180,7 +190,7 @@ class APC implements Adapter
                     'name' => $metaData['name'],
                     'labelNames' => [],
                     'labelValues' => $this->decodeLabelValues($labelValues),
-                    'value' => $value['value'],
+                    'value' => $this->fromBinaryRepresentationAsInteger($value['value']),
                 ];
             }
             $this->sortSamples($data['samples']);
@@ -211,7 +221,7 @@ class APC implements Adapter
                     'name' => $metaData['name'],
                     'labelNames' => [],
                     'labelValues' => $this->decodeLabelValues($labelValues),
-                    'value' => $this->fromInteger($value['value']),
+                    'value' => $this->fromBinaryRepresentationAsInteger($value['value']),
                 ];
             }
 
@@ -288,7 +298,7 @@ class APC implements Adapter
                     'name' => $metaData['name'] . '_sum',
                     'labelNames' => [],
                     'labelValues' => $decodedLabelValues,
-                    'value' => $this->fromInteger($histogramBuckets[$labelValues]['sum']),
+                    'value' => $this->fromBinaryRepresentationAsInteger($histogramBuckets[$labelValues]['sum']),
                 ];
             }
             $histograms[] = new MetricFamilySamples($data);
@@ -300,7 +310,7 @@ class APC implements Adapter
      * @param mixed $val
      * @return int
      */
-    private function toInteger($val): int
+    private function toBinaryRepresentationAsInteger($val): int
     {
         return unpack('Q', pack('d', $val))[1];
     }
@@ -309,7 +319,7 @@ class APC implements Adapter
      * @param mixed $val
      * @return float
      */
-    private function fromInteger($val): float
+    private function fromBinaryRepresentationAsInteger($val): float
     {
         return unpack('d', pack('Q', $val))[1];
     }
