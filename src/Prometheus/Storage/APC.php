@@ -125,11 +125,21 @@ class APC implements Adapter
     }
 
     /**
+     * Removes all previously stored data from apcu
+     *
      * @return void
      */
     public function flushAPC(): void
     {
-        apcu_clear_cache();
+        //                   /      / | PCRE expresion boundary
+        //                    ^       | match from first character only
+        //                     %s:    | common prefix substitute with colon suffix
+        //                        .+  | at least one additional character
+        $matchAll = sprintf('/^%s:.+/', self::PROMETHEUS_PREFIX);
+
+        foreach (new APCUIterator($matchAll) as $key => $value) {
+            apcu_delete($key);
+        }
     }
 
     /**
