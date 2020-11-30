@@ -5,12 +5,28 @@ declare(strict_types=1);
 namespace Prometheus\Storage;
 
 use APCUIterator;
+use Prometheus\Exception\StorageException;
 use Prometheus\MetricFamilySamples;
 use RuntimeException;
 
 class APC implements Adapter
 {
     const PROMETHEUS_PREFIX = 'prom';
+
+    /**
+     * APC constructor.
+     *
+     * @throws StorageException
+     */
+    public function __construct()
+    {
+        if (!extension_loaded('apcu')) {
+            throw new StorageException('APCu extension is not loaded');
+        }
+        if (!apcu_enabled()) {
+            throw new StorageException('APCu is not enabled');
+        }
+    }
 
     /**
      * @return MetricFamilySamples[]
