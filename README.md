@@ -103,7 +103,7 @@ Eg:
 Histogram::exponentialBuckets(0.05, 1.5, 10);
 ```
 
-This will start your buckets with a value of 1.5, grow them by a factor of 1.5 per bucket across a set of 10 buckets.
+This will start your buckets with a value of 0.05, grow them by a factor of 1.5 per bucket across a set of 10 buckets.
 
 Also look at the [examples](examples).
 
