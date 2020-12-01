@@ -17,10 +17,10 @@ class HistogramWithPrefixTest extends AbstractHistogramTest
     {
         $connection = new \Redis();
         $connection->connect(REDIS_HOST);
+        $connection->flushAll();
 
         $connection->setOption(\Redis::OPT_PREFIX, 'prefix:');
 
         $this->adapter = Redis::fromExistingConnection($connection);
-        $this->adapter->flushRedis();
     }
 }

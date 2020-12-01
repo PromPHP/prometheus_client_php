@@ -15,7 +15,10 @@ class GaugeTest extends AbstractGaugeTest
 {
     public function configureAdapter(): void
     {
-        $this->adapter = new Redis(['host' => REDIS_HOST]);
-        $this->adapter->flushRedis();
+        $connection = new \Redis();
+        $connection->connect(REDIS_HOST);
+        $connection->flushAll();
+
+        $this->adapter = Redis::fromExistingConnection($connection);
     }
 }
