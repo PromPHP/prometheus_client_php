@@ -149,3 +149,8 @@ Pick the adapter you want to test.
 docker-compose run phpunit env ADAPTER=apc vendor/bin/phpunit tests/Test/
 docker-compose run phpunit env ADAPTER=redis vendor/bin/phpunit tests/Test/
 ```
+
+## Integration
+
+* [Symfony](https://github.com/3slab/VdmPrometheusBundle)
+
