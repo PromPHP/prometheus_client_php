@@ -92,17 +92,25 @@ class Redis implements Adapter
     }
 
     /**
-     * Atomically removes all previously stored data from redis
-     *
+     * @deprecated use replacement method wipeStorage from Adapter interface
      * @throws StorageException
      */
     public function flushRedis(): void
+    {
+        $this->wipeStorage();
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function wipeStorage(): void
     {
         $this->ensureOpenConnection();
 
         $searchPattern = "";
 
         $globalPrefix = $this->redis->getOption(\Redis::OPT_PREFIX);
+        // @phpstan-ignore-next-line false positive, phpstan thinks getOptions returns int
         if (is_string($globalPrefix)) {
             $searchPattern .= $globalPrefix;
         }

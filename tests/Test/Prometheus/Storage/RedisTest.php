@@ -37,7 +37,7 @@ class RedisTest extends TestCase
         $this->expectExceptionMessage("Can't connect to Redis server");
 
         $redis->collect();
-        $redis->flushRedis();
+        $redis->wipeStorage();
     }
 
     /**
@@ -69,7 +69,7 @@ class RedisTest extends TestCase
             $registry->getOrRegisterGauge('namespace', "gauge_$i", 'gauge help')->inc();
             $registry->getOrRegisterHistogram('namespace', "histogram_$i", 'histogram help')->observe(1);
         }
-        $redis->flushRedis();
+        $redis->wipeStorage();
 
         $redisKeys = $this->redisConnection->keys("*");
         self::assertThat(

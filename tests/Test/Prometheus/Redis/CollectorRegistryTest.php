@@ -14,10 +14,7 @@ class CollectorRegistryTest extends AbstractCollectorRegistryTest
 {
     public function configureAdapter(): void
     {
-        $connection = new \Redis();
-        $connection->connect(REDIS_HOST);
-        $connection->flushAll();
-
-        $this->adapter = Redis::fromExistingConnection($connection);
+        $this->adapter = new Redis(['host' => REDIS_HOST]);
+        $this->adapter->wipeStorage();
     }
 }

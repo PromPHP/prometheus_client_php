@@ -36,7 +36,18 @@ class InMemory implements Adapter
         return $metrics;
     }
 
+    /**
+     * @deprecated use replacement method wipeStorage from Adapter interface
+     */
     public function flushMemory(): void
+    {
+        $this->wipeStorage();
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function wipeStorage(): void
     {
         $this->counters = [];
         $this->gauges = [];

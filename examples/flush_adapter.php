@@ -2,17 +2,18 @@
 
 require __DIR__ . '/../vendor/autoload.php';
 
-$adapter = $_GET['adapter'];
+$adapterName = $_GET['adapter'];
 
-if ($adapter === 'redis') {
+$adapter = null;
+
+if ($adapterName === 'redis') {
     define('REDIS_HOST', $_SERVER['REDIS_HOST'] ?? '127.0.0.1');
 
-    $redisAdapter = new Prometheus\Storage\Redis(['host' => REDIS_HOST]);
-    $redisAdapter->flushRedis();
-} elseif ($adapter === 'apc') {
-    $apcAdapter = new Prometheus\Storage\APC();
-    $apcAdapter->flushAPC();
-} elseif ($adapter === 'in-memory') {
-    $inMemoryAdapter = new Prometheus\Storage\InMemory();
-    $inMemoryAdapter->flushMemory();
+    $adapter = new Prometheus\Storage\Redis(['host' => REDIS_HOST]);
+} elseif ($adapterName === 'apc') {
+    $adapter = new Prometheus\Storage\APC();
+} elseif ($adapterName === 'in-memory') {
+    $adapter = new Prometheus\Storage\InMemory();
 }
+
+$adapter->wipeStorage();
