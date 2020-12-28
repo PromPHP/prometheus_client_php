@@ -335,19 +335,35 @@ class APC implements Adapter
     /**
      * @param mixed $val
      * @return int
+     * @throws RuntimeException
      */
     private function toBinaryRepresentationAsInteger($val): int
     {
-        return unpack('Q', pack('d', $val))[1];
+        $packedDouble = pack('d', $val);
+        if ((bool)$packedDouble !== false) {
+            $unpackedData = unpack("Q", $packedDouble);
+            if (is_array($unpackedData)) {
+                return $unpackedData[1];
+            }
+        }
+        throw new RuntimeException("Formatting from binary representation to integer did not work");
     }
 
     /**
      * @param mixed $val
      * @return float
+     * @throws RuntimeException
      */
     private function fromBinaryRepresentationAsInteger($val): float
     {
-        return unpack('d', pack('Q', $val))[1];
+        $packedBinary = pack('Q', $val);
+        if ((bool)$packedBinary !== false) {
+            $unpackedData = unpack("d", $packedBinary);
+            if (is_array($unpackedData)) {
+                return $unpackedData[1];
+            }
+        }
+        throw new RuntimeException("Formatting from integer to binary representation did not work");
     }
 
     /**
