@@ -16,6 +16,6 @@ class GaugeTest extends AbstractGaugeTest
     public function configureAdapter(): void
     {
         $this->adapter = new APC();
-        $this->adapter->flushAPC();
+        $this->adapter->wipeStorage();
     }
 }
