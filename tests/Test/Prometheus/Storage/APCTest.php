@@ -27,7 +27,7 @@ class APCTest extends TestCase
         $registry->getOrRegisterCounter("namespace", "counter", "counter help")->inc();
         $registry->getOrRegisterGauge("namespace", "gauge", "gauge help")->inc();
         $registry->getOrRegisterHistogram("namespace", "histogram", "histogram help")->observe(1);
-        $apc->flushAPC();
+        $apc->wipeStorage();
 
         $cacheEntries = iterator_to_array(new APCuIterator(null), true);
         $cacheMap     = array_map(function ($item) {

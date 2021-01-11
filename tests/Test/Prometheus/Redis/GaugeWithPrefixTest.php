@@ -21,6 +21,6 @@ class GaugeWithPrefixTest extends AbstractGaugeTest
         $connection->setOption(\Redis::OPT_PREFIX, 'prefix:');
 
         $this->adapter = Redis::fromExistingConnection($connection);
-        $this->adapter->flushRedis();
+        $this->adapter->wipeStorage();
     }
 }

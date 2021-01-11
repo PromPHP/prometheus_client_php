@@ -125,11 +125,21 @@ class APC implements Adapter
     }
 
     /**
-     * Removes all previously stored data from apcu
+     * @deprecated use replacement method wipeStorage from Adapter interface
      *
      * @return void
      */
     public function flushAPC(): void
+    {
+        $this->wipeStorage();
+    }
+
+    /**
+     * Removes all previously stored data from apcu
+     *
+     * @return void
+     */
+    public function wipeStorage(): void
     {
         //                   /      / | PCRE expresion boundary
         //                    ^       | match from first character only

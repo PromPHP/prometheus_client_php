@@ -16,6 +16,6 @@ class CounterTest extends AbstractCounterTest
     public function configureAdapter(): void
     {
         $this->adapter = new APC();
-        $this->adapter->flushAPC();
+        $this->adapter->wipeStorage();
     }
 }

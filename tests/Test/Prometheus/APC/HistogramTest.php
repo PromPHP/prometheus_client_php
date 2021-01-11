@@ -16,6 +16,6 @@ class HistogramTest extends AbstractHistogramTest
     public function configureAdapter(): void
     {
         $this->adapter = new APC();
-        $this->adapter->flushAPC();
+        $this->adapter->wipeStorage();
     }
 }
