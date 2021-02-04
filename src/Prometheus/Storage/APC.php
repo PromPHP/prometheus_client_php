@@ -147,7 +147,7 @@ class APC implements Adapter
      */
     private function assembleLabelKey(array $metaData, string $labels): string
     {
-        return implode(':', [ self::PROMETHEUS_PREFIX, $metaData['type'], $metaData['name'], $labels, 'label' ] );
+        return implode(':', [ self::PROMETHEUS_PREFIX, $metaData['type'], $metaData['name'], $labels, 'label' ]);
     }
 
     /**
@@ -366,7 +366,7 @@ class APC implements Adapter
      * @param string $type
      * @return array<array>
      */
-    private function getMetas(string $type) : array
+    private function getMetas(string $type): array
     {
         $arr = [];
         $root = apcu_fetch($this->rootNode());
@@ -387,7 +387,7 @@ class APC implements Adapter
      * @param array<mixed> $metaData
      * @return array<array>
      */
-    private function getValues(string $type, array $metaData) : array
+    private function getValues(string $type, array $metaData): array
     {
         $labels = $arr = [];
         foreach (array_values($metaData['labelNames']) as $label) {
