@@ -141,7 +141,7 @@ class APC implements Adapter
     }
 
     /**
-     * @param array $metaData
+     * @param array<string> $metaData
      * @param string $labels
      * @return string
      */
@@ -153,7 +153,7 @@ class APC implements Adapter
     /**
      * Store ':label' keys for each metric's labelName in APC.
      *
-     * @param array $data
+     * @param array<mixed> $data
      * @return void
      */
     private function storeLabelKeys(array $data): void
@@ -184,7 +184,7 @@ class APC implements Adapter
         if (false === $arr) {
             $arr = [];
         }
-        if (in_array($item, $arr)) {
+        if (in_array($item, $arr, true)) {
             return;
         }
         $arr[] = $item;
@@ -300,12 +300,15 @@ class APC implements Adapter
      *  [9] => ['/private', 'get', 'fail'], [10] => ['/private', 'post', 'success'], [11] => ['/private', 'post', 'fail'],
      *  [12] => ['/metrics', 'put', 'success'], [13] => ['/metrics', 'put', 'fail'], [14] => ['/metrics', 'get', 'success'],
      *  [15] => ['/metrics', 'get', 'fail'], [16] => ['/metrics', 'post', 'success'], [17] => ['/metrics', 'post', 'fail']
-     * @return array
+     * @param array<string> $labelNames
+     * @param array<array> $labelValues
+     * @return array<array>
      */
     private function buildPermutationTree(array $labelNames, array $labelValues): array
     {
         $treeRowCount = count(array_keys($labelNames));
         $numElements = 1;
+        $treeInfo = [];
         for ($i = $treeRowCount - 1; $i >= 0; $i--) {
             $treeInfo[$i]['numInRow'] = count($labelValues[$i]);
             $numElements *= $treeInfo[$i]['numInRow'];
@@ -361,7 +364,7 @@ class APC implements Adapter
      * When given a type ('histogram', 'gauge', or 'counter'), return an iterable array of matching records retrieved from APCu
      *
      * @param string $type
-     * @return array
+     * @return array<array>
      */
     private function getMetas(string $type) : array
     {
@@ -369,7 +372,7 @@ class APC implements Adapter
         $root = apcu_fetch($this->rootNode());
         if (is_array($root)) {
             foreach ($root as $metaKey) {
-                if (preg_match('/' . self::PROMETHEUS_PREFIX . ':' . $type . ':.*:meta/', $metaKey) && false !== ($gauge = apcu_fetch($metaKey))) {
+                if ((1 === preg_match('/' . self::PROMETHEUS_PREFIX . ':' . $type . ':.*:meta/', $metaKey)) && false !== ($gauge = apcu_fetch($metaKey))) {
                     $arr[] = [ 'key' => $metaKey, 'value' => $gauge ];
                 }
             }
@@ -381,8 +384,8 @@ class APC implements Adapter
      * When given a type ('histogram', 'gauge', or 'counter') and metaData array, return an iterable array of matching records retrieved from APCu
      *
      * @param string $type
-     * @param array $metaData
-     * @return array
+     * @param array<mixed> $metaData
+     * @return array<array>
      */
     private function getValues(string $type, array $metaData) : array
     {
