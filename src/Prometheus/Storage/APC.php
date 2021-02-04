@@ -11,6 +11,7 @@ use RuntimeException;
 class APC implements Adapter
 {
     const PROMETHEUS_PREFIX = 'prom';
+    const CAS_LOOP_RETRIES = 30;
 
     /**
      * APC constructor.
@@ -56,11 +57,15 @@ class APC implements Adapter
         // Atomically increment the sum
         // Taken from https://github.com/prometheus/client_golang/blob/66058aac3a83021948e5fb12f1f408ff556b9037/prometheus/value.go#L91
         $done = false;
-        while (!$done) {
+        $loopCatcher = self::CAS_LOOP_RETRIES;
+        while (!$done && $loopCatcher-- > 0) {
             $old = apcu_fetch($sumKey);
             if ($old !== false) {
                 $done = apcu_cas($sumKey, $old, $this->toBinaryRepresentationAsInteger($this->fromBinaryRepresentationAsInteger($old) + $data['value']));
             }
+        }
+        if ($loopCatcher <= 0) {
+            throw new RuntimeException('Caught infinite loop in ' . __METHOD__ . '()');
         }
 
         // Figure out in which bucket the observation belongs
@@ -95,11 +100,15 @@ class APC implements Adapter
             }
             // Taken from https://github.com/prometheus/client_golang/blob/66058aac3a83021948e5fb12f1f408ff556b9037/prometheus/value.go#L91
             $done = false;
-            while (!$done) {
+            $loopCatcher = self::CAS_LOOP_RETRIES;
+            while (!$done && $loopCatcher-- > 0) {
                 $old = apcu_fetch($valueKey);
                 if ($old !== false) {
                     $done = apcu_cas($valueKey, $old, $this->toBinaryRepresentationAsInteger($this->fromBinaryRepresentationAsInteger($old) + $data['value']));
                 }
+            }
+            if ($loopCatcher <= 0) {
+                throw new RuntimeException('Caught infinite loop in ' . __METHOD__ . '()');
             }
         }
     }
@@ -119,11 +128,15 @@ class APC implements Adapter
 
         // Taken from https://github.com/prometheus/client_golang/blob/66058aac3a83021948e5fb12f1f408ff556b9037/prometheus/value.go#L91
         $done = false;
-        while (!$done) {
+        $loopCatcher = self::CAS_LOOP_RETRIES;
+        while (!$done && $loopCatcher-- > 0) {
             $old = apcu_fetch($valueKey);
             if ($old !== false) {
                 $done = apcu_cas($valueKey, $old, $this->toBinaryRepresentationAsInteger($this->fromBinaryRepresentationAsInteger($old) + $data['value']));
             }
+        }
+        if ($loopCatcher <= 0) {
+            throw new RuntimeException('Caught infinite loop in ' . __METHOD__ . '()');
         }
     }
 
