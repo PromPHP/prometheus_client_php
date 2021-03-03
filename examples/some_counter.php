@@ -17,7 +17,11 @@ if ($adapter === 'redis') {
 }
 $registry = new CollectorRegistry($adapter);
 
+$count = preg_match('/^[0-9]+$/', $_GET['c'])
+    ? intval($_GET['c'])
+    : floatval($_GET['c']);
+
 $counter = $registry->registerCounter('test', 'some_counter', 'it increases', ['type']);
-$counter->incBy($_GET['c'], ['blue']);
+$counter->incBy($count, ['blue']);
 
 echo "OK\n";
