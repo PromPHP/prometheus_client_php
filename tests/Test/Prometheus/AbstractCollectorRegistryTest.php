@@ -361,6 +361,63 @@ EOF
         self::assertSame($histogramA, $histogramB);
     }
 
+    /**
+     * @test
+     * @dataProvider itShouldThrowAnExceptionOnInvalidMetricNamesDataProvider
+     */
+    public function itShouldThrowAnExceptionOnInvalidMetricNames(string $namespace, string $metricName): void
+    {
+        $registry = new CollectorRegistry($this->adapter);
+
+        $this->expectException(\InvalidArgumentException::class);
+        $registry->registerGauge($namespace, $metricName, 'help', ["foo", "bar"]);
+    }
+
+    /**
+     * @return string[][]
+     */
+    public function itShouldThrowAnExceptionOnInvalidMetricNamesDataProvider(): array
+    {
+        return [
+            [
+                "foo",
+                "invalid-metric-name"
+            ],
+            [
+                "invalid-namespace",
+                "foo"
+            ],
+            [
+                "invalid-namespace",
+                "both-invalid"
+            ],
+        ];
+    }
+
+    /**
+     * @test
+     * @dataProvider itShouldThrowAnExceptionOnInvalidMetricLabelDataProvider
+     */
+    public function itShouldThrowAnExceptionOnInvalidMetricLabel(string $invalidLabel): void
+    {
+        $registry = new CollectorRegistry($this->adapter);
+
+        $this->expectException(\InvalidArgumentException::class);
+        $registry->registerGauge("foo", "bar", 'help', [$invalidLabel]);
+    }
+
+    /**
+     * @return string[][]
+     */
+    public function itShouldThrowAnExceptionOnInvalidMetricLabelDataProvider(): array
+    {
+        return [
+            [
+                "invalid-label"
+            ],
+        ];
+    }
+
 
     abstract public function configureAdapter(): void;
 }
