@@ -288,9 +288,9 @@ LUA
         $this->redis->eval(
             <<<LUA
 local result = redis.call(ARGV[1], KEYS[1], ARGV[3], ARGV[2])
-if result == tonumber(ARGV[2]) then
+local added = redis.call('sAdd', KEYS[2], KEYS[1])
+if added == 1 then
     redis.call('hMSet', KEYS[1], '__meta', ARGV[4])
-    redis.call('sAdd', KEYS[2], KEYS[1])
 end
 return result
 LUA
