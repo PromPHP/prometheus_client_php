@@ -42,11 +42,11 @@ abstract class Collector
     {
         $this->storageAdapter = $storageAdapter;
         $metricName = ($namespace !== '' ? $namespace . '_' : '') . $name;
-        self::validateMetricName($metricName);
+        self::assertValidMetricName($metricName);
         $this->name = $metricName;
         $this->help = $help;
         foreach ($labels as $label) {
-            self::validateLabel($label);
+            self::assertValidLabel($label);
         }
         $this->labels = $labels;
     }
@@ -101,7 +101,7 @@ abstract class Collector
     /**
      * @param string $metricName
      */
-    public static function validateMetricName(string $metricName): void
+    public static function assertValidMetricName(string $metricName): void
     {
         if (preg_match(self::RE_METRIC_LABEL_NAME, $metricName) !== 1) {
             throw new InvalidArgumentException("Invalid metric name: '" . $metricName . "'");
@@ -111,7 +111,7 @@ abstract class Collector
     /**
      * @param string $label
      */
-    public static function validateLabel(string $label): void
+    public static function assertValidLabel(string $label): void
     {
         if (preg_match(self::RE_METRIC_LABEL_NAME, $label) !== 1) {
             throw new InvalidArgumentException("Invalid label name: '" . $label . "'");
