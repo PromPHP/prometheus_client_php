@@ -64,15 +64,24 @@ class BlackBoxTest extends TestCase
 
     /**
      * @test
+     * @dataProvider countersDataProvider
+     * @param int|float $increment
      */
-    public function countersShouldIncrementAtomically(): void
+    public function countersShouldIncrementAtomically($increment): void
     {
         $start = microtime(true);
         $promises = [];
         $sum = 0;
+        $n = $increment;
         for ($i = 0; $i < 1100; $i++) {
-            $promises[] =  $this->client->getAsync('/examples/some_counter.php?c=' . $i . '&adapter=' . $this->adapter);
-            $sum += $i;
+            if (is_float($n)) {
+                $url = '/examples/some_counter.php?c=' . number_format($n, 2) . '&adapter=' . $this->adapter;
+            } else {
+                $url = '/examples/some_counter.php?c=' . $n . '&adapter=' . $this->adapter;
+            }
+            $promises[] =  $this->client->getAsync($url);
+            $sum += $n;
+            $n += $increment;
         }
 
         Promise\settle($promises)->wait();
@@ -83,6 +92,17 @@ class BlackBoxTest extends TestCase
         $body = (string)$metricsResult->getBody();
 
         self::assertThat($body, self::stringContains('test_some_counter{type="blue"} ' . $sum));
+    }
+
+    /**
+     * @return array<int, array<float|int>>
+     */
+    public function countersDataProvider(): array
+    {
+        return [
+            [1],
+            [0.5]
+        ];
     }
 
     /**
