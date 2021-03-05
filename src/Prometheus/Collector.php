@@ -33,24 +33,20 @@ abstract class Collector
 
     /**
      * @param Adapter $storageAdapter
-     * @param string  $namespace
-     * @param string  $name
-     * @param string  $help
-     * @param string[]   $labels
+     * @param string $namespace
+     * @param string $name
+     * @param string $help
+     * @param string[] $labels
      */
     public function __construct(Adapter $storageAdapter, string $namespace, string $name, string $help, array $labels = [])
     {
         $this->storageAdapter = $storageAdapter;
         $metricName = ($namespace !== '' ? $namespace . '_' : '') . $name;
-        if (preg_match(self::RE_METRIC_LABEL_NAME, $metricName) !== 1) {
-            throw new InvalidArgumentException("Invalid metric name: '" . $metricName . "'");
-        }
+        self::assertValidMetricName($metricName);
         $this->name = $metricName;
         $this->help = $help;
         foreach ($labels as $label) {
-            if (preg_match(self::RE_METRIC_LABEL_NAME, $label) !== 1) {
-                throw new InvalidArgumentException("Invalid label name: '" . $label . "'");
-            }
+            self::assertValidLabel($label);
         }
         $this->labels = $labels;
     }
@@ -99,6 +95,26 @@ abstract class Collector
     {
         if (count($labels) !== count($this->labels)) {
             throw new InvalidArgumentException(sprintf('Labels are not defined correctly: %s', print_r($labels, true)));
+        }
+    }
+
+    /**
+     * @param string $metricName
+     */
+    public static function assertValidMetricName(string $metricName): void
+    {
+        if (preg_match(self::RE_METRIC_LABEL_NAME, $metricName) !== 1) {
+            throw new InvalidArgumentException("Invalid metric name: '" . $metricName . "'");
+        }
+    }
+
+    /**
+     * @param string $label
+     */
+    public static function assertValidLabel(string $label): void
+    {
+        if (preg_match(self::RE_METRIC_LABEL_NAME, $label) !== 1) {
+            throw new InvalidArgumentException("Invalid label name: '" . $label . "'");
         }
     }
 }
