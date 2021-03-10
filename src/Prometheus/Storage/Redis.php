@@ -374,6 +374,154 @@ LUA
         );
     }
 
+    /**
+     * @param mixed[] $data
+     * @throws StorageException
+     */
+    public function initHistogram(array $data): void
+    {
+        $this->ensureOpenConnection();
+
+        $metricKey = $this->toMetricKey($data);
+
+        // If hash exists, we skip init TODO: new labels adding [checking __meta]
+        if ((bool) $this->redis->hLen($metricKey)) {
+            return;
+        }
+
+        $bucketsToSet = $data['buckets'];
+        array_unshift($bucketsToSet, 'sum');
+        $bucketsToSet[] = '+Inf';
+
+        $labelsCartesian = $this->cartesian($data['labelValuesSet']);
+
+        $values = [];
+        foreach ($bucketsToSet as $bucket) {
+            foreach ($labelsCartesian as $labelValues) {
+                $values[] = json_encode(['b' => $bucket, 'labelValues' => array_values($labelValues)]);
+            }
+        }
+
+        $valuesString = $this->makeLuaValuesString($values);
+
+        // metadata
+        unset($data['labelValuesSet']);
+
+        $this->redis->eval(
+            <<<LUA
+redis.call('hSet', KEYS[1], '__meta', ARGV[1])
+
+for _, subKey in pairs({{$valuesString}}) do
+    redis.call('hIncrBy', KEYS[1], subKey, 0)
+end
+
+redis.call('sAdd', KEYS[2], KEYS[1])
+LUA
+            ,
+            [
+                $metricKey, // key1
+                self::$prefix . Histogram::TYPE . self::PROMETHEUS_METRIC_KEYS_SUFFIX, // key2
+                json_encode($data), // arg1
+            ],
+            2
+        );
+    }
+
+    /**
+     * @param mixed[] $data
+     *
+     * @throws StorageException
+     */
+    public function initGauge(array $data): void
+    {
+        $this->ensureOpenConnection();
+
+        $metricKey = $this->toMetricKey($data);
+
+        // If hash exists, we skip init TODO: new labels adding [checking __meta]
+        if ((bool) $this->redis->hLen($metricKey)) {
+            return;
+        }
+
+        $labelsCartesian = $this->cartesian($data['labelValuesSet']);
+
+        $values = [];
+        foreach ($labelsCartesian as $labelValues) {
+            $values[] = json_encode(array_values($labelValues));
+        }
+
+        $valuesString = $this->makeLuaValuesString($values);
+
+        // metadata
+        unset($data['labelValuesSet']);
+
+        $this->redis->eval(
+            <<<LUA
+redis.call('hMSet', KEYS[1], '__meta', ARGV[1])
+
+for _, subKey in pairs({{$valuesString}}) do
+    redis.call('hIncrBy', KEYS[1], subKey, 0)
+end
+
+redis.call('sAdd', KEYS[2], KEYS[1])
+LUA
+            ,
+            [
+                $metricKey, // key1
+                self::$prefix . Gauge::TYPE . self::PROMETHEUS_METRIC_KEYS_SUFFIX, // key2
+                json_encode($data), // arg1
+            ],
+            2
+        );
+    }
+
+    /**
+     * @param mixed[] $data
+     *
+     * @throws StorageException
+     */
+    public function initCounter(array $data): void
+    {
+        $this->ensureOpenConnection();
+
+        $metricKey = $this->toMetricKey($data);
+
+        // If hash exists, we skip init TODO: new labels adding [checking __meta]
+        if ((bool) $this->redis->hLen($metricKey)) {
+            return;
+        }
+
+        $labelsCartesian = $this->cartesian($data['labelValuesSet']);
+
+        $values = [];
+        foreach ($labelsCartesian as $labelValues) {
+            $values[] = json_encode(array_values($labelValues));
+        }
+
+        $valuesString = $this->makeLuaValuesString($values);
+
+        // metadata
+        unset($data['labelValuesSet']);
+
+        $this->redis->eval(
+            <<<LUA
+redis.call('hMSet', KEYS[1], '__meta', ARGV[1])
+
+for _, subKey in pairs({{$valuesString}}) do
+    redis.call('hIncrBy', KEYS[1], subKey, 0)
+end
+
+redis.call('sAdd', KEYS[2], KEYS[1])
+LUA
+            ,
+            [
+                $metricKey, // key1
+                self::$prefix . Counter::TYPE . self::PROMETHEUS_METRIC_KEYS_SUFFIX, // key2
+                json_encode($data), // arg1
+            ],
+            2
+        );
+    }
 
     /**
      * @param mixed[] $data
@@ -681,5 +829,45 @@ LUA
             throw new RuntimeException(json_last_error_msg());
         }
         return $decodedValues;
+    }
+
+    /**
+     * @param mixed[] $input
+     * @return mixed[]
+     */
+    private function cartesian(array $input): array
+    {
+        $result = [[]];
+
+        foreach ($input as $key => $values) {
+            $append = [];
+
+            foreach ($result as $product) {
+                foreach ($values as $item) {
+                    $product[$key] = $item;
+                    $append[] = $product;
+                }
+            }
+
+            $result = $append;
+        }
+
+        return $result;
+    }
+
+    /**
+     * @param mixed[] $values
+     * @return string
+     */
+    private function makeLuaValuesString(array $values): string
+    {
+        $values = array_map(
+            static function (string $value): string {
+                return '"' . addslashes($value) . '"';
+            },
+            $values
+        );
+
+        return implode(', ', $values);
     }
 }

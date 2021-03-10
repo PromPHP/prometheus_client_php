@@ -351,6 +351,21 @@ class InMemory implements Adapter
         }
     }
 
+    public function initHistogram(array $data): void
+    {
+        // TODO: Implement initHistogram() method.
+    }
+
+    public function initGauge(array $data): void
+    {
+        // TODO: Implement initGauge() method.
+    }
+
+    public function initCounter(array $data): void
+    {
+        // TODO: Implement initCounter() method.
+    }
+
     /**
      * @param mixed[]    $data
      * @param string|int $bucket

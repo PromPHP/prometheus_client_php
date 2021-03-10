@@ -84,4 +84,22 @@ class Gauge extends Collector
     {
         $this->incBy(-$value, $labels);
     }
+
+    /**
+     * @param array[] $labelValuesSet
+     */
+    public function init(array $labelValuesSet = []): void
+    {
+        $this->assertValidInitLabelsValuesSet($labelValuesSet);
+
+        $this->storageAdapter->initGauge(
+            [
+                'name' => $this->getName(),
+                'help' => $this->getHelp(),
+                'type' => $this->getType(),
+                'labelNames' => $this->getLabelNames(),
+                'labelValuesSet' => $labelValuesSet,
+            ]
+        );
+    }
 }

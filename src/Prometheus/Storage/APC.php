@@ -155,6 +155,21 @@ class APC implements Adapter
         }
     }
 
+    public function initHistogram(array $data): void
+    {
+        // TODO: Implement initHistogram() method.
+    }
+
+    public function initGauge(array $data): void
+    {
+        // TODO: Implement initGauge() method.
+    }
+
+    public function initCounter(array $data): void
+    {
+        // TODO: Implement initCounter() method.
+    }
+
     /**
      * @deprecated use replacement method wipeStorage from Adapter interface
      *
