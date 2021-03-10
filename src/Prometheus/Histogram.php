@@ -134,6 +134,25 @@ class Histogram extends Collector
     }
 
     /**
+     * @param array[] $labelValuesSet
+     */
+    public function init(array $labelValuesSet = []): void
+    {
+        $this->assertValidInitLabelsValuesSet($labelValuesSet);
+
+        $this->storageAdapter->initHistogram(
+            [
+                'name'           => $this->getName(),
+                'help'           => $this->getHelp(),
+                'type'           => $this->getType(),
+                'labelNames'     => $this->getLabelNames(),
+                'labelValuesSet' => $labelValuesSet,
+                'buckets'        => $this->buckets,
+            ]
+        );
+    }
+
+    /**
      * @return string
      */
     public function getType(): string
