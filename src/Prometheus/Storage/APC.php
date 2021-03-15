@@ -11,17 +11,20 @@ use RuntimeException;
 
 class APC implements Adapter
 {
+    /** @var string Default prefix to use for APC keys. */
+    const PROMETHEUS_PREFIX = 'prom';
+
     /** @var string Prefix to use for APC keys. */
     private $prometheusPrefix;
 
     /**
      * APC constructor.
      *
-     * @param string $prometheusPrefix Prefix for APCu keys (defaults to 'prom').
+     * @param string $prometheusPrefix Prefix for APCu keys (defaults to {@see PROMETHEUS_PREFIX}).
      *
      * @throws StorageException
      */
-    public function __construct(string $prometheusPrefix = 'prom')
+    public function __construct(string $prometheusPrefix = self::PROMETHEUS_PREFIX)
     {
         if (!extension_loaded('apcu')) {
             throw new StorageException('APCu extension is not loaded');
