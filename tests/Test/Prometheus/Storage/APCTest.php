@@ -45,7 +45,7 @@ class APCTest extends TestCase
     /**
      * @test
      */
-    public function itShouldUseConfiguredPrefix()
+    public function itShouldUseConfiguredPrefix(): void
     {
         $apc = new APC('custom_prefix');
         $apc->wipeStorage();
