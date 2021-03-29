@@ -182,7 +182,7 @@ LUA
     {
         try {
             $connection_successful = false;
-            if ($this->options['persistent_connections'] !== null) {
+            if ($this->options['persistent_connections'] !== false) {
                 $connection_successful = $this->redis->pconnect(
                     $this->options['host'],
                     (int) $this->options['port'],
