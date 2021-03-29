@@ -21,9 +21,28 @@ abstract class AbstractHistogramTest extends TestCase
      */
     public $adapter;
 
+
+    /**
+     * @var string
+     */
+    private $savedPrecision;
+
+    private const HIGH_PRECISION = "17";
+
     public function setUp(): void
     {
         $this->configureAdapter();
+        $savedPrecision = ini_get('serialize_precision');
+        if (!is_string($savedPrecision)) {
+            $savedPrecision = '-1';
+        }
+        $this->savedPrecision = $savedPrecision;
+        ini_set('serialize_precision', self::HIGH_PRECISION);
+    }
+
+    public function tearDown(): void
+    {
+        ini_set('serialize_precision', $this->savedPrecision);
     }
 
     abstract public function configureAdapter(): void;
@@ -234,6 +253,27 @@ abstract class AbstractHistogramTest extends TestCase
                     ),
                 ]
             )
+        );
+    }
+
+    /**
+     * @test
+     */
+    public function itShouldObserveValuesOfTypeDoubleWithUnusualPrecision(): void
+    {
+        $histogram = new Histogram(
+            $this->adapter,
+            'test',
+            'some_metric',
+            'this is for testing',
+            [],
+            [1.0]
+        );
+        ini_set("serialize_precision", "17");
+        $histogram->observe(1.1 * 2 ** 53);
+        self::assertThat(
+            $this->adapter->collect(),
+            self::logicalNot(self::isEmpty())
         );
     }
 
