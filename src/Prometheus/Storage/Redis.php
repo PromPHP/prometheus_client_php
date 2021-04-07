@@ -218,12 +218,13 @@ LUA
 
         $this->redis->eval(
             <<<LUA
-local increment = redis.call('hIncrByFloat', KEYS[1], ARGV[1], ARGV[3])
+local result = redis.call('hIncrByFloat', KEYS[1], ARGV[1], ARGV[3])
 redis.call('hIncrBy', KEYS[1], ARGV[2], 1)
-if increment == ARGV[3] then
+if tonumber(result) >= tonumber(ARGV[3]) then
     redis.call('hSet', KEYS[1], '__meta', ARGV[4])
     redis.call('sAdd', KEYS[2], KEYS[1])
 end
+return result
 LUA
             ,
             [
