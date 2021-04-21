@@ -77,10 +77,10 @@ class Gauge extends Collector
     }
 
     /**
-     * @param int $value
+     * @param int|float $value
      * @param string[] $labels
      */
-    public function decBy(int $value, array $labels = []): void
+    public function decBy($value, array $labels = []): void
     {
         $this->incBy(-$value, $labels);
     }
