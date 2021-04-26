@@ -41,6 +41,9 @@ $gauge->set(2.5, ['blue']);
 
 $histogram = $registry->getOrRegisterHistogram('test', 'some_histogram', 'it observes', ['type'], [0.1, 1, 2, 3.5, 4, 5, 6, 7, 8, 9]);
 $histogram->observe(3.5, ['blue']);
+
+$summary = $registry->getOrRegisterSummary('test', 'some_summary', 'it observes a sliding window', ['type'], 84600, [0.01, 0.05, 0.5, 0.95, 0.99]);
+$histogram->observe(5, ['blue']);
 ```
 
 Manually register and retrieve metrics (these steps are combined in the `getOrRegister...` methods):
@@ -106,6 +109,8 @@ Histogram::exponentialBuckets(0.05, 1.5, 10);
 This will start your buckets with a value of 0.05, grow them by a factor of 1.5 per bucket across a set of 10 buckets.
 
 Also look at the [examples](examples).
+
+
 
 #### PushGateway Support
 As of Version 2.0.0 this library doesn't support the Prometheus PushGateway anymore because we want to have this package as small als possible. If you need Prometheus PushGateway support, you could use the companion library:  https://github.com/PromPHP/prometheus_push_gateway_php
