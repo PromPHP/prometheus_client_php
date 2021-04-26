@@ -148,4 +148,42 @@ test_some_histogram_sum{type="blue"} 45
 EOF
         ));
     }
+
+    /**
+     * @test
+     */
+    public function summariesShouldIncrementAtomically(): void
+    {
+        $start = microtime(true);
+        $promises = [
+            $this->client->getAsync('/examples/some_summary.php?c=0&adapter=' . $this->adapter),
+            $this->client->getAsync('/examples/some_summary.php?c=1&adapter=' . $this->adapter),
+            $this->client->getAsync('/examples/some_summary.php?c=2&adapter=' . $this->adapter),
+            $this->client->getAsync('/examples/some_summary.php?c=3&adapter=' . $this->adapter),
+            $this->client->getAsync('/examples/some_summary.php?c=4&adapter=' . $this->adapter),
+            $this->client->getAsync('/examples/some_summary.php?c=5&adapter=' . $this->adapter),
+            $this->client->getAsync('/examples/some_summary.php?c=6&adapter=' . $this->adapter),
+            $this->client->getAsync('/examples/some_summary.php?c=7&adapter=' . $this->adapter),
+            $this->client->getAsync('/examples/some_summary.php?c=8&adapter=' . $this->adapter),
+            $this->client->getAsync('/examples/some_summary.php?c=9&adapter=' . $this->adapter),
+        ];
+
+        Promise\settle($promises)->wait();
+        $end = microtime(true);
+        echo "\ntime: " . ($end - $start) . "\n";
+
+        $metricsResult = $this->client->get('/examples/metrics.php?adapter=' . $this->adapter);
+        $body = (string)$metricsResult->getBody();
+
+        self::assertThat($body, self::stringContains(<<<EOF
+test_some_summary{type="blue",quantile="0.01"} 1
+test_some_summary{type="blue",quantile="0.05"} 5
+test_some_summary{type="blue",quantile="0.5"} 50
+test_some_summary{type="blue",quantile="0.095"} 95
+test_some_summary{type="blue",quantile="0.99"} 99
+test_some_summary_count{type="blue"} 100
+test_some_summary_sum{type="blue"} 5050
+EOF
+        ));
+    }
 }

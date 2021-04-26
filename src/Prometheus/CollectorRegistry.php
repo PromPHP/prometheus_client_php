@@ -37,6 +37,11 @@ class CollectorRegistry implements RegistryInterface
     private $histograms = [];
 
     /**
+     * @var Summary[]
+     */
+    private $summaries = [];
+
+    /**
      * @var Gauge[]
      */
     private $defaultGauges = [];
@@ -262,6 +267,85 @@ class CollectorRegistry implements RegistryInterface
             $histogram = $this->registerHistogram($namespace, $name, $help, $labels, $buckets);
         }
         return $histogram;
+    }
+
+
+    /**
+     * @param string $namespace e.g. cms
+     * @param string $name e.g. duration_seconds
+     * @param string $help e.g. A summary of the duration in seconds.
+     * @param string[] $labels e.g. ['controller', 'action']
+     * @param int $maxAgeSeconds e.g. 604800
+     * @param float[]|null $quantiles e.g. [0.01, 0.5, 0.99]
+     *
+     * @return Summary
+     * @throws MetricsRegistrationException
+     */
+    public function registerSummary(
+        string $namespace,
+        string $name,
+        string $help,
+        array $labels = [],
+        int $maxAgeSeconds = 86400,
+        array $quantiles = null
+    ): Summary {
+        $metricIdentifier = self::metricIdentifier($namespace, $name);
+        if (isset($this->summaries[$metricIdentifier])) {
+            throw new MetricsRegistrationException("Metric already registered");
+        }
+        $this->summaries[$metricIdentifier] = new Summary(
+            $this->storageAdapter,
+            $namespace,
+            $name,
+            $help,
+            $labels,
+            $maxAgeSeconds,
+            $quantiles
+        );
+        return $this->summaries[$metricIdentifier];
+    }
+
+    /**
+     * @param string $namespace
+     * @param string $name
+     *
+     * @return Summary
+     * @throws MetricNotFoundException
+     */
+    public function getSummary(string $namespace, string $name): Summary
+    {
+        $metricIdentifier = self::metricIdentifier($namespace, $name);
+        if (!isset($this->summaries[$metricIdentifier])) {
+            throw new MetricNotFoundException("Metric not found:" . $metricIdentifier);
+        }
+        return $this->summaries[self::metricIdentifier($namespace, $name)];
+    }
+
+    /**
+     * @param string $namespace e.g. cms
+     * @param string $name e.g. duration_seconds
+     * @param string $help e.g. A summary of the duration in seconds.
+     * @param string[] $labels e.g. ['controller', 'action']
+     * @param int $maxAgeSeconds e.g. 604800
+     * @param float[]|null $quantiles e.g. [0.01, 0.5, 0.99]
+     *
+     * @return Summary
+     * @throws MetricsRegistrationException
+     */
+    public function getOrRegisterSummary(
+        string $namespace,
+        string $name,
+        string $help,
+        array $labels = [],
+        int $maxAgeSeconds = 86400,
+        array $quantiles = null
+    ): Summary {
+        try {
+            $summary = $this->getSummary($namespace, $name);
+        } catch (MetricNotFoundException $e) {
+            $summary = $this->registerSummary($namespace, $name, $help, $labels, $maxAgeSeconds, $quantiles);
+        }
+        return $summary;
     }
 
     /**

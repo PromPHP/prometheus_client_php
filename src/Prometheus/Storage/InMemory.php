@@ -26,6 +26,11 @@ class InMemory implements Adapter
     private $histograms = [];
 
     /**
+     * @var mixed[]
+     */
+    private $summaries = [];
+
+    /**
      * @return MetricFamilySamples[]
      */
     public function collect(): array
@@ -33,6 +38,7 @@ class InMemory implements Adapter
         $metrics = $this->internalCollect($this->counters);
         $metrics = array_merge($metrics, $this->internalCollect($this->gauges));
         $metrics = array_merge($metrics, $this->collectHistograms());
+        $metrics = array_merge($metrics, $this->collectSummaries());
         return $metrics;
     }
 
@@ -52,6 +58,26 @@ class InMemory implements Adapter
         $this->counters = [];
         $this->gauges = [];
         $this->histograms = [];
+    }
+
+    // todo
+    /**
+     * @return MetricFamilySamples[]
+     */
+    private function collectSummaries(): array
+    {
+        $summaries = [];
+        foreach ($this->summaries as $summary) {
+            $metaData = $summary['meta'];
+            $data = [
+                'name' => $metaData['name'],
+                'help' => $metaData['help'],
+                'type' => $metaData['type'],
+                'labelNames' => $metaData['labelNames'],
+                'quantiles' => $metaData['quantiles'],
+            ];
+        }
+        return $summaries;
     }
 
     /**
@@ -159,6 +185,15 @@ class InMemory implements Adapter
             $result[] = new MetricFamilySamples($data);
         }
         return $result;
+    }
+
+    /**
+     * @param mixed[] $data
+     * @return void
+     */
+    public function updateSummary(array $data): void
+    {
+        // todo
     }
 
     /**

@@ -44,7 +44,16 @@ class APC implements Adapter
         $metrics = $this->collectHistograms();
         $metrics = array_merge($metrics, $this->collectGauges());
         $metrics = array_merge($metrics, $this->collectCounters());
+        $metrics = array_merge($metrics, $this->collectSummaries());
         return $metrics;
+    }
+
+    /**
+     * @param mixed[] $data
+     */
+    public function updateSummary(array $data): void
+    {
+        // todo
     }
 
     /**
@@ -273,6 +282,26 @@ class APC implements Adapter
             $gauges[] = new MetricFamilySamples($data);
         }
         return $gauges;
+    }
+
+    /**
+     * @return MetricFamilySamples[]
+     */
+    private function collectSummaries(): array
+    {
+        $summaries = [];
+        foreach (new APCUIterator('/^' . $this->prometheusPrefix . ':histogram:.*:meta/') as $histogram) {
+            $metaData = json_decode($histogram['value'], true);
+            $data = [
+                'name' => $metaData['name'],
+                'help' => $metaData['help'],
+                'type' => $metaData['type'],
+                'labelNames' => $metaData['labelNames'],
+                'buckets' => $metaData['buckets'],
+            ];
+            // todo
+        }
+        return $summaries;
     }
 
     /**

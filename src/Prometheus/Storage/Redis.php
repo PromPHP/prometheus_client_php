@@ -10,6 +10,7 @@ use Prometheus\Exception\StorageException;
 use Prometheus\Gauge;
 use Prometheus\Histogram;
 use Prometheus\MetricFamilySamples;
+use Prometheus\Summary;
 
 class Redis implements Adapter
 {
@@ -145,6 +146,7 @@ LUA
         $metrics = $this->collectHistograms();
         $metrics = array_merge($metrics, $this->collectGauges());
         $metrics = array_merge($metrics, $this->collectCounters());
+        $metrics = array_merge($metrics, $this->collectSummaries());
         return array_map(
             function (array $metric): MetricFamilySamples {
                 return new MetricFamilySamples($metric);
@@ -197,6 +199,40 @@ LUA
         } catch (\RedisException $e) {
             throw new StorageException("Can't connect to Redis server", 0, $e);
         }
+    }
+
+    /**
+     * @param mixed[] $data
+     * @throws StorageException
+     */
+    public function updateSummary(array $data): void
+    {
+        $this->ensureOpenConnection();
+        $metaData = $data;
+        unset($metaData['value'], $metaData['labelValues']);
+
+        // todo
+        $this->redis->eval(
+            <<<LUA
+local result = redis.call('hIncrByFloat', KEYS[1], ARGV[1], ARGV[3])
+redis.call('hIncrBy', KEYS[1], ARGV[2], 1)
+if tonumber(result) >= tonumber(ARGV[3]) then
+    redis.call('hSet', KEYS[1], '__meta', ARGV[4])
+    redis.call('sAdd', KEYS[2], KEYS[1])
+end
+return result
+LUA
+            ,
+            [
+                $this->toMetricKey($data),
+                self::$prefix . Histogram::TYPE . self::PROMETHEUS_METRIC_KEYS_SUFFIX,
+                json_encode(['b' => 'sum', 'labelValues' => $data['labelValues']]),
+                json_encode(['b' => $bucketToIncrease, 'labelValues' => $data['labelValues']]),
+                $data['value'],
+                json_encode($metaData),
+            ],
+            2
+        );
     }
 
     /**
@@ -306,6 +342,20 @@ LUA
             ],
             2
         );
+    }
+
+    /**
+     * @return mixed[]
+     */
+    private function collectSummaries(): array
+    {
+        $keys = $this->redis->sMembers(self::$prefix . Summary::TYPE . self::PROMETHEUS_METRIC_KEYS_SUFFIX);
+        sort($keys);
+        $summaries = [];
+        foreach ($keys as $key) {
+            // todo
+        }
+        return $summaries;
     }
 
     /**
