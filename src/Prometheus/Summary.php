@@ -18,6 +18,11 @@ class Summary extends Collector
     private $quantiles;
 
     /**
+     * @var int
+     */
+    private $maxAgeSeconds;
+
+    /**
      * @param Adapter    $adapter
      * @param string     $namespace
      * @param string     $name
@@ -68,6 +73,7 @@ class Summary extends Collector
             throw new InvalidArgumentException("Summary cannot have a label named " . implode(', ', self::RESERVED_LABELS) . ".");
         }
         $this->quantiles = $quantiles;
+        $this->maxAgeSeconds = $maxAgeSeconds;
     }
 
     /**
@@ -96,12 +102,14 @@ class Summary extends Collector
 
         $this->storageAdapter->updateSummary(
             [
-                'value'       => $value,
-                'name'        => $this->getName(),
-                'help'        => $this->getHelp(),
-                'type'        => $this->getType(),
-                'labelNames'  => $this->getLabelNames(),
-                'labelValues' => $labels,
+                'value'         => $value,
+                'name'          => $this->getName(),
+                'help'          => $this->getHelp(),
+                'type'          => $this->getType(),
+                'labelNames'    => $this->getLabelNames(),
+                'labelValues'   => $labels,
+                'maxAgeSeconds' => $this->maxAgeSeconds,
+                'quantiles'     => $this->quantiles,
             ]
         );
     }

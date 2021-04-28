@@ -58,26 +58,7 @@ class InMemory implements Adapter
         $this->counters = [];
         $this->gauges = [];
         $this->histograms = [];
-    }
-
-    // todo
-    /**
-     * @return MetricFamilySamples[]
-     */
-    private function collectSummaries(): array
-    {
-        $summaries = [];
-        foreach ($this->summaries as $summary) {
-            $metaData = $summary['meta'];
-            $data = [
-                'name' => $metaData['name'],
-                'help' => $metaData['help'],
-                'type' => $metaData['type'],
-                'labelNames' => $metaData['labelNames'],
-                'quantiles' => $metaData['quantiles'],
-            ];
-        }
-        return $summaries;
+        $this->summaries = [];
     }
 
     /**
@@ -156,6 +137,95 @@ class InMemory implements Adapter
     }
 
     /**
+     * @return MetricFamilySamples[]
+     */
+    private function collectSummaries(): array
+    {
+        $summaries = [];
+        foreach ($this->summaries as $metaKey => &$summary) {
+
+            $metaData = $summary['meta'];
+            $data = [
+                'name' => $metaData['name'],
+                'help' => $metaData['help'],
+                'type' => $metaData['type'],
+                'labelNames' => $metaData['labelNames'],
+                'maxAgeSeconds' => $metaData['maxAgeSeconds'],
+                'quantiles' => $metaData['quantiles'],
+                'samples' => [],
+            ];
+
+            foreach ($summary['samples'] as $key => &$values) {
+                $parts = explode(':', $key);
+                $labelValues = $parts[2];
+                $decodedLabelValues = $this->decodeLabelValues($labelValues);
+
+                // Remove old data
+                $values = array_filter($values, function($value) use($data) {
+                    return time()-$value['time'] <= $data['maxAgeSeconds'];
+                });
+
+                // Compute quantiles
+                usort($values, function($value1, $value2) {
+                    if ($value1['value'] === $value2['value']) {
+                        return 0;
+                    }
+                    return ($value1['value'] < $value2['value']) ? -1 : 1;
+                });
+
+                foreach ($data['quantiles'] as $quantile) {
+                    $data['samples'][] = [
+                        'name' => $metaData['name'],
+                        'labelNames' => ['quantile'],
+                        'labelValues' => array_merge($decodedLabelValues, [$quantile]),
+                        'value' => $this->quantile(array_column($values, 'value'), $quantile),
+                    ];
+                }
+
+                // Add the count
+                $data['samples'][] = [
+                    'name' => $metaData['name'] . '_count',
+                    'labelNames' => [],
+                    'labelValues' => $decodedLabelValues,
+                    'value' => count($values),
+                ];
+
+                // Add the sum
+                $data['samples'][] = [
+                    'name' => $metaData['name'] . '_sum',
+                    'labelNames' => [],
+                    'labelValues' => $decodedLabelValues,
+                    'value' => array_sum(array_column($values, 'value')),
+                ];
+            }
+            $summaries[] = new MetricFamilySamples($data);
+        }
+        return $summaries;
+    }
+
+    /**
+     * @param array $arr must be sorted
+     * @param float $q
+     * @return float
+     */
+    private function quantile(array $arr, float $q): float
+    {
+        $count = count($arr);
+        $allindex = ($count-1)*$q;
+        $intvalindex = (int) $allindex;
+        $floatval = $allindex - $intvalindex;
+        if(!is_float($floatval)){
+            $result = $arr[$intvalindex];
+        }else {
+            if($count > $intvalindex+1)
+                $result = $floatval*($arr[$intvalindex+1] - $arr[$intvalindex]) + $arr[$intvalindex];
+            else
+                $result = $arr[$intvalindex];
+        }
+        return $result;
+    }
+
+    /**
      * @param mixed[] $metrics
      * @return MetricFamilySamples[]
      */
@@ -185,15 +255,6 @@ class InMemory implements Adapter
             $result[] = new MetricFamilySamples($data);
         }
         return $result;
-    }
-
-    /**
-     * @param mixed[] $data
-     * @return void
-     */
-    public function updateSummary(array $data): void
-    {
-        // todo
     }
 
     /**
@@ -231,6 +292,31 @@ class InMemory implements Adapter
             $this->histograms[$metaKey]['samples'][$bucketKey] = 0;
         }
         $this->histograms[$metaKey]['samples'][$bucketKey] += 1;
+    }
+
+    /**
+     * @param mixed[] $data
+     * @return void
+     */
+    public function updateSummary(array $data): void
+    {
+        $metaKey = $this->metaKey($data);
+        if (array_key_exists($metaKey, $this->summaries) === false) {
+            $this->summaries[$metaKey] = [
+                'meta' => $this->metaData($data),
+                'samples' => [],
+            ];
+        }
+
+        $valueKey = $this->valueKey($data);
+        if (array_key_exists($valueKey, $this->summaries[$metaKey]['samples']) === false) {
+            $this->summaries[$metaKey]['samples'][$valueKey] = [];
+        }
+
+        $this->summaries[$metaKey]['samples'][$valueKey][] = [
+            'time' => time(),
+            'value' => $data['value'],
+        ];
     }
 
     /**

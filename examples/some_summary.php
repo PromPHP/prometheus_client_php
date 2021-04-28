@@ -3,6 +3,7 @@
 require __DIR__ . '/../vendor/autoload.php';
 
 use Prometheus\CollectorRegistry;
+use Prometheus\RenderTextFormat;
 use Prometheus\Storage\Redis;
 
 error_log('c=' . $_GET['c']);
@@ -19,7 +20,17 @@ if ($adapter === 'redis') {
 }
 $registry = new CollectorRegistry($adapter);
 
-$summary = $registry->registerSummary('test', 'some_summary', 'it observes', ['type'], 900, [0.01, 0.05, 0.5, 0.095, 0.99]);
-$summary->observe($_GET['c'], ['blue']);
+$summary = $registry->registerSummary('test', 'some_summary', 'it observes', ['type'], 900, [0.01, 0.05, 0.5, 0.95, 0.99]);
+// $summary->observe($_GET['c'], ['blue']);
 
-echo "OK\n";
+foreach (range(1,10,1) as $i) {
+    $summary->observe($i, ['blue']);
+}
+
+//echo "OK\n";
+
+$renderer = new RenderTextFormat();
+$result = $renderer->render($registry->getMetricFamilySamples());
+
+header('Content-type: ' . RenderTextFormat::MIME_TYPE);
+echo $result;
