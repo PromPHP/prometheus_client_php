@@ -164,6 +164,10 @@ class InMemory implements Adapter
                 $values = array_filter($values, function($value) use($data) {
                     return time()-$value['time'] <= $data['maxAgeSeconds'];
                 });
+                if(count($values) === 0) {
+                    unset($summary['samples'][$key]);
+                    continue;
+                }
 
                 // Compute quantiles
                 usort($values, function($value1, $value2) {
@@ -198,7 +202,11 @@ class InMemory implements Adapter
                     'value' => array_sum(array_column($values, 'value')),
                 ];
             }
-            $summaries[] = new MetricFamilySamples($data);
+            if(count($data['samples']) > 0){
+                $summaries[] = new MetricFamilySamples($data);
+            }else{
+                unset($this->summaries[$metaKey]);
+            }
         }
         return $summaries;
     }

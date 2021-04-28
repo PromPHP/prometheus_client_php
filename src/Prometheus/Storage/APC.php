@@ -404,6 +404,10 @@ class APC implements Adapter
                 $values = array_filter($values, function($value) use($data) {
                     return time()-$value['time'] <= $data['maxAgeSeconds'];
                 });
+                if(count($values) === 0) {
+                    unset($samples[$key]);
+                    continue;
+                }
 
                 // Compute quantiles
                 usort($values, function($value1, $value2) {
@@ -438,13 +442,17 @@ class APC implements Adapter
                     'value' => array_sum(array_column($values, 'value')),
                 ];
             }
-            $summaries[] = new MetricFamilySamples($data);
-
             // refresh cache
-            apcu_store($summary['key'], [
-                'meta' => $metaData,
-                'samples' => $samples,
-            ]);
+            if(count($data['samples']) > 0){
+                $summaries[] = new MetricFamilySamples($data);
+
+                apcu_store($summary['key'], [
+                    'meta' => $metaData,
+                    'samples' => $samples,
+                ]);
+            }else{
+                apcu_delete($summary['key']);
+            }
         }
         return $summaries;
     }

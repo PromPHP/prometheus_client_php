@@ -11,6 +11,7 @@ use Prometheus\Gauge;
 use Prometheus\Histogram;
 use Prometheus\MetricFamilySamples;
 use Prometheus\Summary;
+use RuntimeException;
 
 class Redis implements Adapter
 {
@@ -137,6 +138,35 @@ LUA
     }
 
     /**
+     * @param mixed[] $data
+     *
+     * @return string
+     */
+    private function metaKey(array $data): string
+    {
+        return implode(':', [
+            $data['type'],
+            $data['name'],
+            'meta'
+        ]);
+    }
+
+    /**
+     * @param mixed[] $data
+     *
+     * @return string
+     */
+    private function valueKey(array $data): string
+    {
+        return implode(':', [
+            $data['type'],
+            $data['name'],
+            $this->encodeLabelValues($data['labelValues']),
+            'value'
+        ]);
+    }
+
+    /**
      * @return MetricFamilySamples[]
      * @throws StorageException
      */
@@ -205,40 +235,6 @@ LUA
      * @param mixed[] $data
      * @throws StorageException
      */
-    public function updateSummary(array $data): void
-    {
-        $this->ensureOpenConnection();
-        $metaData = $data;
-        unset($metaData['value'], $metaData['labelValues']);
-
-        // todo
-        $this->redis->eval(
-            <<<LUA
-local result = redis.call('hIncrByFloat', KEYS[1], ARGV[1], ARGV[3])
-redis.call('hIncrBy', KEYS[1], ARGV[2], 1)
-if tonumber(result) >= tonumber(ARGV[3]) then
-    redis.call('hSet', KEYS[1], '__meta', ARGV[4])
-    redis.call('sAdd', KEYS[2], KEYS[1])
-end
-return result
-LUA
-            ,
-            [
-                $this->toMetricKey($data),
-                self::$prefix . Histogram::TYPE . self::PROMETHEUS_METRIC_KEYS_SUFFIX,
-                json_encode(['b' => 'sum', 'labelValues' => $data['labelValues']]),
-                json_encode(['b' => $bucketToIncrease, 'labelValues' => $data['labelValues']]),
-                $data['value'],
-                json_encode($metaData),
-            ],
-            2
-        );
-    }
-
-    /**
-     * @param mixed[] $data
-     * @throws StorageException
-     */
     public function updateHistogram(array $data): void
     {
         $this->ensureOpenConnection();
@@ -273,6 +269,38 @@ LUA
             ],
             2
         );
+    }
+
+
+    /**
+     * @param mixed[] $data
+     * @throws StorageException
+     */
+    public function updateSummary(array $data): void
+    {
+        $this->ensureOpenConnection();
+        $metaData = $data;
+        unset($metaData['value'], $metaData['labelValues']);
+        $emptyData = [
+            'meta' => $metaData,
+            'samples' => [],
+        ];
+
+        $summaryKey = self::$prefix . Summary::TYPE . self::PROMETHEUS_METRIC_KEYS_SUFFIX;
+        $metaKey = $this->metaKey($data);
+        $this->redis->hsetnx($summaryKey, $metaKey, json_encode($emptyData));
+        $cachedData = json_decode($this->redis->hget($summaryKey, $metaKey), true);
+        $valueKey = $this->valueKey($data);
+        if (array_key_exists($valueKey, $cachedData['samples']) === false) {
+            $cachedData['samples'][$valueKey] = [];
+        }
+
+        $cachedData['samples'][$valueKey][] = [
+            'time' => time(),
+            'value' => $data['value'],
+        ];
+
+        $this->redis->hset($summaryKey, $metaKey, json_encode($cachedData));
     }
 
     /**
@@ -342,20 +370,6 @@ LUA
             ],
             2
         );
-    }
-
-    /**
-     * @return mixed[]
-     */
-    private function collectSummaries(): array
-    {
-        $keys = $this->redis->sMembers(self::$prefix . Summary::TYPE . self::PROMETHEUS_METRIC_KEYS_SUFFIX);
-        sort($keys);
-        $summaries = [];
-        foreach ($keys as $key) {
-            // todo
-        }
-        return $summaries;
     }
 
     /**
@@ -433,6 +447,113 @@ LUA
             $histograms[] = $histogram;
         }
         return $histograms;
+    }
+
+    /**
+     * @return mixed[]
+     */
+    private function collectSummaries(): array
+    {
+        $summaryKey = self::$prefix . Summary::TYPE . self::PROMETHEUS_METRIC_KEYS_SUFFIX;
+        $keys = $this->redis->hGetAll($summaryKey);
+
+        $summaries = [];
+        foreach ($keys as $metaKey => $rawSummary) {
+            $summary = json_decode($rawSummary, true);
+            $metaData = $summary['meta'];
+            $data = [
+                'name' => $metaData['name'],
+                'help' => $metaData['help'],
+                'type' => $metaData['type'],
+                'labelNames' => $metaData['labelNames'],
+                'maxAgeSeconds' => $metaData['maxAgeSeconds'],
+                'quantiles' => $metaData['quantiles'],
+                'samples' => [],
+            ];
+
+            $samples = $summary['samples'];
+            foreach ($samples as $valueKey => &$values) {
+                $parts = explode(':', $valueKey);
+                $labelValues = $parts[2];
+                $decodedLabelValues = $this->decodeLabelValues($labelValues);
+
+                // Remove old data
+                $values = array_filter($values, function($value) use($data) {
+                    return time()-$value['time'] <= $data['maxAgeSeconds'];
+                });
+                if(count($values) === 0) {
+                    unset($samples[$valueKey]);
+                    continue;
+                }
+
+                // Compute quantiles
+                usort($values, function($value1, $value2) {
+                    if ($value1['value'] === $value2['value']) {
+                        return 0;
+                    }
+                    return ($value1['value'] < $value2['value']) ? -1 : 1;
+                });
+
+                foreach ($data['quantiles'] as $quantile) {
+                    $data['samples'][] = [
+                        'name' => $metaData['name'],
+                        'labelNames' => ['quantile'],
+                        'labelValues' => array_merge($decodedLabelValues, [$quantile]),
+                        'value' => $this->quantile(array_column($values, 'value'), $quantile),
+                    ];
+                }
+
+                // Add the count
+                $data['samples'][] = [
+                    'name' => $metaData['name'] . '_count',
+                    'labelNames' => [],
+                    'labelValues' => $decodedLabelValues,
+                    'value' => count($values),
+                ];
+
+                // Add the sum
+                $data['samples'][] = [
+                    'name' => $metaData['name'] . '_sum',
+                    'labelNames' => [],
+                    'labelValues' => $decodedLabelValues,
+                    'value' => array_sum(array_column($values, 'value')),
+                ];
+            }
+            // refresh cache
+            if(count($data['samples']) > 0){
+                $summaries[] = $data;
+
+                $this->redis->hset($summaryKey, $metaKey, json_encode([
+                    'meta' => $metaData,
+                    'samples' => $samples,
+                ]));
+            }else{
+                $this->redis->hdel($summaryKey, $metaKey);
+            }
+        }
+        return $summaries;
+    }
+
+    /**
+     * @param array $arr must be sorted
+     * @param float $q
+     * @return float
+     */
+    private function quantile(array $arr, float $q): float
+    {
+        $count = count($arr);
+        $allindex = ($count-1)*$q;
+        $intvalindex = (int) $allindex;
+        $floatval = $allindex - $intvalindex;
+        if(!is_float($floatval)){
+            $result = $arr[$intvalindex];
+        }else {
+            if($count > $intvalindex+1)
+                $result = $floatval*($arr[$intvalindex+1] - $arr[$intvalindex]) + $arr[$intvalindex];
+            else
+                $result = $arr[$intvalindex];
+        }
+        return $result;
     }
 
     /**
@@ -518,5 +639,38 @@ LUA
     private function toMetricKey(array $data): string
     {
         return implode(':', [self::$prefix, $data['type'], $data['name']]);
+    }
+
+
+    /**
+     * @param mixed[] $values
+     * @return string
+     * @throws RuntimeException
+     */
+    private function encodeLabelValues(array $values): string
+    {
+        $json = json_encode($values);
+        if (false === $json) {
+            throw new RuntimeException(json_last_error_msg());
+        }
+        return base64_encode($json);
+    }
+
+    /**
+     * @param string $values
+     * @return mixed[]
+     * @throws RuntimeException
+     */
+    private function decodeLabelValues(string $values): array
+    {
+        $json = base64_decode($values, true);
+        if (false === $json) {
+            throw new RuntimeException('Cannot base64 decode label values');
+        }
+        $decodedValues = json_decode($json, true);
+        if (false === $decodedValues) {
+            throw new RuntimeException(json_last_error_msg());
+        }
+        return $decodedValues;
     }
 }
