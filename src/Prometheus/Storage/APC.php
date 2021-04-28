@@ -51,14 +51,6 @@ class APC implements Adapter
     /**
      * @param mixed[] $data
      */
-    public function updateSummary(array $data): void
-    {
-        // todo
-    }
-
-    /**
-     * @param mixed[] $data
-     */
     public function updateHistogram(array $data): void
     {
         // Initialize the sum
@@ -92,6 +84,31 @@ class APC implements Adapter
         // Initialize and increment the bucket
         apcu_add($this->histogramBucketValueKey($data, $bucketToIncrease), 0);
         apcu_inc($this->histogramBucketValueKey($data, $bucketToIncrease));
+    }
+
+    /**
+     * @param mixed[] $data
+     */
+    public function updateSummary(array $data): void
+    {
+        $metaKey = $this->metaKey($data);
+        apcu_add($metaKey, [
+            'meta' => $this->metaData($data),
+            'samples' => [],
+        ], $data['maxAgeSeconds']);
+
+        $cachedData = apcu_fetch($metaKey);
+        $valueKey = $this->valueKey($data);
+        if (array_key_exists($valueKey, $cachedData['samples']) === false) {
+            $cachedData['samples'][$valueKey] = [];
+        }
+
+        $cachedData['samples'][$valueKey][] = [
+            'time' => time(),
+            'value' => $data['value'],
+        ];
+
+        apcu_store($metaKey, $cachedData, $data['maxAgeSeconds']);
     }
 
     /**
@@ -287,26 +304,6 @@ class APC implements Adapter
     /**
      * @return MetricFamilySamples[]
      */
-    private function collectSummaries(): array
-    {
-        $summaries = [];
-        foreach (new APCUIterator('/^' . $this->prometheusPrefix . ':histogram:.*:meta/') as $histogram) {
-            $metaData = json_decode($histogram['value'], true);
-            $data = [
-                'name' => $metaData['name'],
-                'help' => $metaData['help'],
-                'type' => $metaData['type'],
-                'labelNames' => $metaData['labelNames'],
-                'buckets' => $metaData['buckets'],
-            ];
-            // todo
-        }
-        return $summaries;
-    }
-
-    /**
-     * @return MetricFamilySamples[]
-     */
     private function collectHistograms(): array
     {
         $histograms = [];
@@ -377,6 +374,101 @@ class APC implements Adapter
             $histograms[] = new MetricFamilySamples($data);
         }
         return $histograms;
+    }
+
+    /**
+     * @return MetricFamilySamples[]
+     */
+    private function collectSummaries(): array
+    {
+        $summaries = [];
+        foreach (new APCUIterator('/^' . $this->prometheusPrefix . ':summary:.*:meta/') as $summary) {
+            $metaData = $summary['value']['meta'];
+            $data = [
+                'name' => $metaData['name'],
+                'help' => $metaData['help'],
+                'type' => $metaData['type'],
+                'labelNames' => $metaData['labelNames'],
+                'maxAgeSeconds' => $metaData['maxAgeSeconds'],
+                'quantiles' => $metaData['quantiles'],
+                'samples' => [],
+            ];
+
+            $samples = $summary['value']['samples'];
+            foreach ($samples as $key => &$values) {
+                $parts = explode(':', $key);
+                $labelValues = $parts[3];
+                $decodedLabelValues = $this->decodeLabelValues($labelValues);
+
+                // Remove old data
+                $values = array_filter($values, function($value) use($data) {
+                    return time()-$value['time'] <= $data['maxAgeSeconds'];
+                });
+
+                // Compute quantiles
+                usort($values, function($value1, $value2) {
+                    if ($value1['value'] === $value2['value']) {
+                        return 0;
+                    }
+                    return ($value1['value'] < $value2['value']) ? -1 : 1;
+                });
+
+                foreach ($data['quantiles'] as $quantile) {
+                    $data['samples'][] = [
+                        'name' => $metaData['name'],
+                        'labelNames' => ['quantile'],
+                        'labelValues' => array_merge($decodedLabelValues, [$quantile]),
+                        'value' => $this->quantile(array_column($values, 'value'), $quantile),
+                    ];
+                }
+
+                // Add the count
+                $data['samples'][] = [
+                    'name' => $metaData['name'] . '_count',
+                    'labelNames' => [],
+                    'labelValues' => $decodedLabelValues,
+                    'value' => count($values),
+                ];
+
+                // Add the sum
+                $data['samples'][] = [
+                    'name' => $metaData['name'] . '_sum',
+                    'labelNames' => [],
+                    'labelValues' => $decodedLabelValues,
+                    'value' => array_sum(array_column($values, 'value')),
+                ];
+            }
+            $summaries[] = new MetricFamilySamples($data);
+
+            // refresh cache
+            apcu_store($summary['key'], [
+                'meta' => $metaData,
+                'samples' => $samples,
+            ]);
+        }
+        return $summaries;
+    }
+
+    /**
+     * @param array $arr must be sorted
+     * @param float $q
+     * @return float
+     */
+    private function quantile(array $arr, float $q): float
+    {
+        $count = count($arr);
+        $allindex = ($count-1)*$q;
+        $intvalindex = (int) $allindex;
+        $floatval = $allindex - $intvalindex;
+        if(!is_float($floatval)){
+            $result = $arr[$intvalindex];
+        }else {
+            if($count > $intvalindex+1)
+                $result = $floatval*($arr[$intvalindex+1] - $arr[$intvalindex]) + $arr[$intvalindex];
+            else
+                $result = $arr[$intvalindex];
+        }
+        return $result;
     }
 
     /**

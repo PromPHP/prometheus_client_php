@@ -37,7 +37,7 @@ class Summary extends Collector
         string $name,
         string $help,
         array $labels = [],
-        int $maxAgeSeconds = 86400,
+        int $maxAgeSeconds = 600,
         array $quantiles = null
     ) {
         parent::__construct($adapter, $namespace, $name, $help, $labels);

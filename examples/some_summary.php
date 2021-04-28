@@ -20,7 +20,7 @@ if ($adapter === 'redis') {
 }
 $registry = new CollectorRegistry($adapter);
 
-$summary = $registry->registerSummary('test', 'some_summary', 'it observes', ['type'], 900, [0.01, 0.05, 0.5, 0.95, 0.99]);
+$summary = $registry->registerSummary('test', 'some_summary', 'it observes', ['type'], 600, [0.01, 0.05, 0.5, 0.95, 0.99]);
 // $summary->observe($_GET['c'], ['blue']);
 
 foreach (range(1,10,1) as $i) {

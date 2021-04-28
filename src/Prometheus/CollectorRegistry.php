@@ -286,7 +286,7 @@ class CollectorRegistry implements RegistryInterface
         string $name,
         string $help,
         array $labels = [],
-        int $maxAgeSeconds = 86400,
+        int $maxAgeSeconds = 600,
         array $quantiles = null
     ): Summary {
         $metricIdentifier = self::metricIdentifier($namespace, $name);
@@ -337,7 +337,7 @@ class CollectorRegistry implements RegistryInterface
         string $name,
         string $help,
         array $labels = [],
-        int $maxAgeSeconds = 86400,
+        int $maxAgeSeconds = 600,
         array $quantiles = null
     ): Summary {
         try {
