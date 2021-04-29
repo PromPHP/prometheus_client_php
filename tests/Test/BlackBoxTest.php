@@ -156,7 +156,6 @@ EOF
     {
         $start = microtime(true);
         $promises = [
-            $this->client->getAsync('/examples/some_summary.php?c=0&adapter=' . $this->adapter),
             $this->client->getAsync('/examples/some_summary.php?c=1&adapter=' . $this->adapter),
             $this->client->getAsync('/examples/some_summary.php?c=2&adapter=' . $this->adapter),
             $this->client->getAsync('/examples/some_summary.php?c=3&adapter=' . $this->adapter),
@@ -166,9 +165,22 @@ EOF
             $this->client->getAsync('/examples/some_summary.php?c=7&adapter=' . $this->adapter),
             $this->client->getAsync('/examples/some_summary.php?c=8&adapter=' . $this->adapter),
             $this->client->getAsync('/examples/some_summary.php?c=9&adapter=' . $this->adapter),
+            $this->client->getAsync('/examples/some_summary.php?c=10&adapter=' . $this->adapter),
         ];
+        foreach ($promises as $promise){
+            $promise->then(function($response) {
+                var_dump($response->getStatusCode());
+            });
+        }
 
+        var_dump('pre wait');
         Promise\settle($promises)->wait();
+        var_dump('post wait');
+
+        foreach ($promises as $promise){
+            var_dump($promise->getState());
+        }
+
         $end = microtime(true);
         echo "\ntime: " . ($end - $start) . "\n";
 
@@ -176,13 +188,13 @@ EOF
         $body = (string)$metricsResult->getBody();
 
         self::assertThat($body, self::stringContains(<<<EOF
-test_some_summary{type="blue",quantile="0.01"} 1
-test_some_summary{type="blue",quantile="0.05"} 5
-test_some_summary{type="blue",quantile="0.5"} 50
-test_some_summary{type="blue",quantile="0.095"} 95
-test_some_summary{type="blue",quantile="0.99"} 99
-test_some_summary_count{type="blue"} 100
-test_some_summary_sum{type="blue"} 5050
+test_some_summary{type="blue",quantile="0.01"} 1.09
+test_some_summary{type="blue",quantile="0.05"} 1.45
+test_some_summary{type="blue",quantile="0.5"} 5.5
+test_some_summary{type="blue",quantile="0.95"} 9.55
+test_some_summary{type="blue",quantile="0.99"} 9.91
+test_some_summary_count{type="blue"} 10
+test_some_summary_sum{type="blue"} 55
 EOF
         ));
     }

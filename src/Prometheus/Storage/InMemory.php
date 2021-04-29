@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Prometheus\Storage;
 
+use Prometheus\Math;
 use Prometheus\MetricFamilySamples;
 use RuntimeException;
 
@@ -141,6 +142,7 @@ class InMemory implements Adapter
      */
     private function collectSummaries(): array
     {
+        $math = new Math();
         $summaries = [];
         foreach ($this->summaries as $metaKey => &$summary) {
 
@@ -182,7 +184,7 @@ class InMemory implements Adapter
                         'name' => $metaData['name'],
                         'labelNames' => ['quantile'],
                         'labelValues' => array_merge($decodedLabelValues, [$quantile]),
-                        'value' => $this->quantile(array_column($values, 'value'), $quantile),
+                        'value' => $math->quantile(array_column($values, 'value'), $quantile),
                     ];
                 }
 
@@ -209,28 +211,6 @@ class InMemory implements Adapter
             }
         }
         return $summaries;
-    }
-
-    /**
-     * @param array $arr must be sorted
-     * @param float $q
-     * @return float
-     */
-    private function quantile(array $arr, float $q): float
-    {
-        $count = count($arr);
-        $allindex = ($count-1)*$q;
-        $intvalindex = (int) $allindex;
-        $floatval = $allindex - $intvalindex;
-        if(!is_float($floatval)){
-            $result = $arr[$intvalindex];
-        }else {
-            if($count > $intvalindex+1)
-                $result = $floatval*($arr[$intvalindex+1] - $arr[$intvalindex]) + $arr[$intvalindex];
-            else
-                $result = $arr[$intvalindex];
-        }
-        return $result;
     }
 
     /**

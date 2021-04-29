@@ -427,7 +427,7 @@ abstract class AbstractSummaryTest extends TestCase
             [0.1, 0.5, 0.9]
         );
         $summary->observe(100);
-        usleep(1050*1000);
+        sleep(2);
         foreach (range(1,10) as $i) {
             $summary->observe($i);
         }

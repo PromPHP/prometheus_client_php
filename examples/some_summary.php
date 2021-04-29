@@ -21,16 +21,6 @@ if ($adapter === 'redis') {
 $registry = new CollectorRegistry($adapter);
 
 $summary = $registry->registerSummary('test', 'some_summary', 'it observes', ['type'], 600, [0.01, 0.05, 0.5, 0.95, 0.99]);
-// $summary->observe($_GET['c'], ['blue']);
+$summary->observe($_GET['c'], ['blue']);
 
-foreach (range(1,10,1) as $i) {
-    $summary->observe($i, ['blue']);
-}
-
-//echo "OK\n";
-
-$renderer = new RenderTextFormat();
-$result = $renderer->render($registry->getMetricFamilySamples());
-
-header('Content-type: ' . RenderTextFormat::MIME_TYPE);
-echo $result;
+echo "OK\n";

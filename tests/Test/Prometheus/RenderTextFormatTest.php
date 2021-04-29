@@ -38,7 +38,7 @@ class RenderTextFormatTest extends TestCase
                  ->inc(["bo\nb", 'ali\"ce']);
         $registry->getOrRegisterHistogram($namespace, 'histogram', 'histogram-help-text', ['label1', 'label2'], [0, 10, 100])
                  ->observe(5, ['bob', 'alice']);
-        $registry->getOrRegisterSummary($namespace, 'histogram', 'summary-help-text', ['label1', 'label2'], 60, [0.1, 0.5, 0.9])
+        $registry->getOrRegisterSummary($namespace, 'summary', 'summary-help-text', ['label1', 'label2'], 60, [0.1, 0.5, 0.9])
             ->observe(5, ['bob', 'alice']);
 
         return $registry->getMetricFamilySamples();

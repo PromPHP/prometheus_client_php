@@ -9,6 +9,7 @@ use Prometheus\Counter;
 use Prometheus\Exception\StorageException;
 use Prometheus\Gauge;
 use Prometheus\Histogram;
+use Prometheus\Math;
 use Prometheus\MetricFamilySamples;
 use Prometheus\Summary;
 use RuntimeException;
@@ -271,13 +272,17 @@ LUA
         );
     }
 
-
     /**
      * @param mixed[] $data
      * @throws StorageException
      */
     public function updateSummary(array $data): void
     {
+
+        // todo https://stackoverflow.com/questions/39425790/how-can-i-update-or-delete-a-record-from-the-json-output-using-laravel-and-predi
+        // https://stackoverflow.com/questions/54640995/on-redis-is-better-to-store-one-key-with-json-data-as-value-or-multiple-keys-wit
+        // une hashmap par $keyValue ? puis utiliser rpushx ?
+
         $this->ensureOpenConnection();
         $metaData = $data;
         unset($metaData['value'], $metaData['labelValues']);
@@ -300,7 +305,10 @@ LUA
             'value' => $data['value'],
         ];
 
-        $this->redis->hset($summaryKey, $metaKey, json_encode($cachedData));
+        $done = false;
+        while ($done === false) {
+            $done = $this->redis->hset($summaryKey, $metaKey, json_encode($cachedData));
+        }
     }
 
     /**
@@ -454,6 +462,7 @@ LUA
      */
     private function collectSummaries(): array
     {
+        $math = new Math();
         $summaryKey = self::$prefix . Summary::TYPE . self::PROMETHEUS_METRIC_KEYS_SUFFIX;
         $keys = $this->redis->hGetAll($summaryKey);
 
@@ -499,7 +508,7 @@ LUA
                         'name' => $metaData['name'],
                         'labelNames' => ['quantile'],
                         'labelValues' => array_merge($decodedLabelValues, [$quantile]),
-                        'value' => $this->quantile(array_column($values, 'value'), $quantile),
+                        'value' => $math->quantile(array_column($values, 'value'), $quantile),
                     ];
                 }
 
@@ -532,28 +541,6 @@ LUA
             }
         }
         return $summaries;
-    }
-
-    /**
-     * @param array $arr must be sorted
-     * @param float $q
-     * @return float
-     */
-    private function quantile(array $arr, float $q): float
-    {
-        $count = count($arr);
-        $allindex = ($count-1)*$q;
-        $intvalindex = (int) $allindex;
-        $floatval = $allindex - $intvalindex;
-        if(!is_float($floatval)){
-            $result = $arr[$intvalindex];
-        }else {
-            if($count > $intvalindex+1)
-                $result = $floatval*($arr[$intvalindex+1] - $arr[$intvalindex]) + $arr[$intvalindex];
-            else
-                $result = $arr[$intvalindex];
-        }
-        return $result;
     }
 
     /**

@@ -23,10 +23,4 @@ $registry = new CollectorRegistry($adapter);
 $histogram = $registry->registerHistogram('test', 'some_histogram', 'it observes', ['type'], [0.1, 1, 2, 3.5, 4, 5, 6, 7, 8, 9]);
 $histogram->observe($_GET['c'], ['blue']);
 
-//echo "OK\n";
-
-$renderer = new RenderTextFormat();
-$result = $renderer->render($registry->getMetricFamilySamples());
-
-header('Content-type: ' . RenderTextFormat::MIME_TYPE);
-echo $result;
+echo "OK\n";

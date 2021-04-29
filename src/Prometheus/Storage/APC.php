@@ -6,6 +6,7 @@ namespace Prometheus\Storage;
 
 use APCUIterator;
 use Prometheus\Exception\StorageException;
+use Prometheus\Math;
 use Prometheus\MetricFamilySamples;
 use RuntimeException;
 
@@ -97,18 +98,24 @@ class APC implements Adapter
             'samples' => [],
         ], $data['maxAgeSeconds']);
 
-        $cachedData = apcu_fetch($metaKey);
-        $valueKey = $this->valueKey($data);
-        if (array_key_exists($valueKey, $cachedData['samples']) === false) {
-            $cachedData['samples'][$valueKey] = [];
+        // Taken from https://github.com/prometheus/client_golang/blob/66058aac3a83021948e5fb12f1f408ff556b9037/prometheus/value.go#L91
+        $done = false;
+        while (!$done) {
+            $cachedData = apcu_fetch($metaKey);
+            if ($cachedData !== false) {
+                $valueKey = $this->valueKey($data);
+                if (array_key_exists($valueKey, $cachedData['samples']) === false) {
+                    $cachedData['samples'][$valueKey] = [];
+                }
+
+                $cachedData['samples'][$valueKey][] = [
+                    'time' => time(),
+                    'value' => $data['value'],
+                ];
+
+                $done = apcu_store($metaKey, $cachedData, $data['maxAgeSeconds']);
+            }
         }
-
-        $cachedData['samples'][$valueKey][] = [
-            'time' => time(),
-            'value' => $data['value'],
-        ];
-
-        apcu_store($metaKey, $cachedData, $data['maxAgeSeconds']);
     }
 
     /**
@@ -381,6 +388,7 @@ class APC implements Adapter
      */
     private function collectSummaries(): array
     {
+        $math = new Math();
         $summaries = [];
         foreach (new APCUIterator('/^' . $this->prometheusPrefix . ':summary:.*:meta/') as $summary) {
             $metaData = $summary['value']['meta'];
@@ -422,7 +430,7 @@ class APC implements Adapter
                         'name' => $metaData['name'],
                         'labelNames' => ['quantile'],
                         'labelValues' => array_merge($decodedLabelValues, [$quantile]),
-                        'value' => $this->quantile(array_column($values, 'value'), $quantile),
+                        'value' => $math->quantile(array_column($values, 'value'), $quantile),
                     ];
                 }
 
@@ -455,28 +463,6 @@ class APC implements Adapter
             }
         }
         return $summaries;
-    }
-
-    /**
-     * @param array $arr must be sorted
-     * @param float $q
-     * @return float
-     */
-    private function quantile(array $arr, float $q): float
-    {
-        $count = count($arr);
-        $allindex = ($count-1)*$q;
-        $intvalindex = (int) $allindex;
-        $floatval = $allindex - $intvalindex;
-        if(!is_float($floatval)){
-            $result = $arr[$intvalindex];
-        }else {
-            if($count > $intvalindex+1)
-                $result = $floatval*($arr[$intvalindex+1] - $arr[$intvalindex]) + $arr[$intvalindex];
-            else
-                $result = $arr[$intvalindex];
-        }
-        return $result;
     }
 
     /**
