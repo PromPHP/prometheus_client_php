@@ -151,8 +151,9 @@ EOF
 
     /**
      * @test
+     * @dataProvider providerAtom
      */
-    public function summariesShouldIncrementAtomically(): void
+    public function summariesShouldIncrementAtomically(int $a): void
     {
         $start = microtime(true);
         $promises = [
@@ -167,20 +168,8 @@ EOF
             $this->client->getAsync('/examples/some_summary.php?c=9&adapter=' . $this->adapter),
             $this->client->getAsync('/examples/some_summary.php?c=10&adapter=' . $this->adapter),
         ];
-        foreach ($promises as $promise){
-            $promise->then(function($response) {
-                var_dump($response->getStatusCode());
-            });
-        }
 
-        var_dump('pre wait');
         Promise\settle($promises)->wait();
-        var_dump('post wait');
-
-        foreach ($promises as $promise){
-            var_dump($promise->getState());
-        }
-
         $end = microtime(true);
         echo "\ntime: " . ($end - $start) . "\n";
 
@@ -198,4 +187,21 @@ test_some_summary_sum{type="blue"} 55
 EOF
         ));
     }
+
+    public function providerAtom(): array
+    {
+        return [
+            ['a' => 1],
+            ['a' => 2],
+            ['a' => 3],
+            ['a' => 4],
+            ['a' => 5],
+            ['a' => 6],
+            ['a' => 7],
+            ['a' => 8],
+            ['a' => 9],
+            ['a' => 10],
+        ];
+    }
+
 }

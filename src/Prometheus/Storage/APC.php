@@ -92,29 +92,19 @@ class APC implements Adapter
      */
     public function updateSummary(array $data): void
     {
+        // store meta
         $metaKey = $this->metaKey($data);
-        apcu_add($metaKey, [
-            'meta' => $this->metaData($data),
-            'samples' => [],
-        ], $data['maxAgeSeconds']);
+        apcu_add($metaKey, $this->metaData($data));
 
-        // Taken from https://github.com/prometheus/client_golang/blob/66058aac3a83021948e5fb12f1f408ff556b9037/prometheus/value.go#L91
+        // store value key
+        $valueKey = $this->valueKey($data);
+        apcu_add($valueKey, $this->encodeLabelValues($data['labelValues']));
+
+        // trick to handle uniqid potential collision
         $done = false;
         while (!$done) {
-            $cachedData = apcu_fetch($metaKey);
-            if ($cachedData !== false) {
-                $valueKey = $this->valueKey($data);
-                if (array_key_exists($valueKey, $cachedData['samples']) === false) {
-                    $cachedData['samples'][$valueKey] = [];
-                }
-
-                $cachedData['samples'][$valueKey][] = [
-                    'time' => time(),
-                    'value' => $data['value'],
-                ];
-
-                $done = apcu_store($metaKey, $cachedData, $data['maxAgeSeconds']);
-            }
+            $valueKey = $valueKey . ':' . uniqid('', true);
+            $done = apcu_add($valueKey, $data['value'], $data['maxAgeSeconds']);
         }
     }
 
@@ -391,7 +381,7 @@ class APC implements Adapter
         $math = new Math();
         $summaries = [];
         foreach (new APCUIterator('/^' . $this->prometheusPrefix . ':summary:.*:meta/') as $summary) {
-            $metaData = $summary['value']['meta'];
+            $metaData = $summary['value'];
             $data = [
                 'name' => $metaData['name'],
                 'help' => $metaData['help'],
@@ -402,27 +392,25 @@ class APC implements Adapter
                 'samples' => [],
             ];
 
-            $samples = $summary['value']['samples'];
-            foreach ($samples as $key => &$values) {
-                $parts = explode(':', $key);
-                $labelValues = $parts[3];
-                $decodedLabelValues = $this->decodeLabelValues($labelValues);
+            foreach (new APCUIterator('/^' . $this->prometheusPrefix . ':summary:' . $metaData['name'] . ':.*:value$/') as $value) {
+                $encodedLabelValues = $value['value'];
+                $decodedLabelValues = $this->decodeLabelValues($encodedLabelValues);
+                $samples = [];
+                foreach (new APCUIterator('/^' . $this->prometheusPrefix . ':summary:' . $metaData['name'] . ':' . $encodedLabelValues . ':value:.*/') as $sample) {
+                    $samples[] = $sample['value'];
+                }
 
-                // Remove old data
-                $values = array_filter($values, function($value) use($data) {
-                    return time()-$value['time'] <= $data['maxAgeSeconds'];
-                });
-                if(count($values) === 0) {
-                    unset($samples[$key]);
+                if(count($samples) === 0) {
+                    apcu_delete($value['key']);
                     continue;
                 }
 
                 // Compute quantiles
-                usort($values, function($value1, $value2) {
-                    if ($value1['value'] === $value2['value']) {
+                usort($samples, function($value1, $value2) {
+                    if ($value1 === $value2) {
                         return 0;
                     }
-                    return ($value1['value'] < $value2['value']) ? -1 : 1;
+                    return ($value1 < $value2) ? -1 : 1;
                 });
 
                 foreach ($data['quantiles'] as $quantile) {
@@ -430,7 +418,7 @@ class APC implements Adapter
                         'name' => $metaData['name'],
                         'labelNames' => ['quantile'],
                         'labelValues' => array_merge($decodedLabelValues, [$quantile]),
-                        'value' => $math->quantile(array_column($values, 'value'), $quantile),
+                        'value' => $math->quantile($samples, $quantile),
                     ];
                 }
 
@@ -439,7 +427,7 @@ class APC implements Adapter
                     'name' => $metaData['name'] . '_count',
                     'labelNames' => [],
                     'labelValues' => $decodedLabelValues,
-                    'value' => count($values),
+                    'value' => count($samples),
                 ];
 
                 // Add the sum
@@ -447,17 +435,13 @@ class APC implements Adapter
                     'name' => $metaData['name'] . '_sum',
                     'labelNames' => [],
                     'labelValues' => $decodedLabelValues,
-                    'value' => array_sum(array_column($values, 'value')),
+                    'value' => array_sum($samples),
                 ];
-            }
-            // refresh cache
-            if(count($data['samples']) > 0){
-                $summaries[] = new MetricFamilySamples($data);
 
-                apcu_store($summary['key'], [
-                    'meta' => $metaData,
-                    'samples' => $samples,
-                ]);
+            }
+
+            if (count($data['samples']) > 0) {
+                $summaries[] = new MetricFamilySamples($data);
             }else{
                 apcu_delete($summary['key']);
             }

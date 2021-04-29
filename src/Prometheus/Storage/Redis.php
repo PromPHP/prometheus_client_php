@@ -281,7 +281,7 @@ LUA
 
         // todo https://stackoverflow.com/questions/39425790/how-can-i-update-or-delete-a-record-from-the-json-output-using-laravel-and-predi
         // https://stackoverflow.com/questions/54640995/on-redis-is-better-to-store-one-key-with-json-data-as-value-or-multiple-keys-wit
-        // une hashmap par $keyValue ? puis utiliser rpushx ?
+        // une hashmap par $valueKey plutot que $metaKey ? puis utiliser rpushx ?
 
         $this->ensureOpenConnection();
         $metaData = $data;
