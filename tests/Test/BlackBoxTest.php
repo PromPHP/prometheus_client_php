@@ -151,9 +151,8 @@ EOF
 
     /**
      * @test
-     * @dataProvider providerAtom
      */
-    public function summariesShouldIncrementAtomically(int $a): void
+    public function summariesShouldIncrementAtomically(): void
     {
         $start = microtime(true);
         $promises = [
@@ -187,21 +186,4 @@ test_some_summary_sum{type="blue"} 55
 EOF
         ));
     }
-
-    public function providerAtom(): array
-    {
-        return [
-            ['a' => 1],
-            ['a' => 2],
-            ['a' => 3],
-            ['a' => 4],
-            ['a' => 5],
-            ['a' => 6],
-            ['a' => 7],
-            ['a' => 8],
-            ['a' => 9],
-            ['a' => 10],
-        ];
-    }
-
 }

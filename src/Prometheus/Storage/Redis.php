@@ -146,7 +146,6 @@ LUA
     private function metaKey(array $data): string
     {
         return implode(':', [
-            $data['type'],
             $data['name'],
             'meta'
         ]);
@@ -160,7 +159,6 @@ LUA
     private function valueKey(array $data): string
     {
         return implode(':', [
-            $data['type'],
             $data['name'],
             $this->encodeLabelValues($data['labelValues']),
             'value'
@@ -278,36 +276,22 @@ LUA
      */
     public function updateSummary(array $data): void
     {
-
-        // todo https://stackoverflow.com/questions/39425790/how-can-i-update-or-delete-a-record-from-the-json-output-using-laravel-and-predi
-        // https://stackoverflow.com/questions/54640995/on-redis-is-better-to-store-one-key-with-json-data-as-value-or-multiple-keys-wit
-        // une hashmap par $valueKey plutot que $metaKey ? puis utiliser rpushx ?
-
         $this->ensureOpenConnection();
-        $metaData = $data;
-        unset($metaData['value'], $metaData['labelValues']);
-        $emptyData = [
-            'meta' => $metaData,
-            'samples' => [],
-        ];
 
+        // store meta
         $summaryKey = self::$prefix . Summary::TYPE . self::PROMETHEUS_METRIC_KEYS_SUFFIX;
-        $metaKey = $this->metaKey($data);
-        $this->redis->hsetnx($summaryKey, $metaKey, json_encode($emptyData));
-        $cachedData = json_decode($this->redis->hget($summaryKey, $metaKey), true);
-        $valueKey = $this->valueKey($data);
-        if (array_key_exists($valueKey, $cachedData['samples']) === false) {
-            $cachedData['samples'][$valueKey] = [];
-        }
+        $metaKey = $summaryKey . ':' . $this->metaKey($data);
+        $this->redis->setnx($metaKey, json_encode($this->metaData($data)));
 
-        $cachedData['samples'][$valueKey][] = [
-            'time' => time(),
-            'value' => $data['value'],
-        ];
+        // store value key
+        $valueKey = $summaryKey . ':' . $this->valueKey($data);
+        $this->redis->setnx($valueKey, json_encode($this->encodeLabelValues($data['labelValues'])));
 
+        // trick to handle uniqid collision
         $done = false;
-        while ($done === false) {
-            $done = $this->redis->hset($summaryKey, $metaKey, json_encode($cachedData));
+        while (!$done) {
+            $sampleKey = $valueKey . ':' . uniqid('', true);
+            $done = $this->redis->set($sampleKey, $data['value'], ['NX', 'EX' => $data['maxAgeSeconds']]);
         }
     }
 
@@ -378,6 +362,18 @@ LUA
             ],
             2
         );
+    }
+
+
+    /**
+     * @param mixed[] $data
+     * @return mixed[]
+     */
+    private function metaData(array $data): array
+    {
+        $metricsMetaData = $data;
+        unset($metricsMetaData['value'], $metricsMetaData['command'], $metricsMetaData['labelValues']);
+        return $metricsMetaData;
     }
 
     /**
@@ -464,12 +460,13 @@ LUA
     {
         $math = new Math();
         $summaryKey = self::$prefix . Summary::TYPE . self::PROMETHEUS_METRIC_KEYS_SUFFIX;
-        $keys = $this->redis->hGetAll($summaryKey);
+        $keys = $this->redis->keys($summaryKey.':*:meta');
 
         $summaries = [];
-        foreach ($keys as $metaKey => $rawSummary) {
+        foreach ($keys as $metaKey) {
+            $rawSummary = $this->redis->get($metaKey);
             $summary = json_decode($rawSummary, true);
-            $metaData = $summary['meta'];
+            $metaData = $summary;
             $data = [
                 'name' => $metaData['name'],
                 'help' => $metaData['help'],
@@ -480,35 +477,32 @@ LUA
                 'samples' => [],
             ];
 
-            $samples = $summary['samples'];
-            foreach ($samples as $valueKey => &$values) {
-                $parts = explode(':', $valueKey);
-                $labelValues = $parts[2];
-                $decodedLabelValues = $this->decodeLabelValues($labelValues);
+            $values = $this->redis->keys($summaryKey.':'.$metaData['name'].':*:value');
+            foreach ($values as $valueKey) {
+                $rawValue = $this->redis->get($valueKey);
+                $value = json_decode($rawValue, true);
+                $encodedLabelValues = $value;
+                $decodedLabelValues = $this->decodeLabelValues($encodedLabelValues);
 
-                // Remove old data
-                $values = array_filter($values, function($value) use($data) {
-                    return time()-$value['time'] <= $data['maxAgeSeconds'];
-                });
-                if(count($values) === 0) {
-                    unset($samples[$valueKey]);
+                $samples = [];
+                $sampleValues = $this->redis->keys($summaryKey.':'.$metaData['name'].':'.$encodedLabelValues.':value:*');
+                foreach ($sampleValues as $sampleValue) {
+                    $samples[] = (float) $this->redis->get($sampleValue);
+                }
+
+                if(count($samples) === 0) {
+                    $this->redis->del($valueKey);
                     continue;
                 }
 
                 // Compute quantiles
-                usort($values, function($value1, $value2) {
-                    if ($value1['value'] === $value2['value']) {
-                        return 0;
-                    }
-                    return ($value1['value'] < $value2['value']) ? -1 : 1;
-                });
-
+                sort($samples);
                 foreach ($data['quantiles'] as $quantile) {
                     $data['samples'][] = [
                         'name' => $metaData['name'],
                         'labelNames' => ['quantile'],
                         'labelValues' => array_merge($decodedLabelValues, [$quantile]),
-                        'value' => $math->quantile(array_column($values, 'value'), $quantile),
+                        'value' => $math->quantile($samples, $quantile),
                     ];
                 }
 
@@ -517,7 +511,7 @@ LUA
                     'name' => $metaData['name'] . '_count',
                     'labelNames' => [],
                     'labelValues' => $decodedLabelValues,
-                    'value' => count($values),
+                    'value' => count($samples),
                 ];
 
                 // Add the sum
@@ -525,19 +519,14 @@ LUA
                     'name' => $metaData['name'] . '_sum',
                     'labelNames' => [],
                     'labelValues' => $decodedLabelValues,
-                    'value' => array_sum(array_column($values, 'value')),
+                    'value' => array_sum($samples),
                 ];
             }
-            // refresh cache
-            if(count($data['samples']) > 0){
-                $summaries[] = $data;
 
-                $this->redis->hset($summaryKey, $metaKey, json_encode([
-                    'meta' => $metaData,
-                    'samples' => $samples,
-                ]));
+            if (count($data['samples']) > 0) {
+                $summaries[] = $data;
             }else{
-                $this->redis->hdel($summaryKey, $metaKey);
+                $this->redis->del($metaKey);
             }
         }
         return $summaries;

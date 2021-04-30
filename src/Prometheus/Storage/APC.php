@@ -100,11 +100,11 @@ class APC implements Adapter
         $valueKey = $this->valueKey($data);
         apcu_add($valueKey, $this->encodeLabelValues($data['labelValues']));
 
-        // trick to handle uniqid potential collision
+        // trick to handle uniqid collision
         $done = false;
         while (!$done) {
-            $valueKey = $valueKey . ':' . uniqid('', true);
-            $done = apcu_add($valueKey, $data['value'], $data['maxAgeSeconds']);
+            $sampleKey = $valueKey . ':' . uniqid('', true);
+            $done = apcu_add($sampleKey, $data['value'], $data['maxAgeSeconds']);
         }
     }
 
@@ -396,7 +396,7 @@ class APC implements Adapter
                 $encodedLabelValues = $value['value'];
                 $decodedLabelValues = $this->decodeLabelValues($encodedLabelValues);
                 $samples = [];
-                foreach (new APCUIterator('/^' . $this->prometheusPrefix . ':summary:' . $metaData['name'] . ':' . $encodedLabelValues . ':value:.*/') as $sample) {
+                foreach (new APCUIterator('/^' . $this->prometheusPrefix . ':summary:' . $metaData['name'] . ':' . str_replace('/','\\/',$encodedLabelValues) . ':value:.*/') as $sample) {
                     $samples[] = $sample['value'];
                 }
 
@@ -406,13 +406,7 @@ class APC implements Adapter
                 }
 
                 // Compute quantiles
-                usort($samples, function($value1, $value2) {
-                    if ($value1 === $value2) {
-                        return 0;
-                    }
-                    return ($value1 < $value2) ? -1 : 1;
-                });
-
+                sort($samples);
                 foreach ($data['quantiles'] as $quantile) {
                     $data['samples'][] = [
                         'name' => $metaData['name'],
@@ -437,7 +431,6 @@ class APC implements Adapter
                     'labelValues' => $decodedLabelValues,
                     'value' => array_sum($samples),
                 ];
-
             }
 
             if (count($data['samples']) > 0) {
