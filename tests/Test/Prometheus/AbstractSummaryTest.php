@@ -193,7 +193,7 @@ abstract class AbstractSummaryTest extends TestCase
             60,
             [0.1, 0.5, 0.9]
         );
-        foreach (range(0, 1,0.1) as $i) {
+        foreach (range(0, 1, 0.1) as $i) {
             $summary->observe($i);
         }
         self::assertThat(
@@ -259,7 +259,7 @@ abstract class AbstractSummaryTest extends TestCase
             60,
             [0.1, 0.5, 0.9]
         );
-        foreach (range(1,10) as $i) {
+        foreach (range(1, 10) as $i) {
             $summary->observe($i);
         }
         self::assertThat(
@@ -428,7 +428,7 @@ abstract class AbstractSummaryTest extends TestCase
         );
         $summary->observe(100);
         sleep(2);
-        foreach (range(1,10) as $i) {
+        foreach (range(1, 10) as $i) {
             $summary->observe($i);
         }
         self::assertThat(
@@ -568,9 +568,6 @@ abstract class AbstractSummaryTest extends TestCase
      */
     public function isShouldAcceptAnySequenceOfBasicLatinCharactersForLabelValues($value): void
     {
-
-        var_dump($value);
-
         $label = 'foo';
         $summary = new Summary($this->adapter, 'test', 'some_metric', 'help', [$label], 60, [0.5]);
         $summary->observe(1, [$value]);

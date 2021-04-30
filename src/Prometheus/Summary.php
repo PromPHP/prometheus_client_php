@@ -69,7 +69,7 @@ class Summary extends Collector
             throw new InvalidArgumentException("maxAgeSeconds $maxAgeSeconds invalid: Expected number greater than 0.");
         }
 
-        if(count(array_intersect(self::RESERVED_LABELS, $labels)) > 0){
+        if (count(array_intersect(self::RESERVED_LABELS, $labels)) > 0) {
             throw new InvalidArgumentException("Summary cannot have a label named " . implode(', ', self::RESERVED_LABELS) . ".");
         }
         $this->quantiles = $quantiles;

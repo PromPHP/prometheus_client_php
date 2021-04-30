@@ -145,7 +145,6 @@ class InMemory implements Adapter
         $math = new Math();
         $summaries = [];
         foreach ($this->summaries as $metaKey => &$summary) {
-
             $metaData = $summary['meta'];
             $data = [
                 'name' => $metaData['name'],
@@ -163,16 +162,16 @@ class InMemory implements Adapter
                 $decodedLabelValues = $this->decodeLabelValues($labelValues);
 
                 // Remove old data
-                $values = array_filter($values, function($value) use($data) {
-                    return time()-$value['time'] <= $data['maxAgeSeconds'];
+                $values = array_filter($values, function (array $value) use ($data): bool {
+                    return time() - $value['time'] <= $data['maxAgeSeconds'];
                 });
-                if(count($values) === 0) {
+                if (count($values) === 0) {
                     unset($summary['samples'][$key]);
                     continue;
                 }
 
                 // Compute quantiles
-                usort($values, function($value1, $value2) {
+                usort($values, function (array $value1, array $value2) {
                     if ($value1['value'] === $value2['value']) {
                         return 0;
                     }
@@ -204,9 +203,9 @@ class InMemory implements Adapter
                     'value' => array_sum(array_column($values, 'value')),
                 ];
             }
-            if(count($data['samples']) > 0){
+            if (count($data['samples']) > 0) {
                 $summaries[] = new MetricFamilySamples($data);
-            }else{
+            } else {
                 unset($this->summaries[$metaKey]);
             }
         }

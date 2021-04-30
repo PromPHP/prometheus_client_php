@@ -396,11 +396,11 @@ class APC implements Adapter
                 $encodedLabelValues = $value['value'];
                 $decodedLabelValues = $this->decodeLabelValues($encodedLabelValues);
                 $samples = [];
-                foreach (new APCUIterator('/^' . $this->prometheusPrefix . ':summary:' . $metaData['name'] . ':' . str_replace('/','\\/',$encodedLabelValues) . ':value:.*/') as $sample) {
+                foreach (new APCUIterator('/^' . $this->prometheusPrefix . ':summary:' . $metaData['name'] . ':' . str_replace('/', '\\/', preg_quote($encodedLabelValues)) . ':value:.*/') as $sample) {
                     $samples[] = $sample['value'];
                 }
 
-                if(count($samples) === 0) {
+                if (count($samples) === 0) {
                     apcu_delete($value['key']);
                     continue;
                 }
@@ -435,7 +435,7 @@ class APC implements Adapter
 
             if (count($data['samples']) > 0) {
                 $summaries[] = new MetricFamilySamples($data);
-            }else{
+            } else {
                 apcu_delete($summary['key']);
             }
         }

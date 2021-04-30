@@ -281,11 +281,19 @@ LUA
         // store meta
         $summaryKey = self::$prefix . Summary::TYPE . self::PROMETHEUS_METRIC_KEYS_SUFFIX;
         $metaKey = $summaryKey . ':' . $this->metaKey($data);
-        $this->redis->setnx($metaKey, json_encode($this->metaData($data)));
+        $json = json_encode($this->metaData($data));
+        if (false === $json) {
+            throw new RuntimeException(json_last_error_msg());
+        }
+        $this->redis->setnx($metaKey, $json);
 
         // store value key
         $valueKey = $summaryKey . ':' . $this->valueKey($data);
-        $this->redis->setnx($valueKey, json_encode($this->encodeLabelValues($data['labelValues'])));
+        $json = json_encode($this->encodeLabelValues($data['labelValues']));
+        if (false === $json) {
+            throw new RuntimeException(json_last_error_msg());
+        }
+        $this->redis->setnx($valueKey, $json);
 
         // trick to handle uniqid collision
         $done = false;
@@ -460,10 +468,12 @@ LUA
      */
     private function removePrefixFromKey(string $key): string
     {
-        if($this->redis->getOption(\Redis::OPT_PREFIX) !== null){
-            return substr($key, strlen($this->redis->getOption(\Redis::OPT_PREFIX)));
+        // @phpstan-ignore-next-line false positive, phpstan thinks getOptions returns int
+        if ($this->redis->getOption(\Redis::OPT_PREFIX) === null) {
+            return $key;
         }
-        return $key;
+        // @phpstan-ignore-next-line false positive, phpstan thinks getOptions returns int
+        return substr($key, strlen($this->redis->getOption(\Redis::OPT_PREFIX)));
     }
 
     /**
@@ -473,12 +483,15 @@ LUA
     {
         $math = new Math();
         $summaryKey = self::$prefix . Summary::TYPE . self::PROMETHEUS_METRIC_KEYS_SUFFIX;
-        $keys = $this->redis->keys($summaryKey.':*:meta');
+        $keys = $this->redis->keys($summaryKey . ':*:meta');
 
         $summaries = [];
         foreach ($keys as $metaKeyWithPrefix) {
             $metaKey = $this->removePrefixFromKey($metaKeyWithPrefix);
             $rawSummary = $this->redis->get($metaKey);
+            if ($rawSummary === false) {
+                continue;
+            }
             $summary = json_decode($rawSummary, true);
             $metaData = $summary;
             $data = [
@@ -491,22 +504,25 @@ LUA
                 'samples' => [],
             ];
 
-            $values = $this->redis->keys($summaryKey.':'.$metaData['name'].':*:value');
+            $values = $this->redis->keys($summaryKey . ':' . $metaData['name'] . ':*:value');
             foreach ($values as $valueKeyWithPrefix) {
                 $valueKey = $this->removePrefixFromKey($valueKeyWithPrefix);
                 $rawValue = $this->redis->get($valueKey);
+                if ($rawValue === false) {
+                    continue;
+                }
                 $value = json_decode($rawValue, true);
                 $encodedLabelValues = $value;
                 $decodedLabelValues = $this->decodeLabelValues($encodedLabelValues);
 
                 $samples = [];
-                $sampleValues = $this->redis->keys($summaryKey.':'.$metaData['name'].':'.$encodedLabelValues.':value:*');
+                $sampleValues = $this->redis->keys($summaryKey . ':' . $metaData['name'] . ':' . $encodedLabelValues . ':value:*');
                 foreach ($sampleValues as $sampleValueWithPrefix) {
                     $sampleValue = $this->removePrefixFromKey($sampleValueWithPrefix);
                     $samples[] = (float) $this->redis->get($sampleValue);
                 }
 
-                if(count($samples) === 0) {
+                if (count($samples) === 0) {
                     $this->redis->del($valueKey);
                     continue;
                 }
@@ -541,7 +557,7 @@ LUA
 
             if (count($data['samples']) > 0) {
                 $summaries[] = $data;
-            }else{
+            } else {
                 $this->redis->del($metaKey);
             }
         }
