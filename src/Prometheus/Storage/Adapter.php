@@ -22,6 +22,12 @@ interface Adapter
      * @param mixed[] $data
      * @return void
      */
+    public function updateSummary(array $data): void;
+
+    /**
+     * @param mixed[] $data
+     * @return void
+     */
     public function updateHistogram(array $data): void;
 
     /**
