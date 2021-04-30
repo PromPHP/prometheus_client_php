@@ -568,6 +568,9 @@ abstract class AbstractSummaryTest extends TestCase
      */
     public function isShouldAcceptAnySequenceOfBasicLatinCharactersForLabelValues($value): void
     {
+
+        var_dump($value);
+
         $label = 'foo';
         $summary = new Summary($this->adapter, 'test', 'some_metric', 'help', [$label], 60, [0.5]);
         $summary->observe(1, [$value]);

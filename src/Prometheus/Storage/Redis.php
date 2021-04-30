@@ -454,6 +454,19 @@ LUA
     }
 
     /**
+     * @param string $key
+     *
+     * @return string
+     */
+    private function removePrefixFromKey(string $key): string
+    {
+        if($this->redis->getOption(\Redis::OPT_PREFIX) !== null){
+            return substr($key, strlen($this->redis->getOption(\Redis::OPT_PREFIX)));
+        }
+        return $key;
+    }
+
+    /**
      * @return mixed[]
      */
     private function collectSummaries(): array
@@ -463,7 +476,8 @@ LUA
         $keys = $this->redis->keys($summaryKey.':*:meta');
 
         $summaries = [];
-        foreach ($keys as $metaKey) {
+        foreach ($keys as $metaKeyWithPrefix) {
+            $metaKey = $this->removePrefixFromKey($metaKeyWithPrefix);
             $rawSummary = $this->redis->get($metaKey);
             $summary = json_decode($rawSummary, true);
             $metaData = $summary;
@@ -478,7 +492,8 @@ LUA
             ];
 
             $values = $this->redis->keys($summaryKey.':'.$metaData['name'].':*:value');
-            foreach ($values as $valueKey) {
+            foreach ($values as $valueKeyWithPrefix) {
+                $valueKey = $this->removePrefixFromKey($valueKeyWithPrefix);
                 $rawValue = $this->redis->get($valueKey);
                 $value = json_decode($rawValue, true);
                 $encodedLabelValues = $value;
@@ -486,7 +501,8 @@ LUA
 
                 $samples = [];
                 $sampleValues = $this->redis->keys($summaryKey.':'.$metaData['name'].':'.$encodedLabelValues.':value:*');
-                foreach ($sampleValues as $sampleValue) {
+                foreach ($sampleValues as $sampleValueWithPrefix) {
+                    $sampleValue = $this->removePrefixFromKey($sampleValueWithPrefix);
                     $samples[] = (float) $this->redis->get($sampleValue);
                 }
 
