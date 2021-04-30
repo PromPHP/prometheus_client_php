@@ -110,8 +110,6 @@ This will start your buckets with a value of 0.05, grow them by a factor of 1.5 
 
 Also look at the [examples](examples).
 
-
-
 #### PushGateway Support
 As of Version 2.0.0 this library doesn't support the Prometheus PushGateway anymore because we want to have this package as small als possible. If you need Prometheus PushGateway support, you could use the companion library:  https://github.com/PromPHP/prometheus_push_gateway_php
 ```

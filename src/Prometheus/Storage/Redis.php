@@ -649,7 +649,6 @@ LUA
         return implode(':', [self::$prefix, $data['type'], $data['name']]);
     }
 
-
     /**
      * @param mixed[] $values
      * @return string
