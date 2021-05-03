@@ -36,8 +36,9 @@ class RenderTextFormatTest extends TestCase
                  ->inc(['bob', 'al\ice']);
         $registry->getOrRegisterGauge($namespace, 'gauge', 'counter-help-text', ['label1', 'label2'])
                  ->inc(["bo\nb", 'ali\"ce']);
-        $registry->getOrRegisterHistogram($namespace, 'histogram', 'counter-help-text', ['label1', 'label2'], [0, 10, 100])
-                 ->observe(5, ['bob', 'alice']);
+        $histogram = $registry->getOrRegisterHistogram($namespace, 'histogram', 'counter-help-text', ['label1', 'label2'], [0, 10, 100]);
+        $histogram->observe(5, ['bob', 'alice']);
+        $histogram->observeWithExemplar(1.337, ['bob', 'alice'], ['traceID' => 'my-trace-id'], 1619827200);
 
         return $registry->getMetricFamilySamples();
     }
@@ -54,11 +55,11 @@ mynamespace_gauge{label1="bo\\nb",label2="ali\\\\\"ce"} 1
 # HELP mynamespace_histogram counter-help-text
 # TYPE mynamespace_histogram histogram
 mynamespace_histogram_bucket{label1="bob",label2="alice",le="0"} 0
-mynamespace_histogram_bucket{label1="bob",label2="alice",le="10"} 1
-mynamespace_histogram_bucket{label1="bob",label2="alice",le="100"} 1
-mynamespace_histogram_bucket{label1="bob",label2="alice",le="+Inf"} 1
-mynamespace_histogram_count{label1="bob",label2="alice"} 1
-mynamespace_histogram_sum{label1="bob",label2="alice"} 5
+mynamespace_histogram_bucket{label1="bob",label2="alice",le="10"} 2 # {trace_id="my-trace-id"} 1.337 1619827200
+mynamespace_histogram_bucket{label1="bob",label2="alice",le="100"} 2
+mynamespace_histogram_bucket{label1="bob",label2="alice",le="+Inf"} 2
+mynamespace_histogram_count{label1="bob",label2="alice"} 2
+mynamespace_histogram_sum{label1="bob",label2="alice"} 6.337
 
 TEXTPLAIN;
     }
