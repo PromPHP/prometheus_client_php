@@ -17,6 +17,11 @@ class Histogram extends Collector
     private $buckets;
 
     /**
+     * @var array e.g [1.1 => Exemplar]
+     */
+    protected $bucketExemplars;
+
+    /**
      * @param Adapter    $adapter
      * @param string     $namespace
      * @param string     $name
@@ -129,8 +134,24 @@ class Histogram extends Collector
                 'labelNames'  => $this->getLabelNames(),
                 'labelValues' => $labels,
                 'buckets'     => $this->buckets,
+                'bucketExemplars' => $this->bucketExemplars,
             ]
         );
+    }
+
+    /**
+     * @see https://github.com/OpenObservability/OpenMetrics/blob/main/specification/OpenMetrics.md#exemplars-1
+     * @param float $value
+     * @param array $labels
+     * @param array $exemplarLabels e.g ['traceID' => 'my-trace-id, 'otherLabel' => 'value]
+     * @param int $timestamp e.g 1619827200
+     */
+    public function observeWithExemplar(float $value, array $labels = [], array $exemplarLabels = [], int $timestamp = null): void
+    {
+        foreach ($exemplarLabels as $exemplarLabelKey => $exemplarLabelValue) {
+            self::assertValidLabel($exemplarLabelKey);
+        }
+        $this->observe($value, $labels);
     }
 
     /**
