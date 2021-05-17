@@ -6,6 +6,7 @@ namespace Prometheus;
 
 use InvalidArgumentException;
 use Prometheus\Storage\Adapter;
+use Prometheus\Storage\APC;
 
 class Histogram extends Collector
 {
