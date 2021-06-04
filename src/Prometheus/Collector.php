@@ -6,10 +6,18 @@ namespace Prometheus;
 
 use InvalidArgumentException;
 use Prometheus\Storage\Adapter;
+use Prometheus\Storage\APC;
 
 abstract class Collector
 {
     const RE_METRIC_LABEL_NAME = '/^[a-zA-Z_:][a-zA-Z0-9_:]*$/';
+    /**
+     * Colons cannot be used in names - all meta-information will be invalid
+     * @see src/Prometheus/Storage/APC.php:169
+     * @see src/Prometheus/Storage/APC.php:178
+     * @see src/Prometheus/Storage/APC.php:194
+     */
+    const RE_METRIC_LABEL_NAME_APCU = '/^[a-zA-Z_][a-zA-Z0-9_]*$/';
 
     /**
      * @var Adapter
@@ -42,11 +50,12 @@ abstract class Collector
     {
         $this->storageAdapter = $storageAdapter;
         $metricName = ($namespace !== '' ? $namespace . '_' : '') . $name;
-        self::assertValidMetricName($metricName);
+        $regexp = ($this->storageAdapter instanceof APC) ? self::RE_METRIC_LABEL_NAME_APCU : self::RE_METRIC_LABEL_NAME;
+        self::assertValidMetricName($metricName, $regexp);
         $this->name = $metricName;
         $this->help = $help;
         foreach ($labels as $label) {
-            self::assertValidLabel($label);
+            self::assertValidLabel($label, $regexp);
         }
         $this->labels = $labels;
     }
@@ -101,7 +110,7 @@ abstract class Collector
     /**
      * @param string $metricName
      */
-    public static function assertValidMetricName(string $metricName): void
+    public static function assertValidMetricName(string $metricName, string $regExp): void
     {
         if (preg_match(self::RE_METRIC_LABEL_NAME, $metricName) !== 1) {
             throw new InvalidArgumentException("Invalid metric name: '" . $metricName . "'");
@@ -111,7 +120,7 @@ abstract class Collector
     /**
      * @param string $label
      */
-    public static function assertValidLabel(string $label): void
+    public static function assertValidLabel(string $label, string $regExp): void
     {
         if (preg_match(self::RE_METRIC_LABEL_NAME, $label) !== 1) {
             throw new InvalidArgumentException("Invalid label name: '" . $label . "'");
