@@ -39,7 +39,6 @@ class MetricFamilySamples
         $this->name = $data['name'];
         $this->type = $data['type'];
         $this->help = $data['help'];
-        $this->labelNames = $data['labelNames'];
         foreach ($data['samples'] as $sampleData) {
             $this->samples[] = new Sample($sampleData);
         }
@@ -75,21 +74,5 @@ class MetricFamilySamples
     public function getSamples(): array
     {
         return $this->samples;
-    }
-
-    /**
-     * @return string[]
-     */
-    public function getLabelNames(): array
-    {
-        return $this->labelNames;
-    }
-
-    /**
-     * @return bool
-     */
-    public function hasLabelNames(): bool
-    {
-        return $this->labelNames !== [];
     }
 }

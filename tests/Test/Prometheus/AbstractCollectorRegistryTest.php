@@ -107,10 +107,9 @@ EOF
         $registry = new CollectorRegistry($this->adapter);
         $metric = $registry->registerCounter('test', 'some_metric', 'this is for testing', ['foo', 'bar']);
         $metric->incBy(2, ['lalal', 'lululu']);
-        $registry->getCounter('test', 'some_metric')->inc(['lalal', 'lululu']);
-        $registry->getCounter('test', 'some_metric')->inc(['lalal', 'lvlvlv']);
+        $registry->getCounter('test', 'some_metric', ['foo', 'bar'])->inc(['lalal', 'lululu']);
+        $registry->getCounter('test', 'some_metric', ['foo', 'bar'])->inc(['lalal', 'lvlvlv']);
 
-        $registry = new CollectorRegistry($this->adapter);
         self::assertThat(
             $this->renderer->render($registry->getMetricFamilySamples()),
             self::stringContains(
@@ -139,10 +138,10 @@ EOF
             [0.1, 1, 5, 10]
         );
         $metric->observe(2, ['lalal', 'lululu']);
-        $registry->getHistogram('test', 'some_metric')->observe(7.1, ['lalal', 'lvlvlv']);
-        $registry->getHistogram('test', 'some_metric')->observe(13, ['lalal', 'lululu']);
-        $registry->getHistogram('test', 'some_metric')->observe(7.1, ['lalal', 'lululu']);
-        $registry->getHistogram('test', 'some_metric')->observe(7.1, ['gnaaha', 'hihihi']);
+        $registry->getHistogram('test', 'some_metric', ['foo', 'bar'])->observe(7.1, ['lalal', 'lvlvlv']);
+        $registry->getHistogram('test', 'some_metric', ['foo', 'bar'])->observe(13, ['lalal', 'lululu']);
+        $registry->getHistogram('test', 'some_metric', ['foo', 'bar'])->observe(7.1, ['lalal', 'lululu']);
+        $registry->getHistogram('test', 'some_metric', ['foo', 'bar'])->observe(7.1, ['gnaaha', 'hihihi']);
 
         $registry = new CollectorRegistry($this->adapter);
         self::assertThat(
@@ -189,7 +188,6 @@ EOF
         $registry->getHistogram('test', 'some_metric')->observe(13);
         $registry->getHistogram('test', 'some_metric')->observe(7.1);
 
-        $registry = new CollectorRegistry($this->adapter);
         self::assertThat(
             $this->renderer->render($registry->getMetricFamilySamples()),
             self::stringContains(
@@ -257,13 +255,25 @@ EOF
     /**
      * @test
      */
-    public function itShouldForbidRegisteringTheSameCounterWithDifferentLabels(): void
+    public function itShouldAllowRegisteringTheSameCounterWithDifferentLabels(): void
     {
         $registry = new CollectorRegistry($this->adapter);
-        $registry->registerCounter('foo', 'metric', 'help', ["foo", "bar"]);
+        $metric1 = $registry->registerCounter('foo', 'metric', 'help', ["foo", "bar"]);
+        $metric1->incBy(2, ['fooval', 'barval']);
+        $metric2 = $registry->registerCounter('foo', 'metric', 'help', ["spam", "eggs"]);
+        $metric2->incBy(5, ['spamval', 'eggsval']);
+        self::assertThat(
+            $this->renderer->render($registry->getMetricFamilySamples()),
+            self::stringContains(
+                <<<EOF
+# HELP foo_metric help
+# TYPE foo_metric counter
+foo_metric{foo="fooval",bar="barval"} 2
+foo_metric{spam="spamval",eggs="eggsval"} 5
 
-        $this->expectException(MetricsRegistrationException::class);
-        $registry->registerCounter('foo', 'metric', 'help', ["spam", "eggs"]);
+EOF
+            )
+        );
     }
 
     /**
@@ -281,13 +291,59 @@ EOF
     /**
      * @test
      */
-    public function itShouldForbidRegisteringTheSameHistogramWithDifferentLabels(): void
+    public function itShouldAllowRegisteringTheSameHistogramWithDifferentLabels(): void
     {
         $registry = new CollectorRegistry($this->adapter);
-        $registry->registerCounter('foo', 'metric', 'help', ["foo", "bar"]);
+        $metric1 = $registry->registerHistogram('foo', 'metric', 'help', ["foo", "bar"]);
+        $metric1->observe(2, ['fooval', 'barval']);
+        $metric1->observe(2.5, ['fooval', 'barval']);
+        $metric2 = $registry->registerHistogram('foo', 'metric', 'help', ["spam", "eggs"]);
+        $metric2->observe(5, ['spamval', 'eggsval']);
+        $metric2->observe(8, ['spamval', 'eggsval']);
+        self::assertThat(
+            $this->renderer->render($registry->getMetricFamilySamples()),
+            self::stringContains(
+                <<<EOF
+# HELP foo_metric help
+# TYPE foo_metric histogram
+foo_metric_bucket{foo="fooval",bar="barval",le="0.005"} 0
+foo_metric_bucket{foo="fooval",bar="barval",le="0.01"} 0
+foo_metric_bucket{foo="fooval",bar="barval",le="0.025"} 0
+foo_metric_bucket{foo="fooval",bar="barval",le="0.05"} 0
+foo_metric_bucket{foo="fooval",bar="barval",le="0.075"} 0
+foo_metric_bucket{foo="fooval",bar="barval",le="0.1"} 0
+foo_metric_bucket{foo="fooval",bar="barval",le="0.25"} 0
+foo_metric_bucket{foo="fooval",bar="barval",le="0.5"} 0
+foo_metric_bucket{foo="fooval",bar="barval",le="0.75"} 0
+foo_metric_bucket{foo="fooval",bar="barval",le="1"} 0
+foo_metric_bucket{foo="fooval",bar="barval",le="2.5"} 2
+foo_metric_bucket{foo="fooval",bar="barval",le="5"} 2
+foo_metric_bucket{foo="fooval",bar="barval",le="7.5"} 2
+foo_metric_bucket{foo="fooval",bar="barval",le="10"} 2
+foo_metric_bucket{foo="fooval",bar="barval",le="+Inf"} 2
+foo_metric_count{foo="fooval",bar="barval"} 2
+foo_metric_sum{foo="fooval",bar="barval"} 4.5
+foo_metric_bucket{spam="spamval",eggs="eggsval",le="0.005"} 0
+foo_metric_bucket{spam="spamval",eggs="eggsval",le="0.01"} 0
+foo_metric_bucket{spam="spamval",eggs="eggsval",le="0.025"} 0
+foo_metric_bucket{spam="spamval",eggs="eggsval",le="0.05"} 0
+foo_metric_bucket{spam="spamval",eggs="eggsval",le="0.075"} 0
+foo_metric_bucket{spam="spamval",eggs="eggsval",le="0.1"} 0
+foo_metric_bucket{spam="spamval",eggs="eggsval",le="0.25"} 0
+foo_metric_bucket{spam="spamval",eggs="eggsval",le="0.5"} 0
+foo_metric_bucket{spam="spamval",eggs="eggsval",le="0.75"} 0
+foo_metric_bucket{spam="spamval",eggs="eggsval",le="1"} 0
+foo_metric_bucket{spam="spamval",eggs="eggsval",le="2.5"} 0
+foo_metric_bucket{spam="spamval",eggs="eggsval",le="5"} 1
+foo_metric_bucket{spam="spamval",eggs="eggsval",le="7.5"} 1
+foo_metric_bucket{spam="spamval",eggs="eggsval",le="10"} 2
+foo_metric_bucket{spam="spamval",eggs="eggsval",le="+Inf"} 2
+foo_metric_count{spam="spamval",eggs="eggsval"} 2
+foo_metric_sum{spam="spamval",eggs="eggsval"} 13
 
-        $this->expectException(MetricsRegistrationException::class);
-        $registry->registerCounter('foo', 'metric', 'help', ["spam", "eggs"]);
+EOF
+            )
+        );
     }
 
     /**
@@ -305,13 +361,25 @@ EOF
     /**
      * @test
      */
-    public function itShouldForbidRegisteringTheSameGaugeWithDifferentLabels(): void
+    public function itShouldAllowRegisteringTheSameGaugeWithDifferentLabels(): void
     {
         $registry = new CollectorRegistry($this->adapter);
-        $registry->registerGauge('foo', 'metric', 'help', ["foo", "bar"]);
+        $metric1 = $registry->registerGauge('foo', 'metric', 'help', ["foo", "bar"]);
+        $metric1->set(2, ['fooval', 'barval']);
+        $metric2 = $registry->registerGauge('foo', 'metric', 'help', ["spam", "eggs"]);
+        $metric2->set(5, ['spamval', 'eggsval']);
+        self::assertThat(
+            $this->renderer->render($registry->getMetricFamilySamples()),
+            self::stringContains(
+                <<<EOF
+# HELP foo_metric help
+# TYPE foo_metric gauge
+foo_metric{foo="fooval",bar="barval"} 2
+foo_metric{spam="spamval",eggs="eggsval"} 5
 
-        $this->expectException(MetricsRegistrationException::class);
-        $registry->registerGauge('foo', 'metric', 'help', ["spam", "eggs"]);
+EOF
+            )
+        );
     }
 
     /**

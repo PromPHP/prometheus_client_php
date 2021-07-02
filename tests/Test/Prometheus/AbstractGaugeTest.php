@@ -44,11 +44,10 @@ abstract class AbstractGaugeTest extends TestCase
                             'name' => 'test_some_metric',
                             'help' => 'this is for testing',
                             'type' => Gauge::TYPE,
-                            'labelNames' => ['foo', 'bar'],
                             'samples' => [
                                 [
                                     'name' => 'test_some_metric',
-                                    'labelNames' => [],
+                                    'labelNames' => ['foo', 'bar'],
                                     'labelValues' => ['lalal', 'lululu'],
                                     'value' => 123,
                                 ],
@@ -78,7 +77,6 @@ abstract class AbstractGaugeTest extends TestCase
                             'name' => 'test_some_metric',
                             'help' => 'this is for testing',
                             'type' => Gauge::TYPE,
-                            'labelNames' => [],
                             'samples' => [
                                 [
                                     'name' => 'test_some_metric',
@@ -112,7 +110,6 @@ abstract class AbstractGaugeTest extends TestCase
                             'name' => 'test_some_metric',
                             'help' => 'this is for testing',
                             'type' => Gauge::TYPE,
-                            'labelNames' => [],
                             'samples' => [
                                 [
                                     'name' => 'test_some_metric',
@@ -147,11 +144,10 @@ abstract class AbstractGaugeTest extends TestCase
                             'name' => 'test_some_metric',
                             'help' => 'this is for testing',
                             'type' => Gauge::TYPE,
-                            'labelNames' => ['foo', 'bar'],
                             'samples' => [
                                 [
                                     'name' => 'test_some_metric',
-                                    'labelNames' => [],
+                                    'labelNames' => ['foo', 'bar'],
                                     'labelValues' => ['lalal', 'lululu'],
                                     'value' => 124,
                                 ],
@@ -180,11 +176,10 @@ abstract class AbstractGaugeTest extends TestCase
                             'name' => 'test_some_metric',
                             'help' => 'this is for testing',
                             'type' => Gauge::TYPE,
-                            'labelNames' => ['foo', 'bar'],
                             'samples' => [
                                 [
                                     'name' => 'test_some_metric',
-                                    'labelNames' => [],
+                                    'labelNames' => ['foo', 'bar'],
                                     'labelValues' => ['lalal', 'lululu'],
                                     'value' => 124.5,
                                 ],
@@ -213,11 +208,10 @@ abstract class AbstractGaugeTest extends TestCase
                             'name' => 'test_some_metric',
                             'help' => 'this is for testing',
                             'type' => Gauge::TYPE,
-                            'labelNames' => ['foo', 'bar'],
                             'samples' => [
                                 [
                                     'name' => 'test_some_metric',
-                                    'labelNames' => [],
+                                    'labelNames' => ['foo', 'bar'],
                                     'labelValues' => ['lalal', 'lululu'],
                                     'value' => -124,
                                 ],
@@ -246,11 +240,10 @@ abstract class AbstractGaugeTest extends TestCase
                             'name' => 'test_some_metric',
                             'help' => 'this is for testing',
                             'type' => Gauge::TYPE,
-                            'labelNames' => ['foo', 'bar'],
                             'samples' => [
                                 [
                                     'name' => 'test_some_metric',
-                                    'labelNames' => [],
+                                    'labelNames' => ['foo', 'bar'],
                                     'labelValues' => ['lalal', 'lululu'],
                                     'value' => -124,
                                 ],
@@ -279,11 +272,10 @@ abstract class AbstractGaugeTest extends TestCase
                             'name' => 'test_some_metric',
                             'help' => 'this is for testing',
                             'type' => Gauge::TYPE,
-                            'labelNames' => ['foo', 'bar'],
                             'samples' => [
                                 [
                                     'name' => 'test_some_metric',
-                                    'labelNames' => [],
+                                    'labelNames' => ['foo', 'bar'],
                                     'labelValues' => ['lalal', 'lululu'],
                                     'value' => 321,
                                 ],
@@ -336,7 +328,7 @@ abstract class AbstractGaugeTest extends TestCase
 
         foreach ($samples as $sample) {
             $labels = array_combine(
-                array_merge($metric->getLabelNames(), $sample->getLabelNames()),
+                $sample->getLabelNames(),
                 $sample->getLabelValues()
             );
             self::assertIsArray($labels);

@@ -36,9 +36,8 @@ class RenderTextFormat implements RendererInterface
      */
     private function renderSample(MetricFamilySamples $metric, Sample $sample): string
     {
-        $labelNames = $metric->getLabelNames();
-        if ($metric->hasLabelNames() || $sample->hasLabelNames()) {
-            $escapedLabels = $this->escapeAllLabels($labelNames, $sample);
+        if ($sample->hasLabelNames()) {
+            $escapedLabels = $this->escapeAllLabels($sample);
             return $sample->getName() . '{' . implode(',', $escapedLabels) . '} ' . $sample->getValue();
         }
         return $sample->getName() . ' ' . $sample->getValue();
@@ -54,16 +53,15 @@ class RenderTextFormat implements RendererInterface
     }
 
     /**
-     * @param string[]  $labelNames
      * @param Sample $sample
      *
      * @return string[]
      */
-    private function escapeAllLabels(array $labelNames, Sample $sample): array
+    private function escapeAllLabels(Sample $sample): array
     {
         $escapedLabels = [];
 
-        $labels = array_combine(array_merge($labelNames, $sample->getLabelNames()), $sample->getLabelValues());
+        $labels = array_combine($sample->getLabelNames(), $sample->getLabelValues());
 
         if ($labels === false) {
             return [];

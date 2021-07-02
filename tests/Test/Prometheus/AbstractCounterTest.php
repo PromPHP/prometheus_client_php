@@ -46,13 +46,12 @@ abstract class AbstractCounterTest extends TestCase
                             'type' => Counter::TYPE,
                             'help' => 'this is for testing',
                             'name' => 'test_some_metric',
-                            'labelNames' => ['foo', 'bar'],
                             'samples' => [
                                 [
                                     'labelValues' => ['lalal', 'lululu'],
                                     'value' => 3,
                                     'name' => 'test_some_metric',
-                                    'labelNames' => [],
+                                    'labelNames' => ['foo', 'bar'],
                                 ],
                             ],
                         ]
@@ -78,7 +77,6 @@ abstract class AbstractCounterTest extends TestCase
                             'type' => Counter::TYPE,
                             'help' => 'this is for testing',
                             'name' => 'test_some_metric',
-                            'labelNames' => [],
                             'samples' => [
                                 [
                                     'labelValues' => [],
@@ -111,13 +109,12 @@ abstract class AbstractCounterTest extends TestCase
                             'type' => Counter::TYPE,
                             'help' => 'this is for testing',
                             'name' => 'test_some_metric',
-                            'labelNames' => ['foo', 'bar'],
                             'samples' => [
                                 [
                                     'labelValues' => ['lalal', 'lululu'],
                                     'value' => 124,
                                     'name' => 'test_some_metric',
-                                    'labelNames' => [],
+                                    'labelNames' => ['foo', 'bar'],
                                 ],
                             ],
                         ]
@@ -144,13 +141,12 @@ abstract class AbstractCounterTest extends TestCase
                             'type' => Counter::TYPE,
                             'help' => 'this is for testing',
                             'name' => 'test_some_metric',
-                            'labelNames' => ['foo', 'bar'],
                             'samples' => [
                                 [
                                     'labelValues' => ['lalal', 'lululu'],
                                     'value' => 2.5,
                                     'name' => 'test_some_metric',
-                                    'labelNames' => [],
+                                    'labelNames' => ['foo', 'bar'],
                                 ],
                             ],
                         ]
@@ -202,7 +198,7 @@ abstract class AbstractCounterTest extends TestCase
 
         foreach ($samples as $sample) {
             $labels = array_combine(
-                array_merge($metric->getLabelNames(), $sample->getLabelNames()),
+                $sample->getLabelNames(),
                 $sample->getLabelValues()
             );
             self::assertIsArray($labels);
