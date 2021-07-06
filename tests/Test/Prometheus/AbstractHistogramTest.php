@@ -71,41 +71,40 @@ abstract class AbstractHistogramTest extends TestCase
                             'name' => 'test_some_metric',
                             'help' => 'this is for testing',
                             'type' => Histogram::TYPE,
-                            'labelNames' => ['foo', 'bar'],
                             'samples' => [
                                 [
                                     'name' => 'test_some_metric_bucket',
-                                    'labelNames' => ['le'],
+                                    'labelNames' => ['foo', 'bar', 'le'],
                                     'labelValues' => ['lalal', 'lululu', 100],
                                     'value' => 0,
                                 ],
                                 [
                                     'name' => 'test_some_metric_bucket',
-                                    'labelNames' => ['le'],
+                                    'labelNames' => ['foo', 'bar', 'le'],
                                     'labelValues' => ['lalal', 'lululu', 200],
                                     'value' => 1,
                                 ],
                                 [
                                     'name' => 'test_some_metric_bucket',
-                                    'labelNames' => ['le'],
+                                    'labelNames' => ['foo', 'bar', 'le'],
                                     'labelValues' => ['lalal', 'lululu', 300],
                                     'value' => 2,
                                 ],
                                 [
                                     'name' => 'test_some_metric_bucket',
-                                    'labelNames' => ['le'],
+                                    'labelNames' => ['foo', 'bar', 'le'],
                                     'labelValues' => ['lalal', 'lululu', '+Inf'],
                                     'value' => 2,
                                 ],
                                 [
                                     'name' => 'test_some_metric_count',
-                                    'labelNames' => [],
+                                    'labelNames' => ['foo', 'bar'],
                                     'labelValues' => ['lalal', 'lululu'],
                                     'value' => 2,
                                 ],
                                 [
                                     'name' => 'test_some_metric_sum',
-                                    'labelNames' => [],
+                                    'labelNames' => ['foo', 'bar'],
                                     'labelValues' => ['lalal', 'lululu'],
                                     'value' => 368,
                                 ],
@@ -140,7 +139,6 @@ abstract class AbstractHistogramTest extends TestCase
                             'name' => 'test_some_metric',
                             'help' => 'this is for testing',
                             'type' => Histogram::TYPE,
-                            'labelNames' => [],
                             'samples' => [
                                 [
                                     'name' => 'test_some_metric_bucket',
@@ -210,7 +208,6 @@ abstract class AbstractHistogramTest extends TestCase
                             'name' => 'test_some_metric',
                             'help' => 'this is for testing',
                             'type' => Histogram::TYPE,
-                            'labelNames' => [],
                             'samples' => [
                                 [
                                     'name' => 'test_some_metric_bucket',
@@ -302,7 +299,6 @@ abstract class AbstractHistogramTest extends TestCase
                             'name' => 'test_some_metric',
                             'help' => 'this is for testing',
                             'type' => Histogram::TYPE,
-                            'labelNames' => [],
                             'samples' => [
                                 [
                                     'name' => 'test_some_metric_bucket',
@@ -487,7 +483,7 @@ abstract class AbstractHistogramTest extends TestCase
 
         foreach ($samples as $sample) {
             $labels = array_combine(
-                array_merge($metric->getLabelNames(), $sample->getLabelNames()),
+                $sample->getLabelNames(),
                 $sample->getLabelValues()
             );
             self::assertIsArray($labels);

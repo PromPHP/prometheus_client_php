@@ -121,7 +121,7 @@ class Redis implements Adapter
         $this->redis->eval(
             <<<LUA
 local cursor = "0"
-repeat 
+repeat
     local results = redis.call('SCAN', cursor, 'MATCH', ARGV[1])
     cursor = results[1]
     for _, key in ipairs(results[2]) do
@@ -213,15 +213,17 @@ LUA
                 break;
             }
         }
-        $metaData = $data;
-        unset($metaData['value'], $metaData['labelValues']);
-
+        $metaData = [];
+        foreach (['name', 'help', 'type'] as $k) {
+            $metaData[$k] = $data[$k];
+        }
         $this->redis->eval(
             <<<LUA
 local result = redis.call('hIncrByFloat', KEYS[1], ARGV[1], ARGV[3])
 redis.call('hIncrBy', KEYS[1], ARGV[2], 1)
 if tonumber(result) >= tonumber(ARGV[3]) then
-    redis.call('hSet', KEYS[1], '__meta', ARGV[4])
+    redis.call('hSet', KEYS[1], ARGV[7], ARGV[4])
+    redis.call('hSet', KEYS[1], ARGV[5], ARGV[6])
     redis.call('sAdd', KEYS[2], KEYS[1])
 end
 return result
@@ -230,10 +232,13 @@ LUA
             [
                 $this->toMetricKey($data),
                 self::$prefix . Histogram::TYPE . self::PROMETHEUS_METRIC_KEYS_SUFFIX,
-                json_encode(['b' => 'sum', 'labelValues' => $data['labelValues']]),
-                json_encode(['b' => $bucketToIncrease, 'labelValues' => $data['labelValues']]),
+                json_encode(['type' => 'bucketEntry', 'b' => 'sum', 'labels' => array_combine($data['labelNames'], $data['labelValues'])]),
+                json_encode(['type' => 'bucketEntry', 'b' => $bucketToIncrease, 'labels' => array_combine($data['labelNames'], $data['labelValues'])]),
                 $data['value'],
                 json_encode($metaData),
+                json_encode(['type' => 'bucketsPerLabels', 'labelNames' => $data['labelNames']]),
+                json_encode($data['buckets']),
+                json_encode(['type' => '__meta'])
             ],
             2
         );
@@ -269,7 +274,7 @@ LUA
                 $this->toMetricKey($data),
                 self::$prefix . Gauge::TYPE . self::PROMETHEUS_METRIC_KEYS_SUFFIX,
                 $this->getRedisCommand($data['command']),
-                json_encode($data['labelValues']),
+                json_encode(array_combine($data['labelNames'], $data['labelValues'])),
                 $data['value'],
                 json_encode($metaData),
             ],
@@ -301,7 +306,7 @@ LUA
                 self::$prefix . Counter::TYPE . self::PROMETHEUS_METRIC_KEYS_SUFFIX,
                 $this->getRedisCommand($data['command']),
                 $data['value'],
-                json_encode($data['labelValues']),
+                json_encode(array_combine($data['labelNames'], $data['labelValues'])),
                 json_encode($metaData),
             ],
             2
@@ -318,56 +323,59 @@ LUA
         $histograms = [];
         foreach ($keys as $key) {
             $raw = $this->redis->hGetAll(str_replace($this->redis->_prefix(''), '', $key));
-            $histogram = json_decode($raw['__meta'], true);
-            unset($raw['__meta']);
-            $histogram['samples'] = [];
+            $histBuckets = [];
+            $bucketsPerLabels = [];
+            $histogram = [];
+            foreach ($raw as $redis_key => $redis_value) {
+                $decodedKey = json_decode($redis_key, true);
+                switch ($decodedKey['type']) {
+                    case '__meta':
+                        $histogram = json_decode($redis_value, true);
+                        $histogram['samples'] = [];
+                        // Add the Inf bucket so we can compute it later on
+                        break;
 
-            // Add the Inf bucket so we can compute it later on
-            $histogram['buckets'][] = '+Inf';
+                    case 'bucketEntry':
+                        $jsonLabelNamesAndVals = json_encode($decodedKey['labels']);
+                        $histBuckets[$jsonLabelNamesAndVals][(string)$decodedKey['b']] = $redis_value;
+                        break;
 
-            $allLabelValues = [];
-            foreach (array_keys($raw) as $k) {
-                $d = json_decode($k, true);
-                if ($d['b'] == 'sum') {
-                    continue;
+                    case 'bucketsPerLabels':
+                        $jsonEncodedLabelNames = json_encode($decodedKey['labelNames']);
+                        $bucketsPerLabels[$jsonEncodedLabelNames] = json_decode($redis_value, true);
+                        $bucketsPerLabels[$jsonEncodedLabelNames][] = '+Inf';
+                        break;
+
+                    default:
+                        break;
                 }
-                $allLabelValues[] = $d['labelValues'];
             }
-
-            // We need set semantics.
-            // This is the equivalent of array_unique but for arrays of arrays.
-            $allLabelValues = array_map("unserialize", array_unique(array_map("serialize", $allLabelValues)));
-            sort($allLabelValues);
-
-            foreach ($allLabelValues as $labelValues) {
+            ksort($histBuckets);
+            foreach ($histBuckets as $jsonLabelNamesAndVals => $buckets_values) {
+                $labelsNamesAndValues = json_decode((string)$jsonLabelNamesAndVals, true);
+                $labelNames = array_keys($labelsNamesAndValues);
+                $labelValues = array_values($labelsNamesAndValues);
+                $jsonEncodedLabelNames = json_encode($labelNames);
                 // Fill up all buckets.
                 // If the bucket doesn't exist fill in values from
                 // the previous one.
                 $acc = 0;
-                foreach ($histogram['buckets'] as $bucket) {
-                    $bucketKey = json_encode(['b' => $bucket, 'labelValues' => $labelValues]);
-                    if (!isset($raw[$bucketKey])) {
-                        $histogram['samples'][] = [
-                            'name' => $histogram['name'] . '_bucket',
-                            'labelNames' => ['le'],
-                            'labelValues' => array_merge($labelValues, [$bucket]),
-                            'value' => $acc,
-                        ];
-                    } else {
-                        $acc += $raw[$bucketKey];
-                        $histogram['samples'][] = [
-                            'name' => $histogram['name'] . '_bucket',
-                            'labelNames' => ['le'],
-                            'labelValues' => array_merge($labelValues, [$bucket]),
-                            'value' => $acc,
-                        ];
+                foreach ($bucketsPerLabels[$jsonEncodedLabelNames] as $bucket) {
+                    if (isset($buckets_values[(string)$bucket])) {
+                        $acc += $buckets_values[(string)$bucket];
                     }
+                    $histogram['samples'][] = [
+                        'name' => $histogram['name'] . '_bucket',
+                        'labelNames' => array_merge($labelNames, ['le']),
+                        'labelValues' => array_merge($labelValues, [$bucket]),
+                        'value' => $acc,
+                    ];
                 }
 
                 // Add the count
                 $histogram['samples'][] = [
                     'name' => $histogram['name'] . '_count',
-                    'labelNames' => [],
+                    'labelNames' => $labelNames,
                     'labelValues' => $labelValues,
                     'value' => $acc,
                 ];
@@ -375,9 +383,9 @@ LUA
                 // Add the sum
                 $histogram['samples'][] = [
                     'name' => $histogram['name'] . '_sum',
-                    'labelNames' => [],
+                    'labelNames' => $labelNames,
                     'labelValues' => $labelValues,
-                    'value' => $raw[json_encode(['b' => 'sum', 'labelValues' => $labelValues])],
+                    'value' => $buckets_values['sum'],
                 ];
             }
             $histograms[] = $histogram;
@@ -399,10 +407,11 @@ LUA
             unset($raw['__meta']);
             $gauge['samples'] = [];
             foreach ($raw as $k => $value) {
+                $labelNamesAndValues = json_decode($k, true);
                 $gauge['samples'][] = [
                     'name' => $gauge['name'],
-                    'labelNames' => [],
-                    'labelValues' => json_decode($k, true),
+                    'labelNames' => array_keys($labelNamesAndValues),
+                    'labelValues' => array_values($labelNamesAndValues),
                     'value' => $value,
                 ];
             }
@@ -428,10 +437,11 @@ LUA
             unset($raw['__meta']);
             $counter['samples'] = [];
             foreach ($raw as $k => $value) {
+                $labelNamesAndValues = json_decode($k, true);
                 $counter['samples'][] = [
                     'name' => $counter['name'],
-                    'labelNames' => [],
-                    'labelValues' => json_decode($k, true),
+                    'labelNames' => array_keys($labelNamesAndValues),
+                    'labelValues' => array_values($labelNamesAndValues),
                     'value' => $value,
                 ];
             }
