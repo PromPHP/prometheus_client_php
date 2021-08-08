@@ -111,5 +111,5 @@ interface RegistryInterface
      * @return Histogram
      * @throws MetricsRegistrationException
      */
-    public function getOrRegisterHistogram(string $namespace, string $name, string $help, array $labels = [], array $buckets = null): Histogram;
+    public function getOrRegisterHistogram(string $namespace, string $name, string $help, array $labels = [], array $buckets = null, ?int $timestamp = null): Histogram;
 }

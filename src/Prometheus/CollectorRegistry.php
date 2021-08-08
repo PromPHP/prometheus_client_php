@@ -206,7 +206,8 @@ class CollectorRegistry implements RegistryInterface
         string $name,
         string $help,
         array $labels = [],
-        array $buckets = null
+        array $buckets = null,
+        ?int $timestamp = null
     ): Histogram {
         $metricIdentifier = self::metricIdentifier($namespace, $name);
         if (isset($this->histograms[$metricIdentifier])) {
@@ -218,7 +219,8 @@ class CollectorRegistry implements RegistryInterface
             $name,
             $help,
             $labels,
-            $buckets
+            $buckets,
+            $timestamp
         );
         return $this->histograms[$metricIdentifier];
     }
@@ -254,12 +256,13 @@ class CollectorRegistry implements RegistryInterface
         string $name,
         string $help,
         array $labels = [],
-        array $buckets = null
+        array $buckets = null,
+        ?int $timestamp = null
     ): Histogram {
         try {
             $histogram = $this->getHistogram($namespace, $name);
         } catch (MetricNotFoundException $e) {
-            $histogram = $this->registerHistogram($namespace, $name, $help, $labels, $buckets);
+            $histogram = $this->registerHistogram($namespace, $name, $help, $labels, $buckets, $timestamp);
         }
         return $histogram;
     }

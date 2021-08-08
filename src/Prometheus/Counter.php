@@ -21,16 +21,16 @@ class Counter extends Collector
     /**
      * @param string[] $labels e.g. ['status', 'opcode']
      */
-    public function inc(array $labels = []): void
+    public function inc(array $labels = [], ?int $timestamp = null): void
     {
-        $this->incBy(1, $labels);
+        $this->incBy(1, $labels, $timestamp);
     }
 
     /**
      * @param int|float $count e.g. 2
      * @param mixed[] $labels e.g. ['status', 'opcode']
      */
-    public function incBy($count, array $labels = []): void
+    public function incBy($count, array $labels = [], ?int $timestamp = null): void
     {
         $this->assertLabelsAreDefinedCorrectly($labels);
 
@@ -41,6 +41,7 @@ class Counter extends Collector
                 'type' => $this->getType(),
                 'labelNames' => $this->getLabelNames(),
                 'labelValues' => $labels,
+                'timestamp'   => $timestamp,
                 'value' => $count,
                 'command' => is_float($count) ? Adapter::COMMAND_INCREMENT_FLOAT : Adapter::COMMAND_INCREMENT_INTEGER,
             ]
