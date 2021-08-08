@@ -27,6 +27,11 @@ class Sample
     private $value;
 
     /**
+     * @var int|null
+     */
+    private $timestamp;
+
+    /**
      * Sample constructor.
      * @param mixed[] $data
      */
@@ -36,6 +41,7 @@ class Sample
         $this->labelNames = (array) $data['labelNames'];
         $this->labelValues = (array) $data['labelValues'];
         $this->value = $data['value'];
+        $this->timestamp = $data['timestamp'];
     }
 
     /**
@@ -68,6 +74,11 @@ class Sample
     public function getValue(): string
     {
         return (string) $this->value;
+    }
+
+    public function getTimestamp(): ?int
+    {
+        return $this->timestamp;
     }
 
     /**

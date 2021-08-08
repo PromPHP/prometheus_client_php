@@ -96,6 +96,7 @@ class InMemory implements Adapter
                             'labelNames' => ['le'],
                             'labelValues' => array_merge($decodedLabelValues, [$bucket]),
                             'value' => $acc,
+                            'timestamp' => null,
                         ];
                     } else {
                         $acc += $histogramBuckets[$labelValues][$bucket];
@@ -104,6 +105,7 @@ class InMemory implements Adapter
                             'labelNames' => ['le'],
                             'labelValues' => array_merge($decodedLabelValues, [$bucket]),
                             'value' => $acc,
+                            'timestamp' => null,
                         ];
                     }
                 }
@@ -114,6 +116,7 @@ class InMemory implements Adapter
                     'labelNames' => [],
                     'labelValues' => $decodedLabelValues,
                     'value' => $acc,
+                    'timestamp' => null,
                 ];
 
                 // Add the sum
@@ -122,6 +125,7 @@ class InMemory implements Adapter
                     'labelNames' => [],
                     'labelValues' => $decodedLabelValues,
                     'value' => $histogramBuckets[$labelValues]['sum'],
+                    'timestamp' => null,
                 ];
             }
             $histograms[] = new MetricFamilySamples($data);
@@ -145,7 +149,7 @@ class InMemory implements Adapter
                 'labelNames' => $metaData['labelNames'],
                 'samples' => [],
             ];
-            foreach ($metric['samples'] as $key => $value) {
+            foreach ($metric['samples'] as $key => [$value, $timestamp]) {
                 $parts = explode(':', $key);
                 $labelValues = $parts[2];
                 $data['samples'][] = [
@@ -153,6 +157,7 @@ class InMemory implements Adapter
                     'labelNames' => [],
                     'labelValues' => $this->decodeLabelValues($labelValues),
                     'value' => $value,
+                    'timestamp' => $timestamp,
                 ];
             }
             $this->sortSamples($data['samples']);
@@ -212,12 +217,15 @@ class InMemory implements Adapter
             ];
         }
         if (array_key_exists($valueKey, $this->gauges[$metaKey]['samples']) === false) {
-            $this->gauges[$metaKey]['samples'][$valueKey] = 0;
+            $this->gauges[$metaKey]['samples'][$valueKey] = [0, $data['timestamp']];
         }
         if ($data['command'] === Adapter::COMMAND_SET) {
-            $this->gauges[$metaKey]['samples'][$valueKey] = $data['value'];
+            $this->gauges[$metaKey]['samples'][$valueKey] = [$data['value'], $data['timestamp']];
         } else {
-            $this->gauges[$metaKey]['samples'][$valueKey] += $data['value'];
+            $this->gauges[$metaKey]['samples'][$valueKey] = [
+                $this->gauges[$metaKey]['samples'][$valueKey][0] + $data['value'],
+                $data['timestamp']
+            ];
         }
     }
 
@@ -235,12 +243,15 @@ class InMemory implements Adapter
             ];
         }
         if (array_key_exists($valueKey, $this->counters[$metaKey]['samples']) === false) {
-            $this->counters[$metaKey]['samples'][$valueKey] = 0;
+            $this->counters[$metaKey]['samples'][$valueKey] = [0, $data['timestamp']];
         }
         if ($data['command'] === Adapter::COMMAND_SET) {
-            $this->counters[$metaKey]['samples'][$valueKey] = 0;
+            $this->counters[$metaKey]['samples'][$valueKey] = [0, $data['timestamp']];
         } else {
-            $this->counters[$metaKey]['samples'][$valueKey] += $data['value'];
+            $this->counters[$metaKey]['samples'][$valueKey] = [
+                $this->counters[$metaKey]['samples'][$valueKey][0] + $data['value'],
+                $data['timestamp']
+            ];
         }
     }
 

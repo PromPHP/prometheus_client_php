@@ -37,11 +37,13 @@ class RenderTextFormat implements RendererInterface
     private function renderSample(MetricFamilySamples $metric, Sample $sample): string
     {
         $labelNames = $metric->getLabelNames();
+        $timestamp = $sample->getTimestamp();
+        $timestampPart = $timestamp === null ? '' : ' ' . $timestamp;
         if ($metric->hasLabelNames() || $sample->hasLabelNames()) {
             $escapedLabels = $this->escapeAllLabels($labelNames, $sample);
-            return $sample->getName() . '{' . implode(',', $escapedLabels) . '} ' . $sample->getValue();
+            return $sample->getName() . '{' . implode(',', $escapedLabels) . '} ' . $sample->getValue() . $timestampPart;
         }
-        return $sample->getName() . ' ' . $sample->getValue();
+        return $sample->getName() . ' ' . $sample->getValue() . $timestampPart;
     }
 
     /**
