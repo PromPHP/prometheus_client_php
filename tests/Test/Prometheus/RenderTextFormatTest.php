@@ -34,9 +34,9 @@ class RenderTextFormatTest extends TestCase
         $registry = new CollectorRegistry(new InMemory(), false);
         $registry->getOrRegisterCounter($namespace, 'counter', 'counter-help-text', ['label1', 'label2'])
                  ->inc(['bob', 'al\ice']);
-        $registry->getOrRegisterGauge($namespace, 'gauge', 'counter-help-text', ['label1', 'label2'])
+        $registry->getOrRegisterGauge($namespace, 'gauge', 'gauge-help-text', ['label1', 'label2'])
                  ->inc(["bo\nb", 'ali\"ce']);
-        $registry->getOrRegisterHistogram($namespace, 'histogram', 'counter-help-text', ['label1', 'label2'], [0, 10, 100])
+        $registry->getOrRegisterHistogram($namespace, 'histogram', 'histogram-help-text', ['label1', 'label2'], [0, 10, 100])
                  ->observe(5, ['bob', 'alice']);
 
         return $registry->getMetricFamilySamples();
@@ -48,10 +48,10 @@ class RenderTextFormatTest extends TestCase
 # HELP mynamespace_counter counter-help-text
 # TYPE mynamespace_counter counter
 mynamespace_counter{label1="bob",label2="al\\\\ice"} 1
-# HELP mynamespace_gauge counter-help-text
+# HELP mynamespace_gauge gauge-help-text
 # TYPE mynamespace_gauge gauge
 mynamespace_gauge{label1="bo\\nb",label2="ali\\\\\"ce"} 1
-# HELP mynamespace_histogram counter-help-text
+# HELP mynamespace_histogram histogram-help-text
 # TYPE mynamespace_histogram histogram
 mynamespace_histogram_bucket{label1="bob",label2="alice",le="0"} 0
 mynamespace_histogram_bucket{label1="bob",label2="alice",le="10"} 1
