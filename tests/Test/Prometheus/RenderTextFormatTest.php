@@ -38,6 +38,8 @@ class RenderTextFormatTest extends TestCase
                  ->inc(["bo\nb", 'ali\"ce']);
         $registry->getOrRegisterHistogram($namespace, 'histogram', 'histogram-help-text', ['label1', 'label2'], [0, 10, 100])
                  ->observe(5, ['bob', 'alice']);
+        $registry->getOrRegisterSummary($namespace, 'summary', 'summary-help-text', ['label1', 'label2'], 60, [0.1, 0.5, 0.9])
+            ->observe(5, ['bob', 'alice']);
 
         return $registry->getMetricFamilySamples();
     }
@@ -59,6 +61,13 @@ mynamespace_histogram_bucket{label1="bob",label2="alice",le="100"} 1
 mynamespace_histogram_bucket{label1="bob",label2="alice",le="+Inf"} 1
 mynamespace_histogram_count{label1="bob",label2="alice"} 1
 mynamespace_histogram_sum{label1="bob",label2="alice"} 5
+# HELP mynamespace_summary summary-help-text
+# TYPE mynamespace_summary summary
+mynamespace_summary{label1="bob",label2="alice",quantile="0.1"} 5
+mynamespace_summary{label1="bob",label2="alice",quantile="0.5"} 5
+mynamespace_summary{label1="bob",label2="alice",quantile="0.9"} 5
+mynamespace_summary_count{label1="bob",label2="alice"} 1
+mynamespace_summary_sum{label1="bob",label2="alice"} 5
 
 TEXTPLAIN;
     }
