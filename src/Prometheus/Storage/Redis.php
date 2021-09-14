@@ -285,7 +285,7 @@ LUA
         if (false === $json) {
             throw new RuntimeException(json_last_error_msg());
         }
-        $this->redis->setnx($metaKey, $json);
+        $this->redis->setNx($metaKey, $json);
 
         // store value key
         $valueKey = $summaryKey . ':' . $this->valueKey($data);
@@ -293,7 +293,7 @@ LUA
         if (false === $json) {
             throw new RuntimeException(json_last_error_msg());
         }
-        $this->redis->setnx($valueKey, $json);
+        $this->redis->setNx($valueKey, $json);
 
         // trick to handle uniqid collision
         $done = false;
