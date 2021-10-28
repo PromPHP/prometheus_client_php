@@ -14,6 +14,8 @@ if ($adapter === 'redis') {
     $adapter = new Prometheus\Storage\Redis();
 } elseif ($adapter === 'apc') {
     $adapter = new Prometheus\Storage\APC();
+} elseif ($adapter === 'apcng') {
+    $adapter = new Prometheus\Storage\APCng();
 } elseif ($adapter === 'in-memory') {
     $adapter = new Prometheus\Storage\InMemory();
 }
