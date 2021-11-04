@@ -103,15 +103,6 @@ $registry = new CollectorRegistry(new APC());
 (see the `README.APCng.md` file for more details)
 
 
-Using the APC or APCng storage:
-```php
-$registry = new CollectorRegistry(new APCng());
- or
-$registry = new CollectorRegistry(new APC());
-```
-(see the `README.APCng.md` file for more details)
-
-
 ### Advanced Usage
 
 #### Advanced Histogram Usage

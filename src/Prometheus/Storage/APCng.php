@@ -253,16 +253,6 @@ class APCng implements Adapter
     }
 
     /**
-     * @deprecated use replacement method wipeStorage from Adapter interface
-     *
-     * @return void
-     */
-    public function flushAPC(): void
-    {
-        $this->wipeStorage();
-    }
-
-    /**
      * Removes all previously stored data from apcu
      *
      * NOTE: This is non-atomic: while it's iterating APCu, another thread could write a new Prometheus key that doesn't get erased.
