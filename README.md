@@ -8,9 +8,9 @@ If using Redis, we recommend running a local Redis instance next to your PHP wor
 ## How does it work?
 
 Usually PHP worker processes don't share any state.
-You can pick from three adapters.
-Redis, APC or an in memory adapter.
-While the first needs a separate binary running, the second just needs the [APC](https://pecl.php.net/package/APCU) extension to be installed. If you don't need persistent metrics between requests (e.g. a long running cron job or script) the in memory adapter might be suitable to use.
+You can pick from four adapters.
+Redis, APC, APCng, or an in-memory adapter.
+While the first needs a separate binary running, the second and third just need the [APC](https://pecl.php.net/package/APCU) extension to be installed. If you don't need persistent metrics between requests (e.g. a long running cron job or script) the in-memory adapter might be suitable to use.
 
 ## Installation
 
@@ -94,6 +94,15 @@ $renderer = new RenderTextFormat();
 $result = $renderer->render($registry->getMetricFamilySamples());
 ```
 
+Using the APC or APCng storage:
+```php
+$registry = new CollectorRegistry(new APCng());
+ or
+$registry = new CollectorRegistry(new APC());
+```
+(see the `README.APCng.md` file for more details)
+
+
 ### Advanced Usage
 
 #### Advanced Histogram Usage
@@ -150,5 +159,19 @@ Pick the adapter you want to test.
 
 ```
 docker-compose run phpunit env ADAPTER=apc vendor/bin/phpunit tests/Test/
+docker-compose run phpunit env ADAPTER=apcng vendor/bin/phpunit tests/Test/
 docker-compose run phpunit env ADAPTER=redis vendor/bin/phpunit tests/Test/
+```
+
+## Performance testing
+
+This currently tests the APC and APCng adapters head-to-head and reports if the APCng adapter is slower for any actions.
+```
+phpunit vendor/bin/phpunit tests/Test/ --group Performance
+```
+
+The test can also be run inside a container.
+```
+docker-compose up
+docker-compose run phpunit vendor/bin/phpunit tests/Test/ --group Performance
 ```
