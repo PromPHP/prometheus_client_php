@@ -176,11 +176,11 @@ EOF
         $body = (string)$metricsResult->getBody();
 
         self::assertThat($body, self::stringContains(<<<EOF
-test_some_summary{type="blue",quantile="0.01"} 1.09
-test_some_summary{type="blue",quantile="0.05"} 1.45
-test_some_summary{type="blue",quantile="0.5"} 5.5
-test_some_summary{type="blue",quantile="0.95"} 9.55
-test_some_summary{type="blue",quantile="0.99"} 9.91
+test_some_summary{type="blue",quantile="0.01"} 1
+test_some_summary{type="blue",quantile="0.05"} 1
+test_some_summary{type="blue",quantile="0.5"} 5
+test_some_summary{type="blue",quantile="0.95"} 10
+test_some_summary{type="blue",quantile="0.99"} 10
 test_some_summary_count{type="blue"} 10
 test_some_summary_sum{type="blue"} 55
 EOF
