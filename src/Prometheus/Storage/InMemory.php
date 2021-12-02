@@ -14,22 +14,22 @@ class InMemory implements Adapter
     /**
      * @var mixed[]
      */
-    private $counters = [];
+    protected $counters = [];
 
     /**
      * @var mixed[]
      */
-    private $gauges = [];
+    protected $gauges = [];
 
     /**
      * @var mixed[]
      */
-    private $histograms = [];
+    protected $histograms = [];
 
     /**
      * @var mixed[]
      */
-    private $summaries = [];
+    protected $summaries = [];
 
     /**
      * @return MetricFamilySamples[]
@@ -65,7 +65,7 @@ class InMemory implements Adapter
     /**
      * @return MetricFamilySamples[]
      */
-    private function collectHistograms(): array
+    protected function collectHistograms(): array
     {
         $histograms = [];
         foreach ($this->histograms as $histogram) {
@@ -140,7 +140,7 @@ class InMemory implements Adapter
     /**
      * @return MetricFamilySamples[]
      */
-    private function collectSummaries(): array
+    protected function collectSummaries(): array
     {
         $math = new Math();
         $summaries = [];
@@ -216,7 +216,7 @@ class InMemory implements Adapter
      * @param mixed[] $metrics
      * @return MetricFamilySamples[]
      */
-    private function internalCollect(array $metrics): array
+    protected function internalCollect(array $metrics): array
     {
         $result = [];
         foreach ($metrics as $metric) {
@@ -358,7 +358,7 @@ class InMemory implements Adapter
      *
      * @return string
      */
-    private function histogramBucketValueKey(array $data, $bucket): string
+    protected function histogramBucketValueKey(array $data, $bucket): string
     {
         return implode(':', [
             $data['type'],
@@ -373,7 +373,7 @@ class InMemory implements Adapter
      *
      * @return string
      */
-    private function metaKey(array $data): string
+    protected function metaKey(array $data): string
     {
         return implode(':', [
             $data['type'],
@@ -387,7 +387,7 @@ class InMemory implements Adapter
      *
      * @return string
      */
-    private function valueKey(array $data): string
+    protected function valueKey(array $data): string
     {
         return implode(':', [
             $data['type'],
@@ -402,7 +402,7 @@ class InMemory implements Adapter
      *
      * @return mixed[]
      */
-    private function metaData(array $data): array
+    protected function metaData(array $data): array
     {
         $metricsMetaData = $data;
         unset($metricsMetaData['value'], $metricsMetaData['command'], $metricsMetaData['labelValues']);
@@ -412,7 +412,7 @@ class InMemory implements Adapter
     /**
      * @param mixed[] $samples
      */
-    private function sortSamples(array &$samples): void
+    protected function sortSamples(array &$samples): void
     {
         usort($samples, function ($a, $b): int {
             return strcmp(implode("", $a['labelValues']), implode("", $b['labelValues']));
@@ -424,7 +424,7 @@ class InMemory implements Adapter
      * @return string
      * @throws RuntimeException
      */
-    private function encodeLabelValues(array $values): string
+    protected function encodeLabelValues(array $values): string
     {
         $json = json_encode($values);
         if (false === $json) {
@@ -438,7 +438,7 @@ class InMemory implements Adapter
      * @return mixed[]
      * @throws RuntimeException
      */
-    private function decodeLabelValues(string $values): array
+    protected function decodeLabelValues(string $values): array
     {
         $json = base64_decode($values, true);
         if (false === $json) {

@@ -32,6 +32,8 @@ jobs:
         run: docker-compose up -d
       - name: Run Blackbox with APC
         run: docker-compose run phpunit env ADAPTER=apc vendor/bin/phpunit tests/Test/
+      - name: Run Blackbox with APCng
+        run: docker-compose run phpunit env ADAPTER=apcng vendor/bin/phpunit tests/Test/
       - name: Run Blackbox with Redis
         run: docker-compose run phpunit env ADAPTER=redis vendor/bin/phpunit tests/Test/
 
