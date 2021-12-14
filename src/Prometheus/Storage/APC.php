@@ -6,6 +6,7 @@ namespace Prometheus\Storage;
 
 use APCUIterator;
 use Prometheus\Exception\StorageException;
+use Prometheus\Math;
 use Prometheus\MetricFamilySamples;
 use RuntimeException;
 
@@ -44,6 +45,7 @@ class APC implements Adapter
         $metrics = $this->collectHistograms();
         $metrics = array_merge($metrics, $this->collectGauges());
         $metrics = array_merge($metrics, $this->collectCounters());
+        $metrics = array_merge($metrics, $this->collectSummaries());
         return $metrics;
     }
 
@@ -83,6 +85,27 @@ class APC implements Adapter
         // Initialize and increment the bucket
         apcu_add($this->histogramBucketValueKey($data, $bucketToIncrease), 0);
         apcu_inc($this->histogramBucketValueKey($data, $bucketToIncrease));
+    }
+
+    /**
+     * @param mixed[] $data
+     */
+    public function updateSummary(array $data): void
+    {
+        // store meta
+        $metaKey = $this->metaKey($data);
+        apcu_add($metaKey, $this->metaData($data));
+
+        // store value key
+        $valueKey = $this->valueKey($data);
+        apcu_add($valueKey, $this->encodeLabelValues($data['labelValues']));
+
+        // trick to handle uniqid collision
+        $done = false;
+        while (!$done) {
+            $sampleKey = $valueKey . ':' . uniqid('', true);
+            $done = apcu_add($sampleKey, $data['value'], $data['maxAgeSeconds']);
+        }
     }
 
     /**
@@ -348,6 +371,75 @@ class APC implements Adapter
             $histograms[] = new MetricFamilySamples($data);
         }
         return $histograms;
+    }
+
+    /**
+     * @return MetricFamilySamples[]
+     */
+    private function collectSummaries(): array
+    {
+        $math = new Math();
+        $summaries = [];
+        foreach (new APCUIterator('/^' . $this->prometheusPrefix . ':summary:.*:meta/') as $summary) {
+            $metaData = $summary['value'];
+            $data = [
+                'name' => $metaData['name'],
+                'help' => $metaData['help'],
+                'type' => $metaData['type'],
+                'labelNames' => $metaData['labelNames'],
+                'maxAgeSeconds' => $metaData['maxAgeSeconds'],
+                'quantiles' => $metaData['quantiles'],
+                'samples' => [],
+            ];
+
+            foreach (new APCUIterator('/^' . $this->prometheusPrefix . ':summary:' . $metaData['name'] . ':.*:value$/') as $value) {
+                $encodedLabelValues = $value['value'];
+                $decodedLabelValues = $this->decodeLabelValues($encodedLabelValues);
+                $samples = [];
+                foreach (new APCUIterator('/^' . $this->prometheusPrefix . ':summary:' . $metaData['name'] . ':' . str_replace('/', '\\/', preg_quote($encodedLabelValues)) . ':value:.*/') as $sample) {
+                    $samples[] = $sample['value'];
+                }
+
+                if (count($samples) === 0) {
+                    apcu_delete($value['key']);
+                    continue;
+                }
+
+                // Compute quantiles
+                sort($samples);
+                foreach ($data['quantiles'] as $quantile) {
+                    $data['samples'][] = [
+                        'name' => $metaData['name'],
+                        'labelNames' => ['quantile'],
+                        'labelValues' => array_merge($decodedLabelValues, [$quantile]),
+                        'value' => $math->quantile($samples, $quantile),
+                    ];
+                }
+
+                // Add the count
+                $data['samples'][] = [
+                    'name' => $metaData['name'] . '_count',
+                    'labelNames' => [],
+                    'labelValues' => $decodedLabelValues,
+                    'value' => count($samples),
+                ];
+
+                // Add the sum
+                $data['samples'][] = [
+                    'name' => $metaData['name'] . '_sum',
+                    'labelNames' => [],
+                    'labelValues' => $decodedLabelValues,
+                    'value' => array_sum($samples),
+                ];
+            }
+
+            if (count($data['samples']) > 0) {
+                $summaries[] = new MetricFamilySamples($data);
+            } else {
+                apcu_delete($summary['key']);
+            }
+        }
+        return $summaries;
     }
 
     /**

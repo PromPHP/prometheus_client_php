@@ -21,7 +21,7 @@ if ($adapter === 'redis') {
 }
 $registry = new CollectorRegistry($adapter);
 
-$histogram = $registry->registerHistogram('test', 'some_histogram', 'it observes', ['type'], [0.1, 1, 2, 3.5, 4, 5, 6, 7, 8, 9]);
-$histogram->observe($_GET['c'], ['blue']);
+$summary = $registry->registerSummary('test', 'some_summary', 'it observes', ['type'], 600, [0.01, 0.05, 0.5, 0.95, 0.99]);
+$summary->observe($_GET['c'], ['blue']);
 
 echo "OK\n";

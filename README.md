@@ -8,9 +8,9 @@ If using Redis, we recommend running a local Redis instance next to your PHP wor
 ## How does it work?
 
 Usually PHP worker processes don't share any state.
-You can pick from three adapters.
-Redis, APC or an in memory adapter.
-While the first needs a separate binary running, the second just needs the [APC](https://pecl.php.net/package/APCU) extension to be installed. If you don't need persistent metrics between requests (e.g. a long running cron job or script) the in memory adapter might be suitable to use.
+You can pick from four adapters.
+Redis, APC, APCng, or an in-memory adapter.
+While the first needs a separate binary running, the second and third just need the [APC](https://pecl.php.net/package/APCU) extension to be installed. If you don't need persistent metrics between requests (e.g. a long running cron job or script) the in-memory adapter might be suitable to use.
 
 ## Installation
 
@@ -41,6 +41,9 @@ $gauge->set(2.5, ['blue']);
 
 $histogram = $registry->getOrRegisterHistogram('test', 'some_histogram', 'it observes', ['type'], [0.1, 1, 2, 3.5, 4, 5, 6, 7, 8, 9]);
 $histogram->observe(3.5, ['blue']);
+
+$summary = $registry->getOrRegisterSummary('test', 'some_summary', 'it observes a sliding window', ['type'], 84600, [0.01, 0.05, 0.5, 0.95, 0.99]);
+$histogram->observe(5, ['blue']);
 ```
 
 Manually register and retrieve metrics (these steps are combined in the `getOrRegister...` methods):
@@ -90,6 +93,15 @@ $counter->incBy(3, ['blue']);
 $renderer = new RenderTextFormat();
 $result = $renderer->render($registry->getMetricFamilySamples());
 ```
+
+Using the APC or APCng storage:
+```php
+$registry = new CollectorRegistry(new APCng());
+ or
+$registry = new CollectorRegistry(new APC());
+```
+(see the `README.APCng.md` file for more details)
+
 
 ### Advanced Usage
 
@@ -147,5 +159,19 @@ Pick the adapter you want to test.
 
 ```
 docker-compose run phpunit env ADAPTER=apc vendor/bin/phpunit tests/Test/
+docker-compose run phpunit env ADAPTER=apcng vendor/bin/phpunit tests/Test/
 docker-compose run phpunit env ADAPTER=redis vendor/bin/phpunit tests/Test/
+```
+
+## Performance testing
+
+This currently tests the APC and APCng adapters head-to-head and reports if the APCng adapter is slower for any actions.
+```
+phpunit vendor/bin/phpunit tests/Test/ --group Performance
+```
+
+The test can also be run inside a container.
+```
+docker-compose up
+docker-compose run phpunit vendor/bin/phpunit tests/Test/ --group Performance
 ```

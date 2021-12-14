@@ -21,4 +21,10 @@
             <directory suffix=".php">./src/Prometheus</directory>
         </whitelist>
     </filter>
+
+    <groups>
+        <exclude>
+            <group>Performance</group>
+        </exclude>
+    </groups>
 </phpunit>
