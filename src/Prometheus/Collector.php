@@ -117,5 +117,8 @@ abstract class Collector
         if (preg_match(self::RE_LABEL_NAME, $label) !== 1) {
             throw new InvalidArgumentException("Invalid label name: '" . $label . "'");
         }
+        else if (strpos($label, "__") === 0) {
+            throw new InvalidArgumentException("Can't used a reserved label name: '" . $label . "'");
+        }
     }
 }

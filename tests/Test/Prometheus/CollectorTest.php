@@ -37,4 +37,10 @@ class CollectorTest extends TestCase
         $this->expectException(\InvalidArgumentException::class);
         $this->registry->getOrRegisterCounter('mynamespace', 'counter', 'counter-help-text', ['label1','label:2']);
     }
+
+    public function testReservedLabelName(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->registry->getOrRegisterCounter('mynamespace', 'counter', 'counter-help-text', ['__reserved']);
+    }
 }
