@@ -418,6 +418,23 @@ EOF
         ];
     }
 
+    /**
+     * @test
+     */
+    public function itShouldWipeTheUnderlyingStorageAdapterWhenInvokingWipeStorageMethod(): void
+    {
+        // Arrange
+        $registry = new CollectorRegistry($this->adapter);
+        $registry->registerCounter("foo", "myCounter", "Help text");
+        $registry->registerGauge("foo", "myGauge", "Help text");
+        $registry->registerHistogram("foo", "myHistogram", "Help text");
+        
+        // Act
+        $registry->wipeStorage();
+        
+        // Assert
+        $this->assertEmpty($registry->getMetricFamilySamples());
+    }
 
     abstract public function configureAdapter(): void;
 }
