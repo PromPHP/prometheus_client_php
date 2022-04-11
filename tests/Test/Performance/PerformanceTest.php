@@ -10,7 +10,6 @@ use PHPUnit\Framework\TestCase;
 
 class PerformanceTest extends TestCase
 {
-
     /* Number of items stored in APC, and number of metrics tracked by Prometheus, respectively */
     const NUM_APC_KEYS = [ 1000, 10 * 1000, 100 * 1000, 1000 * 1000 ];
     const NUM_PROM_METRICS = [ 50, 500, 2500 ];

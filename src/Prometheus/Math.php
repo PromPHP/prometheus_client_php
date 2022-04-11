@@ -6,7 +6,6 @@ namespace Prometheus;
 
 class Math
 {
-
     /**
      * taken from https://www.php.net/manual/fr/function.stats-stat-percentile.php#79752
      * @param float[] $arr must be sorted

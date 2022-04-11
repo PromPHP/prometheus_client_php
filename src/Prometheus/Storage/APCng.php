@@ -246,8 +246,9 @@ class APCng implements Adapter
         if (false === $arr) {
             $arr = [];
         }
-        if (!array_key_exists($item, $arr)) {
-            $arr[$this->encodeLabelKey($item)] = 1;
+        $_item = $this->encodeLabelKey($item);
+        if (!array_key_exists($_item, $arr)) {
+            $arr[$_item] = 1;
             apcu_store($key, $arr);
         }
     }
