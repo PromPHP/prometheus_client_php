@@ -13,7 +13,6 @@ use Prometheus\CollectorRegistry;
  */
 class APCngTest extends TestCase
 {
-
     /**
      * @test
      */
