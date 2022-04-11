@@ -137,7 +137,7 @@ composer require promphp/prometheus_push_gateway_php
 
 Start a Redis instance:
 ```
-docker-compose up Redis
+docker-compose up redis
 ```
 
 Run the tests:
