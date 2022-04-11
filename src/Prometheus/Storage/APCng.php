@@ -388,7 +388,7 @@ class APCng implements Adapter
      * @param array<array> $labelValues
      * @return array<array>
      */
-    private function buildPermutationTree(array $labelNames, array $labelValues): array
+    private function buildPermutationTree(array $labelNames, array $labelValues): array /** @phpstan-ignore-line */
     {
         $treeRowCount = count(array_keys($labelNames));
         $numElements = 1;
@@ -450,7 +450,7 @@ class APCng implements Adapter
      * @param string $type
      * @return array<array>
      */
-    private function getMetas(string $type): array
+    private function getMetas(string $type): array /** @phpstan-ignore-line */
     {
         $arr = [];
         $metaCache = apcu_fetch($this->metainfoCacheKey);
@@ -472,7 +472,7 @@ class APCng implements Adapter
      * @param array<mixed> $metaData
      * @return array<array>
      */
-    private function getValues(string $type, array $metaData): array
+    private function getValues(string $type, array $metaData): array /** @phpstan-ignore-line */
     {
         $labels = $arr = [];
         foreach (array_values($metaData['labelNames']) as $label) {

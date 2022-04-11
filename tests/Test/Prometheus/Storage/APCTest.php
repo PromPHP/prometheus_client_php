@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Prometheus\Storage;
 
-use APCuIterator;
+use APCUIterator;
 use PHPUnit\Framework\TestCase;
 use Prometheus\CollectorRegistry;
 
@@ -28,7 +28,7 @@ class APCTest extends TestCase
         $registry->getOrRegisterHistogram("namespace", "histogram", "histogram help")->observe(1);
         $apc->wipeStorage();
 
-        $cacheEntries = iterator_to_array(new APCuIterator(null), true);
+        $cacheEntries = iterator_to_array(new APCUIterator(null), true);
         $cacheMap     = array_map(function ($item) {
             return $item['value'];
         }, $cacheEntries);

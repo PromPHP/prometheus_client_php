@@ -23,7 +23,7 @@ class TestEngineSpeed
     public function __construct(string $driver, int $num_metrics)
     {
         $this->num_metrics = $num_metrics;
-        $this->driver = new $driver();
+        $this->driver = new $driver();  /** @phpstan-ignore-line */
     }
 
    /**
