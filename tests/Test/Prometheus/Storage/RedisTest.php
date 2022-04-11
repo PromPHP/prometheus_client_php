@@ -46,8 +46,8 @@ class RedisTest extends TestCase
     {
         $connection = new \Redis();
 
-        $this->expectException(StorageException::class);
-        $this->expectExceptionMessage('Connection to Redis server not established');
+        self::expectException(StorageException::class);
+        self::expectExceptionMessage('Connection to Redis server not established');
 
         Redis::fromExistingConnection($connection);
     }
@@ -92,22 +92,22 @@ class RedisTest extends TestCase
 
         $redis->collect();
 
-        $this->assertStringContainsString(
+        self::assertStringContainsString(
             $expectedClientId,
             $this->redisConnection->rawCommand('client', 'list')
         );
-        $this->assertStringNotContainsString(
+        self::assertStringNotContainsString(
             $notExpectedClientId,
             $this->redisConnection->rawCommand('client', 'list')
         );
 
         $redis->collect();
 
-        $this->assertStringContainsString(
+        self::assertStringContainsString(
             $expectedClientId,
             $this->redisConnection->rawCommand('client', 'list')
         );
-        $this->assertStringNotContainsString(
+        self::assertStringNotContainsString(
             $notExpectedClientId,
             $this->redisConnection->rawCommand('client', 'list')
         );
@@ -126,22 +126,22 @@ class RedisTest extends TestCase
 
         $redis->collect();
 
-        $this->assertStringContainsString(
+        self::assertStringContainsString(
             $expectedClientId,
             $this->redisConnection->rawCommand('client', 'list')
         );
-        $this->assertStringNotContainsString(
+        self::assertStringNotContainsString(
             $notExpectedClientId,
             $this->redisConnection->rawCommand('client', 'list')
         );
 
         $redis->collect();
 
-        $this->assertStringContainsString(
+        self::assertStringContainsString(
             $expectedClientId,
             $this->redisConnection->rawCommand('client', 'list')
         );
-        $this->assertStringNotContainsString(
+        self::assertStringNotContainsString(
             $notExpectedClientId,
             $this->redisConnection->rawCommand('client', 'list')
         );
