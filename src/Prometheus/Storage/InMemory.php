@@ -10,7 +10,6 @@ use RuntimeException;
 
 class InMemory implements Adapter
 {
-
     /**
      * @var mixed[]
      */

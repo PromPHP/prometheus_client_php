@@ -9,7 +9,6 @@ use Prometheus\Math;
 
 class MathTest extends TestCase
 {
-
     /**
      * @dataProvider providerQuantileSuccess
      *
