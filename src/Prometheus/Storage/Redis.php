@@ -204,6 +204,8 @@ LUA
         }
 
         $this->redis->setOption(\Redis::OPT_READ_TIMEOUT, $this->options['read_timeout']);
+
+        $this->connectionInitialized = true;
     }
 
     /**

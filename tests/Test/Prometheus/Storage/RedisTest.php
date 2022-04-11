@@ -78,4 +78,72 @@ class RedisTest extends TestCase
             ])
         );
     }
+
+    /**
+     * @test
+     */
+    public function itShouldOnlyConnectOnceOnSubsequentCalls(): void
+    {
+        $clientId = $this->redisConnection->rawCommand('client', 'id');
+        $expectedClientId = 'id=' . ($clientId + 1) . ' ';
+        $notExpectedClientId = 'id=' . ($clientId + 2) . ' ';
+
+        $redis = new Redis(['host' => REDIS_HOST]);
+
+        $redis->collect();
+
+        $this->assertStringContainsString(
+            $expectedClientId,
+            $this->redisConnection->rawCommand('client', 'list')
+        );
+        $this->assertStringNotContainsString(
+            $notExpectedClientId,
+            $this->redisConnection->rawCommand('client', 'list')
+        );
+
+        $redis->collect();
+
+        $this->assertStringContainsString(
+            $expectedClientId,
+            $this->redisConnection->rawCommand('client', 'list')
+        );
+        $this->assertStringNotContainsString(
+            $notExpectedClientId,
+            $this->redisConnection->rawCommand('client', 'list')
+        );
+    }
+
+    /**
+     * @test
+     */
+    public function itShouldOnlyConnectOnceForInjectedRedisConnectionOnSubsequentCalls(): void
+    {
+        $clientId = $this->redisConnection->rawCommand('client', 'id');
+        $expectedClientId = 'id=' . $clientId . ' ';
+        $notExpectedClientId = 'id=' . ($clientId + 1) . ' ';
+
+        $redis = Redis::fromExistingConnection($this->redisConnection);
+
+        $redis->collect();
+
+        $this->assertStringContainsString(
+            $expectedClientId,
+            $this->redisConnection->rawCommand('client', 'list')
+        );
+        $this->assertStringNotContainsString(
+            $notExpectedClientId,
+            $this->redisConnection->rawCommand('client', 'list')
+        );
+
+        $redis->collect();
+
+        $this->assertStringContainsString(
+            $expectedClientId,
+            $this->redisConnection->rawCommand('client', 'list')
+        );
+        $this->assertStringNotContainsString(
+            $notExpectedClientId,
+            $this->redisConnection->rawCommand('client', 'list')
+        );
+    }
 }
