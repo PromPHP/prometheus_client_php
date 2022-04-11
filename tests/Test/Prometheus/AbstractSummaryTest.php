@@ -586,7 +586,6 @@ abstract class AbstractSummaryTest extends TestCase
                 array_merge($metric->getLabelNames(), $sample->getLabelNames()),
                 $sample->getLabelValues()
             );
-            self::assertIsArray($labels);
             self::assertEquals($value, $labels[$label]);
         }
     }

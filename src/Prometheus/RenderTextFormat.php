@@ -54,7 +54,7 @@ class RenderTextFormat implements RendererInterface
     }
 
     /**
-     * @param string[]  $labelNames
+     * @param string[] $labelNames
      * @param Sample $sample
      *
      * @return string[]
@@ -65,12 +65,8 @@ class RenderTextFormat implements RendererInterface
 
         $labels = array_combine(array_merge($labelNames, $sample->getLabelNames()), $sample->getLabelValues());
 
-        if ($labels === false) {
-            return [];
-        }
-
         foreach ($labels as $labelName => $labelValue) {
-            $escapedLabels[] = $labelName . '="' . $this->escapeLabelValue((string) $labelValue) . '"';
+            $escapedLabels[] = $labelName . '="' . $this->escapeLabelValue((string)$labelValue) . '"';
         }
 
         return $escapedLabels;

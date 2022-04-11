@@ -43,7 +43,7 @@ $histogram = $registry->getOrRegisterHistogram('test', 'some_histogram', 'it obs
 $histogram->observe(3.5, ['blue']);
 
 $summary = $registry->getOrRegisterSummary('test', 'some_summary', 'it observes a sliding window', ['type'], 84600, [0.01, 0.05, 0.5, 0.95, 0.99]);
-$histogram->observe(5, ['blue']);
+$summary->observe(5, ['blue']);
 ```
 
 Manually register and retrieve metrics (these steps are combined in the `getOrRegister...` methods):

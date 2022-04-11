@@ -10,7 +10,6 @@ use Prometheus\RenderTextFormat;
 /* No unit test methods exposed here. This class is a utility class instantiated by PerformanceTest */
 class TestEngineSpeed
 {
-
     /** @var \Prometheus\Storage\Adapter */
     private $driver;
 
