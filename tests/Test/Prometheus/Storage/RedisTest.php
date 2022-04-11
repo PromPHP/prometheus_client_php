@@ -13,7 +13,6 @@ use Prometheus\Exception\StorageException;
  */
 class RedisTest extends TestCase
 {
-
     /**
      * @var \Redis
      */

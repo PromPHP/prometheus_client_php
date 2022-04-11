@@ -12,7 +12,6 @@ use Test\Prometheus\AbstractHistogramTest;
  */
 class HistogramTest extends AbstractHistogramTest
 {
-
     public function configureAdapter(): void
     {
         $this->adapter = new InMemory();
