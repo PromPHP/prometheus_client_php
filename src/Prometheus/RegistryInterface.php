@@ -8,6 +8,13 @@ use Prometheus\Exception\MetricsRegistrationException;
 interface RegistryInterface
 {
     /**
+     * Removes all previously stored metrics from underlying storage adapter
+     *
+     * @return void
+     */
+    public function wipeStorage(): void;
+
+    /**
      * @return MetricFamilySamples[]
      */
     public function getMetricFamilySamples(): array;
