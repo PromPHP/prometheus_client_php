@@ -9,7 +9,8 @@ use Prometheus\Storage\Adapter;
 
 abstract class Collector
 {
-    const RE_METRIC_LABEL_NAME = '/^[a-zA-Z_:][a-zA-Z0-9_:]*$/';
+    const RE_METRIC_NAME = '/^[a-zA-Z_:][a-zA-Z0-9_:]*$/';
+    const RE_LABEL_NAME = '/^[a-zA-Z_][a-zA-Z0-9_]*$/';
 
     /**
      * @var Adapter
@@ -103,7 +104,7 @@ abstract class Collector
      */
     public static function assertValidMetricName(string $metricName): void
     {
-        if (preg_match(self::RE_METRIC_LABEL_NAME, $metricName) !== 1) {
+        if (preg_match(self::RE_METRIC_NAME, $metricName) !== 1) {
             throw new InvalidArgumentException("Invalid metric name: '" . $metricName . "'");
         }
     }
@@ -113,8 +114,10 @@ abstract class Collector
      */
     public static function assertValidLabel(string $label): void
     {
-        if (preg_match(self::RE_METRIC_LABEL_NAME, $label) !== 1) {
+        if (preg_match(self::RE_LABEL_NAME, $label) !== 1) {
             throw new InvalidArgumentException("Invalid label name: '" . $label . "'");
+        } else if (strpos($label, "__") === 0) {
+            throw new InvalidArgumentException("Can't used a reserved label name: '" . $label . "'");
         }
     }
 }

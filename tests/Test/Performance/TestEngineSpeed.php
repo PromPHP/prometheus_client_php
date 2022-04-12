@@ -10,7 +10,6 @@ use Prometheus\RenderTextFormat;
 /* No unit test methods exposed here. This class is a utility class instantiated by PerformanceTest */
 class TestEngineSpeed
 {
-
     /** @var \Prometheus\Storage\Adapter */
     private $driver;
 
@@ -24,7 +23,7 @@ class TestEngineSpeed
     public function __construct(string $driver, int $num_metrics)
     {
         $this->num_metrics = $num_metrics;
-        $this->driver = new $driver();
+        $this->driver = new $driver();  /** @phpstan-ignore-line */
     }
 
    /**

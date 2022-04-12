@@ -9,7 +9,6 @@ use Prometheus\Math;
 
 class MathTest extends TestCase
 {
-
     /**
      * @dataProvider providerQuantileSuccess
      *
@@ -26,7 +25,7 @@ class MathTest extends TestCase
     /**
      * @return array[]
      */
-    public function providerQuantileSuccess(): array
+    public function providerQuantileSuccess(): array /** @phpstan-ignore-line */
     {
         return [
             'Even serie' => [[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 0.5, 5],

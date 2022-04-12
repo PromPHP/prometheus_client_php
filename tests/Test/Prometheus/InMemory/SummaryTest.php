@@ -12,7 +12,6 @@ use Test\Prometheus\AbstractSummaryTest;
  */
 class SummaryTest extends AbstractSummaryTest
 {
-
     public function configureAdapter(): void
     {
         $this->adapter = new InMemory();
