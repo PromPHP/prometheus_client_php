@@ -433,7 +433,7 @@ EOF
         $registry->wipeStorage();
 
         // Assert
-        $this->assertEmpty($registry->getMetricFamilySamples());
+        self::assertEmpty($registry->getMetricFamilySamples());
     }
 
     abstract public function configureAdapter(): void;
