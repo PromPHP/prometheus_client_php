@@ -428,10 +428,10 @@ EOF
         $registry->registerCounter("foo", "myCounter", "Help text");
         $registry->registerGauge("foo", "myGauge", "Help text");
         $registry->registerHistogram("foo", "myHistogram", "Help text");
-        
+
         // Act
         $registry->wipeStorage();
-        
+
         // Assert
         $this->assertEmpty($registry->getMetricFamilySamples());
     }

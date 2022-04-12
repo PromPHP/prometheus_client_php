@@ -70,7 +70,7 @@ class CollectorRegistry implements RegistryInterface
 
     /**
      * Removes all previously stored metrics from underlying storage adapter
-     * 
+     *
      * @return void
      */
     public function wipeStorage(): void
