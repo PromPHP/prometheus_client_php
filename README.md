@@ -43,7 +43,7 @@ $histogram = $registry->getOrRegisterHistogram('test', 'some_histogram', 'it obs
 $histogram->observe(3.5, ['blue']);
 
 $summary = $registry->getOrRegisterSummary('test', 'some_summary', 'it observes a sliding window', ['type'], 84600, [0.01, 0.05, 0.5, 0.95, 0.99]);
-$histogram->observe(5, ['blue']);
+$summary->observe(5, ['blue']);
 ```
 
 Manually register and retrieve metrics (these steps are combined in the `getOrRegister...` methods):
@@ -129,7 +129,7 @@ composer require promphp/prometheus_push_gateway_php
 
 ### Dependencies
 
-* PHP ^7.2
+* PHP ^7.2 | ^8.0
 * PHP Redis extension
 * PHP APCu extension
 * [Composer](https://getcomposer.org/doc/00-intro.md#installation-linux-unix-osx)
@@ -137,7 +137,7 @@ composer require promphp/prometheus_push_gateway_php
 
 Start a Redis instance:
 ```
-docker-compose up Redis
+docker-compose up redis
 ```
 
 Run the tests:

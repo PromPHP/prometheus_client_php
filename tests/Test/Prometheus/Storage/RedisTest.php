@@ -13,7 +13,6 @@ use Prometheus\Exception\StorageException;
  */
 class RedisTest extends TestCase
 {
-
     /**
      * @var \Redis
      */
@@ -47,8 +46,8 @@ class RedisTest extends TestCase
     {
         $connection = new \Redis();
 
-        $this->expectException(StorageException::class);
-        $this->expectExceptionMessage('Connection to Redis server not established');
+        self::expectException(StorageException::class);
+        self::expectExceptionMessage('Connection to Redis server not established');
 
         Redis::fromExistingConnection($connection);
     }
@@ -77,6 +76,74 @@ class RedisTest extends TestCase
             self::equalTo([
                 'not a prometheus metric key'
             ])
+        );
+    }
+
+    /**
+     * @test
+     */
+    public function itShouldOnlyConnectOnceOnSubsequentCalls(): void
+    {
+        $clientId = $this->redisConnection->rawCommand('client', 'id');
+        $expectedClientId = 'id=' . ($clientId + 1) . ' ';
+        $notExpectedClientId = 'id=' . ($clientId + 2) . ' ';
+
+        $redis = new Redis(['host' => REDIS_HOST]);
+
+        $redis->collect();
+
+        self::assertStringContainsString(
+            $expectedClientId,
+            $this->redisConnection->rawCommand('client', 'list')
+        );
+        self::assertStringNotContainsString(
+            $notExpectedClientId,
+            $this->redisConnection->rawCommand('client', 'list')
+        );
+
+        $redis->collect();
+
+        self::assertStringContainsString(
+            $expectedClientId,
+            $this->redisConnection->rawCommand('client', 'list')
+        );
+        self::assertStringNotContainsString(
+            $notExpectedClientId,
+            $this->redisConnection->rawCommand('client', 'list')
+        );
+    }
+
+    /**
+     * @test
+     */
+    public function itShouldOnlyConnectOnceForInjectedRedisConnectionOnSubsequentCalls(): void
+    {
+        $clientId = $this->redisConnection->rawCommand('client', 'id');
+        $expectedClientId = 'id=' . $clientId . ' ';
+        $notExpectedClientId = 'id=' . ($clientId + 1) . ' ';
+
+        $redis = Redis::fromExistingConnection($this->redisConnection);
+
+        $redis->collect();
+
+        self::assertStringContainsString(
+            $expectedClientId,
+            $this->redisConnection->rawCommand('client', 'list')
+        );
+        self::assertStringNotContainsString(
+            $notExpectedClientId,
+            $this->redisConnection->rawCommand('client', 'list')
+        );
+
+        $redis->collect();
+
+        self::assertStringContainsString(
+            $expectedClientId,
+            $this->redisConnection->rawCommand('client', 'list')
+        );
+        self::assertStringNotContainsString(
+            $notExpectedClientId,
+            $this->redisConnection->rawCommand('client', 'list')
         );
     }
 }
