@@ -157,17 +157,17 @@ class APC implements Adapter
 
     public function initHistogram(array $data): void
     {
-        // TODO: Implement initHistogram() method.
+        throw new \RuntimeException('APC driver currently doesn\'t support this feature');
     }
 
     public function initGauge(array $data): void
     {
-        // TODO: Implement initGauge() method.
+        throw new \RuntimeException('APC driver currently doesn\'t support this feature');
     }
 
     public function initCounter(array $data): void
     {
-        // TODO: Implement initCounter() method.
+        throw new \RuntimeException('APC driver currently doesn\'t support this feature');
     }
 
     /**
