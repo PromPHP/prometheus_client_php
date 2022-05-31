@@ -644,7 +644,7 @@ LUA
 
     /**
      * @param string $pattern
-     * @return array
+     * @return mixed[]
      */
     private function getRedisKeys(string $pattern): array
     {
@@ -653,7 +653,7 @@ LUA
 
         $cursor = null;
         $result = [];
-        if($optScan === \Redis::SCAN_RETRY) {
+        if ($optScan === \Redis::SCAN_RETRY) {
             while ($tmpKeys = $this->redis->scan($cursor, $prefix . $pattern)) {
                 $result = array_merge($result, $tmpKeys);
             }
