@@ -485,7 +485,7 @@ LUA
     {
         $math = new Math();
         $summaryKey = self::$prefix . Summary::TYPE . self::PROMETHEUS_METRIC_KEYS_SUFFIX;
-        $keys = $this->getRedisKeys($summaryKey . ':*:meta');
+        $keys = $this->redis->keys($summaryKey . ':*:meta');
 
         $summaries = [];
         foreach ($keys as $metaKeyWithPrefix) {
@@ -506,7 +506,7 @@ LUA
                 'samples' => [],
             ];
 
-            $values = $this->getRedisKeys($summaryKey . ':' . $metaData['name'] . ':*:value');
+            $values = $this->redis->keys($summaryKey . ':' . $metaData['name'] . ':*:value');
             foreach ($values as $valueKeyWithPrefix) {
                 $valueKey = $this->removePrefixFromKey($valueKeyWithPrefix);
                 $rawValue = $this->redis->get($valueKey);
@@ -518,7 +518,7 @@ LUA
                 $decodedLabelValues = $this->decodeLabelValues($encodedLabelValues);
 
                 $samples = [];
-                $sampleValues = $this->getRedisKeys($summaryKey . ':' . $metaData['name'] . ':' . $encodedLabelValues . ':value:*');
+                $sampleValues = $this->redis->keys($summaryKey . ':' . $metaData['name'] . ':' . $encodedLabelValues . ':value:*');
                 foreach ($sampleValues as $sampleValueWithPrefix) {
                     $sampleValue = $this->removePrefixFromKey($sampleValueWithPrefix);
                     $samples[] = (float) $this->redis->get($sampleValue);
@@ -640,31 +640,6 @@ LUA
             default:
                 throw new InvalidArgumentException("Unknown command");
         }
-    }
-
-    /**
-     * @param string $pattern
-     * @return mixed[]
-     */
-    private function getRedisKeys(string $pattern): array
-    {
-        $prefix = $this->redis->getOption(\Redis::OPT_PREFIX);
-        $optScan = $this->redis->getOption(\Redis::OPT_SCAN);
-
-        $cursor = null;
-        $result = [];
-        if ($optScan === \Redis::SCAN_RETRY) {
-            while ($tmpKeys = $this->redis->scan($cursor, $prefix . $pattern)) {
-                $result = array_merge($result, $tmpKeys);
-            }
-        } else {
-            do {
-                $tmpKeys = $this->redis->scan($cursor, $prefix . $pattern);
-                $result = is_array($tmpKeys) ? array_merge($result, $tmpKeys) : $result;
-            } while ($cursor > 0);
-        }
-
-        return $result;
     }
 
     /**
