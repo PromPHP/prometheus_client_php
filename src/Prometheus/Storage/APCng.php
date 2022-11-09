@@ -18,13 +18,14 @@ class APCng implements Adapter
     /** @var int Number of retries before we give on apcu_cas(). This can prevent an infinite-loop if we fill up APCu. */
     const CAS_LOOP_RETRIES = 2000;
 
-    /** @var int Number of seconds for cache object to live in APCu. When new metrics are created by other threads, this is the maximum delay until they are discovered.
-                 Setting this to a value less than 1 will disable the cache, which will negatively impact performance when making multiple collect*() function-calls.
-                 If more than a few thousand metrics are being tracked, disabling cache will be faster, due to apcu_store/fetch serialization being slow. */
-    private $metainfoCacheTTL = 1;
-
     /** @var string APCu key where array of all discovered+created metainfo keys is stored */
     private $metainfoCacheKey;
+
+    /** @var string APCu key where count of all added metainfo keys is stored */
+    private $metaInfoCounterKey;
+
+    /** @var string APCu key pattern where array of all added metainfo keys is stored */
+    private $metaInfoCountedMetricKeyPattern;
 
     /** @var string Prefix to use for APCu keys. */
     private $prometheusPrefix;
@@ -47,6 +48,8 @@ class APCng implements Adapter
 
         $this->prometheusPrefix = $prometheusPrefix;
         $this->metainfoCacheKey = implode(':', [ $this->prometheusPrefix, 'metainfocache' ]);
+        $this->metaInfoCounterKey = implode(':', [ $this->prometheusPrefix, 'metainfocounter' ]);
+        $this->metaInfoCountedMetricKeyPattern = implode(':', [ $this->prometheusPrefix, 'metainfocountedmetric_#COUNTER#' ]);
     }
 
     /**
@@ -79,7 +82,7 @@ class APCng implements Adapter
             } else {
                 // If sum does not exist, initialize it, store the metadata for the new histogram
                 apcu_add($sumKey, $this->toBinaryRepresentationAsInteger(0));
-                apcu_store($this->metaKey($data), json_encode($this->metaData($data)));
+                $this->storeMetadata($data);
                 $this->storeLabelKeys($data);
             }
         }
@@ -120,7 +123,7 @@ class APCng implements Adapter
         $valueKey = $this->valueKey($data);
         $new = apcu_add($valueKey, $this->encodeLabelValues($data['labelValues']));
         if ($new) {
-            apcu_add($this->metaKey($data), $this->metaData($data));
+            $this->storeMetadata($data, false);
             $this->storeLabelKeys($data);
         }
         $sampleKeyPrefix = $valueKey . ':' . time();
@@ -156,7 +159,7 @@ class APCng implements Adapter
         $valueKey = $this->valueKey($data);
         if ($data['command'] === Adapter::COMMAND_SET) {
             apcu_store($valueKey, $this->toBinaryRepresentationAsInteger($data['value']));
-            apcu_store($this->metaKey($data), json_encode($this->metaData($data)));
+            $this->storeMetadata($data);
             $this->storeLabelKeys($data);
         } else {
             // Taken from https://github.com/prometheus/client_golang/blob/66058aac3a83021948e5fb12f1f408ff556b9037/prometheus/value.go#L91
@@ -168,7 +171,7 @@ class APCng implements Adapter
                     $done = apcu_cas($valueKey, $old, $this->toBinaryRepresentationAsInteger($this->fromBinaryRepresentationAsInteger($old) + $data['value']));
                 } else {
                     apcu_add($valueKey, $this->toBinaryRepresentationAsInteger(0));
-                    apcu_store($this->metaKey($data), json_encode($this->metaData($data)));
+                    $this->storeMetadata($data);
                     $this->storeLabelKeys($data);
                 }
             }
@@ -194,7 +197,7 @@ class APCng implements Adapter
                 $done = apcu_cas($valueKey, $old, $this->toBinaryRepresentationAsInteger($this->fromBinaryRepresentationAsInteger($old) + $data['value']));
             } else {
                 apcu_add($valueKey, 0);
-                apcu_store($this->metaKey($data), json_encode($this->metaData($data)));
+                $this->storeMetadata($data);
                 $this->storeLabelKeys($data);
             }
         }
@@ -273,17 +276,9 @@ class APCng implements Adapter
         foreach (new APCUIterator($matchAll) as $key => $value) {
             apcu_delete($key);
         }
-    }
 
-    /**
-     * Sets the metainfo cache TTL; how long to retain metainfo before scanning APCu keyspace again (default 1 second)
-     *
-     * @param int $ttl
-     * @return void
-     */
-    public function setMetainfoTTL(int $ttl): void
-    {
-        $this->metainfoCacheTTL = $ttl;
+        apcu_delete($this->metaInfoCounterKey);
+        apcu_delete($this->metainfoCacheKey);
     }
 
     /**
@@ -302,16 +297,19 @@ class APCng implements Adapter
      * @param int $apc_ttl
      * @return array<string>
      */
-    private function scanAndBuildMetainfoCache(int $apc_ttl = 1): array
+    private function scanAndBuildMetainfoCache(): array
     {
         $arr = [];
-        $matchAllMeta = sprintf('/^%s:.*:meta/', $this->prometheusPrefix);
-        foreach (new APCUIterator($matchAllMeta) as $apc_record) {
-            $arr[] = $apc_record['key'];
+
+        $counter = (int) apcu_fetch($this->metaInfoCounterKey);
+
+        for ($i = 1; $i <= $counter; $i++) {
+            $metaCounterKey = $this->metaCounterKey($i);
+            $arr[] = apcu_fetch($metaCounterKey);
         }
-        if ($apc_ttl >= 1) {
-            apcu_store($this->metainfoCacheKey, $arr, $apc_ttl);
-        }
+
+        apcu_store($this->metainfoCacheKey, $arr);
+
         return $arr;
     }
 
@@ -453,10 +451,31 @@ class APCng implements Adapter
     private function getMetas(string $type): array /** @phpstan-ignore-line */
     {
         $arr = [];
-        $metaCache = apcu_fetch($this->metainfoCacheKey);
-        if (!is_array($metaCache)) {
-            $metaCache = $this->scanAndBuildMetainfoCache($this->metainfoCacheTTL);
+        $counterModified = 0;
+        $counterModifiedInfo = apcu_key_info($this->metaInfoCounterKey);
+
+        if ($counterModifiedInfo !== null) {
+            $counterModified = (int) $counterModifiedInfo['mtime'];
         }
+
+        $cacheModified = 0;
+        $cacheModifiedInfo = apcu_key_info($this->metainfoCacheKey);
+
+        if ($cacheModifiedInfo !== null) {
+            $cacheModified = (int) $cacheModifiedInfo['mtime'];
+        }
+
+        $metaCache = null;
+
+        if ($counterModified >= $cacheModified || $cacheModified === 0) {
+            $metaCache = $this->scanAndBuildMetainfoCache();
+        }
+
+
+        if ($metaCache === null) {
+            $metaCache = apcu_fetch($this->metainfoCacheKey);
+        }
+
         foreach ($metaCache as $metaKey) {
             if ((1 === preg_match('/' . $this->prometheusPrefix . ':' . $type . ':.*:meta/', $metaKey)) && false !== ($gauge = apcu_fetch($metaKey))) {
                 $arr[] = [ 'key' => $metaKey, 'value' => $gauge ];
@@ -800,5 +819,33 @@ class APCng implements Adapter
             throw new RuntimeException('Cannot base64 decode label key');
         }
         return $decodedKey;
+    }
+
+    private function storeMetadata(array $data, bool $encoded = true): void
+    {
+        $metaKey = $this->metaKey($data);
+        $metaData = $this->metaData($data);
+        $toStore = $metaData;
+
+        if ($encoded) {
+            $toStore = json_encode($metaData);
+        }
+
+        $stored = apcu_add($metaKey, $toStore);
+
+        if (!$stored) {
+            return;
+        }
+
+        apcu_add($this->metaInfoCounterKey, 0);
+        $counter = apcu_inc($this->metaInfoCounterKey);
+
+        $newCountedMetricKey = $this->metaCounterKey($counter);
+        apcu_store($newCountedMetricKey, $metaKey);
+    }
+
+    private function metaCounterKey(int $counter): string
+    {
+        return str_replace('#COUNTER#', (string) $counter, $this->metaInfoCountedMetricKeyPattern);
     }
 }
