@@ -71,29 +71,27 @@ class APCngTest extends TestCase
 
     /**
      * @test
-     * Ensure orphaned items added after the metainfo cache has been created get "picked up" and stored
-     * in the metainfo cache. Ensure the TTL is honored (off-by-one errors in APCu TTL handling notwithstanding).
+     * Test that orphaned items added after the metainfo cache has been created get "picked up" and stored
+     * in the metainfo cache.
      */
-    public function itShouldHonorMetainfoCacheTTL(): void
+    public function itShouldNotNeedToHaveTTLForMetaInfoCache(): void
     {
-        $ttl = 1; // 1-second TTL
-
         $apc = new APCng();
-        $apc->setMetainfoTTL($ttl);
         $registry = $this->metainfoCacheTestPartOne($apc);
 
         $metrics = $apc->collect();
         $metricHelpStrings = array_map(function ($item): string {
             return $item->getHelp();
         }, $metrics);
+
+        // all metrics are available after each collect() call
         self::assertContains('gauge help', $metricHelpStrings);
-        self::assertNotContains('counter help', $metricHelpStrings);
+        self::assertContains('counter help', $metricHelpStrings);
         self::assertContains('histogram help', $metricHelpStrings);
         self::assertContains('summary help', $metricHelpStrings);
 
         // Let the TTL expire, the hidden metric will appear. Increment counter before & after cache expiry to prove all inc() calls were processed
         $registry->getOrRegisterCounter("namespace", "counter", "counter help")->incBy(3);
-        sleep($ttl + 1); // APCu needs one extra second. Off-by-one error somewhere?
         $registry->getOrRegisterCounter("namespace", "counter", "counter help")->incBy(5);
         $metrics = $apc->collect();
         foreach ($metrics as $metric) {
@@ -101,29 +99,6 @@ class APCngTest extends TestCase
                 self::assertEquals(9, $metric->getSamples()[0]->getValue());
             }
         }
-        $metricHelpStrings = array_map(function ($item): string {
-            return $item->getHelp();
-        }, $metrics);
-        self::assertContains('gauge help', $metricHelpStrings);
-        self::assertContains('counter help', $metricHelpStrings);
-        self::assertContains('histogram help', $metricHelpStrings);
-        self::assertContains('summary help', $metricHelpStrings);
-    }
-
-    /**
-     * @test
-     */
-    public function itShouldHonorZeroMetainfoCacheTTL(): void
-    {
-        $this->metainfoCacheDisabledTest(0); // cache disabled
-    }
-
-    /**
-     * @test
-     */
-    public function itShouldHandleNegativeMetainfoCacheTTLAsZero(): void
-    {
-        $this->metainfoCacheDisabledTest(-1);
     }
 
     /* Helper function for metainfo cache testing, reduces copypaste */
@@ -147,21 +122,5 @@ class APCngTest extends TestCase
 
         $registry->getOrRegisterCounter("namespace", "counter", "counter help")->inc();
         return $registry;
-    }
-
-    /* Helper function for metainfo cache-disabled results testing, reduces more copypaste when only $ttl is changing */
-    private function metainfoCacheDisabledTest(int $ttl): void
-    {
-        $apc = new APCng();
-        $apc->setMetainfoTTL($ttl);
-        $this->metainfoCacheTestPartOne($apc);
-        $metrics = $apc->collect();
-        $metricHelpStrings = array_map(function ($item): string {
-            return $item->getHelp();
-        }, $metrics);
-        self::assertContains('gauge help', $metricHelpStrings);
-        self::assertContains('counter help', $metricHelpStrings);
-        self::assertContains('histogram help', $metricHelpStrings);
-        self::assertContains('summary help', $metricHelpStrings);
     }
 }
