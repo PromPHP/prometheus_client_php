@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Prometheus\Storage;
 
-use APCUIterator;
+use APCuIterator;
 use Prometheus\Exception\StorageException;
 use Prometheus\Math;
 use Prometheus\MetricFamilySamples;
@@ -17,11 +17,6 @@ class APCng implements Adapter
     const PROMETHEUS_PREFIX = 'prom';
 
     private const MAX_LOOPS = 10;
-
-    /**
-     * @var int
-     */
-    private $decimalPrecision;
 
     /**
      * @var int
@@ -72,7 +67,6 @@ class APCng implements Adapter
             );
         }
 
-        $this->decimalPrecision = $decimalPrecision;
         $this->precisionMultiplier = 10 ** $decimalPrecision;
     }
 
@@ -239,7 +233,7 @@ class APCng implements Adapter
                 $data['name'],
                 $label,
                 'label'
-            ]), (string) isset($data['labelValues']) ? $data['labelValues'][$seq] : ''); // may not need the isset check
+            ]), isset($data['labelValues']) ? $data['labelValues'][$seq] : ''); // may not need the isset check
         }
     }
 
@@ -280,7 +274,7 @@ class APCng implements Adapter
         //                        .+  | at least one additional character
         $matchAll = sprintf('/^%s:.+/', $this->prometheusPrefix);
 
-        foreach (new APCUIterator($matchAll, APC_ITER_KEY) as $key) {
+        foreach (new APCuIterator($matchAll, APC_ITER_KEY) as $key) {
             apcu_delete($key);
         }
 
@@ -332,7 +326,7 @@ class APCng implements Adapter
             /** @var array<mixed>|false $metaInfo */
             $metaInfo = apcu_fetch($metaKey);
 
-            if (!$metaInfo) {
+            if ($metaInfo === false) {
                 throw new UnexpectedValueException(
                     sprintf('Meta info missing for meta key: %s', $metaKey)
                 );
@@ -502,7 +496,7 @@ class APCng implements Adapter
         $metaCache = null;
 
         if (isset($this->metaCache[$type]) && !$cacheNeedsRebuild) {
-            return $this->metaCache[$type] ?? [];
+            return $this->metaCache[$type];
         }
 
         if ($cacheNeedsRebuild) {
@@ -757,6 +751,9 @@ class APCng implements Adapter
         return $summaries;
     }
 
+    /**
+     * @param int|float $val
+     */
     private function incrementKeyWithValue(string $key, $val): void
     {
         $converted = $this->convertToIncrementalInteger($val);
@@ -775,13 +772,16 @@ class APCng implements Adapter
         do {
             $loops++;
             $success = apcu_inc($key, $val);
-        } while (!$success && $loops <= self::MAX_LOOPS);
+        } while ($success === false && $loops <= self::MAX_LOOPS); /** @phpstan-ignore-line */
 
-        if (!$success) {
+        if ($success === false) { /** @phpstan-ignore-line */
             throw new RuntimeException('Caught possible infinite loop in ' . __METHOD__ . '()');
         }
     }
 
+    /**
+     * @param int|float $val
+     */
     private function decrementKeyWithValue(string $key, $val): void
     {
         if ($val === 0 || $val === 0.0) {
@@ -794,9 +794,9 @@ class APCng implements Adapter
         do {
             $loops++;
             $success = apcu_dec($key, $converted);
-        } while (!$success && $loops <= self::MAX_LOOPS);
+        } while ($success === false && $loops <= self::MAX_LOOPS); /** @phpstan-ignore-line */
 
-        if (!$success) {
+        if ($success === false) { /** @phpstan-ignore-line */
             throw new RuntimeException('Caught possible infinite loop in ' . __METHOD__ . '()');
         }
     }
@@ -879,6 +879,9 @@ class APCng implements Adapter
         return $decodedKey;
     }
 
+    /**
+     * @param mixed[] $data
+     */
     private function storeMetadata(array $data, bool $encoded = true): void
     {
         $metaKey = $this->metaKey($data);

@@ -9,6 +9,10 @@ use PHPUnit\Framework\Constraint\IsEqual;
 
 trait AlmostIdenticalFloatArraysAssertionTrait
 {
+    /**
+     * @param mixed $expected
+     * @param mixed $actual
+     */
     public static function assertIsAlmostEqual($expected, $actual): void
     {
         $constraint = self::almostEqualTo($expected);
@@ -16,6 +20,9 @@ trait AlmostIdenticalFloatArraysAssertionTrait
         Assert::assertThat($actual, $constraint);
     }
 
+    /**
+     * @param mixed $expected
+     */
     public static function almostEqualTo($expected): IsEqual
     {
         return new IsEqual($expected, 0.000001);

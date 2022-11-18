@@ -489,6 +489,7 @@ abstract class AbstractHistogramTest extends TestCase
         self::assertContainsOnlyInstancesOf(Sample::class, $samples);
 
         foreach ($samples as $sample) {
+            /** @var array<string, mixed> $labels */
             $labels = array_combine(
                 array_merge($metric->getLabelNames(), $sample->getLabelNames()),
                 $sample->getLabelValues()
