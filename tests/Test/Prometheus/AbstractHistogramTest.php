@@ -10,12 +10,15 @@ use Prometheus\Histogram;
 use Prometheus\MetricFamilySamples;
 use Prometheus\Sample;
 use Prometheus\Storage\Adapter;
+use Test\Prometheus\Helper\AlmostIdenticalFloatArraysAssertionTrait;
 
 /**
  * See https://prometheus.io/docs/instrumenting/exposition_formats/
  */
 abstract class AbstractHistogramTest extends TestCase
 {
+    use AlmostIdenticalFloatArraysAssertionTrait;
+
     /**
      * @var Adapter
      */
@@ -522,7 +525,7 @@ abstract class AbstractHistogramTest extends TestCase
             9.7309753417969,
         ];
 
-        self::assertEquals($generatedBuckets, $expectedBuckets);
+        self::assertIsAlmostEqual($generatedBuckets, $expectedBuckets);
     }
 
     /**
