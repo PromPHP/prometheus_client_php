@@ -67,6 +67,7 @@ class RenderTextFormat implements RendererInterface
 
         $labels = array_combine(array_merge($labelNames, $sample->getLabelNames()), $sample->getLabelValues());
 
+        /** @phpstan-ignore-next-line */
         if ($labels === false) {
             throw new RuntimeException('Unable to combine labels.');
         }

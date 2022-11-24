@@ -96,7 +96,7 @@ class APCng implements Adapter
 
         if ($old === false) {
             // If sum does not exist, initialize it, store the metadata for the new histogram
-            apcu_add($sumKey, 0);
+            apcu_add($sumKey, 0, 0);
             $this->storeMetadata($data);
             $this->storeLabelKeys($data);
         }
@@ -134,7 +134,7 @@ class APCng implements Adapter
     {
         // store value key; store metadata & labels if new
         $valueKey = $this->valueKey($data);
-        $new = apcu_add($valueKey, $this->encodeLabelValues($data['labelValues']));
+        $new = apcu_add($valueKey, $this->encodeLabelValues($data['labelValues']), 0);
         if ($new) {
             $this->storeMetadata($data, false);
             $this->storeLabelKeys($data);
@@ -167,7 +167,7 @@ class APCng implements Adapter
     {
         $valueKey = $this->valueKey($data);
         if ($data['command'] === Adapter::COMMAND_SET) {
-            apcu_store($valueKey, $this->convertToIncrementalInteger($data['value']));
+            apcu_store($valueKey, $this->convertToIncrementalInteger($data['value']), 0);
             $this->storeMetadata($data);
             $this->storeLabelKeys($data);
 
@@ -177,7 +177,7 @@ class APCng implements Adapter
         $old = apcu_fetch($valueKey);
 
         if ($old === false) {
-            apcu_add($valueKey, 0);
+            apcu_add($valueKey, 0, 0);
             $this->storeMetadata($data);
             $this->storeLabelKeys($data);
         }
@@ -199,7 +199,7 @@ class APCng implements Adapter
         $old = apcu_fetch($valueKey);
 
         if ($old === false) {
-            apcu_add($valueKey, 0);
+            apcu_add($valueKey, 0, 0);
             $this->storeMetadata($data);
             $this->storeLabelKeys($data);
         }
@@ -253,7 +253,7 @@ class APCng implements Adapter
         $_item = $this->encodeLabelKey($item);
         if (!array_key_exists($_item, $arr)) {
             $arr[$_item] = 1;
-            apcu_store($key, $arr);
+            apcu_store($key, $arr, 0);
         }
     }
 
@@ -335,7 +335,7 @@ class APCng implements Adapter
             $arr[$type][] = ['key' => $metaKey, 'value' => $metaInfo];
         }
 
-        apcu_store($this->metainfoCacheKey, $arr);
+        apcu_store($this->metainfoCacheKey, $arr, 0);
 
         return $arr;
     }
@@ -892,17 +892,17 @@ class APCng implements Adapter
             $toStore = json_encode($metaData);
         }
 
-        $stored = apcu_add($metaKey, $toStore);
+        $stored = apcu_add($metaKey, $toStore, 0);
 
         if (!$stored) {
             return;
         }
 
-        apcu_add($this->metaInfoCounterKey, 0);
+        apcu_add($this->metaInfoCounterKey, 0, 0);
         $counter = apcu_inc($this->metaInfoCounterKey);
 
         $newCountedMetricKey = $this->metaCounterKey($counter);
-        apcu_store($newCountedMetricKey, $metaKey);
+        apcu_store($newCountedMetricKey, $metaKey, 0);
     }
 
     private function metaCounterKey(int $counter): string
