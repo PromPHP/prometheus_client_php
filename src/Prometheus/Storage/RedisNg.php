@@ -296,6 +296,7 @@ LUA
 
         // store value key
         $valueKey = $summaryKey . ':' . $this->valueKey($data);
+
         $json = json_encode($this->encodeLabelValues($data['labelValues']));
         if (false === $json) {
             throw new RuntimeException(json_last_error_msg());
@@ -308,7 +309,9 @@ LUA
         while (!$done) {
             $sampleKey = $valueKey . ':' . uniqid('', true);
             $done = $this->redis->set($sampleKey, $data['value'], ['NX', 'EX' => $data['maxAgeSeconds']]);
+            $this->redis->sAdd($summaryKey . ':' . $data["name"] . ":value:keys", $sampleKey);
         }
+
     }
 
     /**
@@ -491,7 +494,6 @@ LUA
     {
         $math = new Math();
         $summaryKeyIndexKey = self::$prefix . Summary::TYPE . self::PROMETHEUS_METRIC_KEYS_SUFFIX . ":keys";
-        $summaryKey = self::$prefix . Summary::TYPE . self::PROMETHEUS_METRIC_KEYS_SUFFIX;
 
         $keys = $this->redis->sMembers($summaryKeyIndexKey);
         //$keys = $this->redis->keys($summaryKey . ':*:meta');
@@ -499,7 +501,6 @@ LUA
         foreach ($keys as $key) {
             $metaKey = $this->removePrefixFromKey($key);
             $rawSummary = $this->redis->get($metaKey . ':meta');
-            var_dump($metaKey . ':meta', $rawSummary);
             if ($rawSummary === false) {
                 continue;
             }
@@ -514,62 +515,56 @@ LUA
                 'quantiles' => $metaData['quantiles'],
                 'samples' => [],
             ];
-            var_dump($metaKey . ':value');
-            $dd = $this->redis->get($metaKey . ':value');
-            var_dump($dd);
-            $values = $this->redis->keys($metaKey . ':value');
-            var_dump($values);
+            $values = $this->redis->sMembers($metaKey . ':value:keys');
+            $samples = [];
             foreach ($values as $valueKeyWithPrefix) {
                 $valueKey = $this->removePrefixFromKey($valueKeyWithPrefix);
-                $rawValue = $this->redis->get($valueKey);
-                var_dump($rawValue);
+                $rawValue = explode(":", $valueKey);
                 if ($rawValue === false) {
                     continue;
                 }
-                $value = json_decode($rawValue, true);
-                $encodedLabelValues = $value;
+                $encodedLabelValues = $rawValue[2];
                 $decodedLabelValues = $this->decodeLabelValues($encodedLabelValues);
 
-                $samples = [];
-                var_dump($metaKey . ':' . $encodedLabelValues . ':value:*');
-                $sampleValues = $this->redis->keys($metaKey . ':' . $encodedLabelValues . ':value:*');
-                foreach ($sampleValues as $sampleValueWithPrefix) {
-                    $sampleValue = $this->removePrefixFromKey($sampleValueWithPrefix);
-                    $samples[] = (float)$this->redis->get($sampleValue);
-                }
 
-                if (count($samples) === 0) {
-                    $this->redis->del($valueKey);
-                    continue;
+                $sampleValue = $this->removePrefixFromKey($valueKeyWithPrefix);
+                $return = $this->redis->get($sampleValue);
+                if ($return !== false) {
+                    $samples[] = (float)$return;
                 }
+            }
+            if (count($samples) === 0) {
+                $this->redis->del($valueKey);
+                continue;
+            }
 
-                // Compute quantiles
-                sort($samples);
-                foreach ($data['quantiles'] as $quantile) {
-                    $data['samples'][] = [
-                        'name' => $metaData['name'],
-                        'labelNames' => ['quantile'],
-                        'labelValues' => array_merge($decodedLabelValues, [$quantile]),
-                        'value' => $math->quantile($samples, $quantile),
-                    ];
-                }
-
-                // Add the count
+            // Compute quantiles
+            sort($samples);
+            foreach ($data['quantiles'] as $quantile) {
                 $data['samples'][] = [
-                    'name' => $metaData['name'] . '_count',
-                    'labelNames' => [],
-                    'labelValues' => $decodedLabelValues,
-                    'value' => count($samples),
-                ];
-
-                // Add the sum
-                $data['samples'][] = [
-                    'name' => $metaData['name'] . '_sum',
-                    'labelNames' => [],
-                    'labelValues' => $decodedLabelValues,
-                    'value' => array_sum($samples),
+                    'name' => $metaData['name'],
+                    'labelNames' => ['quantile'],
+                    'labelValues' => array_merge($decodedLabelValues, [$quantile]),
+                    'value' => $math->quantile($samples, $quantile),
                 ];
             }
+
+            // Add the count
+            $data['samples'][] = [
+                'name' => $metaData['name'] . '_count',
+                'labelNames' => [],
+                'labelValues' => $decodedLabelValues,
+                'value' => count($samples),
+            ];
+
+            // Add the sum
+            $data['samples'][] = [
+                'name' => $metaData['name'] . '_sum',
+                'labelNames' => [],
+                'labelValues' => $decodedLabelValues,
+                'value' => array_sum($samples),
+            ];
+
 
             if (count($data['samples']) > 0) {
                 $summaries[] = $data;
