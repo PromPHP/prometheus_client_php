@@ -495,10 +495,8 @@ LUA
         $summaryKeyIndexKey = self::$prefix . Summary::TYPE . self::PROMETHEUS_METRIC_KEYS_SUFFIX . ":keys";
 
         $keys = $this->redis->sMembers($summaryKeyIndexKey);
-        //$keys = $this->redis->keys($summaryKey . ':*:meta');
         $summaries = [];
-        foreach ($keys as $key) {
-            $metaKey = $this->removePrefixFromKey($key);
+        foreach ($keys as $metaKey) {
             $rawSummary = $this->redis->get($metaKey . ':meta');
             if ($rawSummary === false) {
                 continue;
@@ -516,8 +514,7 @@ LUA
             ];
             $values = $this->redis->sMembers($metaKey . ':value:keys');
             $samples = [];
-            foreach ($values as $valueKeyWithPrefix) {
-                $valueKey = $this->removePrefixFromKey($valueKeyWithPrefix);
+            foreach ($values as $valueKey) {
                 $rawValue = explode(":", $valueKey);
                 if ($rawValue === false) {
                     continue;
@@ -525,9 +522,7 @@ LUA
                 $encodedLabelValues = $rawValue[2];
                 $decodedLabelValues = $this->decodeLabelValues($encodedLabelValues);
 
-
-                $sampleValue = $this->removePrefixFromKey($valueKeyWithPrefix);
-                $return = $this->redis->get($sampleValue);
+                $return = $this->redis->get($valueKey);
                 if ($return !== false) {
                     $samples[] = (float)$return;
                 }
