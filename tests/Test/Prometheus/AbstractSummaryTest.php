@@ -10,12 +10,15 @@ use Prometheus\Summary;
 use Prometheus\MetricFamilySamples;
 use Prometheus\Sample;
 use Prometheus\Storage\Adapter;
+use Test\Prometheus\Helper\AlmostIdenticalFloatArraysAssertionTrait;
 
 /**
  * See https://prometheus.io/docs/instrumenting/exposition_formats/
  */
 abstract class AbstractSummaryTest extends TestCase
 {
+    use AlmostIdenticalFloatArraysAssertionTrait;
+
     /**
      * @var Adapter
      */
@@ -66,7 +69,7 @@ abstract class AbstractSummaryTest extends TestCase
         }
         self::assertThat(
             $this->adapter->collect(),
-            self::equalTo(
+            self::almostEqualTo(
                 [
                     new MetricFamilySamples(
                         [
@@ -198,7 +201,7 @@ abstract class AbstractSummaryTest extends TestCase
         }
         self::assertThat(
             $this->adapter->collect(),
-            self::equalTo(
+            self::almostEqualTo(
                 [
                     new MetricFamilySamples(
                         [
@@ -582,6 +585,7 @@ abstract class AbstractSummaryTest extends TestCase
         self::assertContainsOnlyInstancesOf(Sample::class, $samples);
 
         foreach ($samples as $sample) {
+            /** @var array<string, mixed> $labels */
             $labels = array_combine(
                 array_merge($metric->getLabelNames(), $sample->getLabelNames()),
                 $sample->getLabelValues()

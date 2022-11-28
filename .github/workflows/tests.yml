@@ -35,7 +35,7 @@ jobs:
         with:
           php-version: ${{ matrix.php }}
           extensions: redis, apcu
-          ini-values: apc.enable_cli='On'
+          ini-values: apc.enable_cli='On',apc.shm_size = 256M
           coverage: none
 
       - name: Install dependencies

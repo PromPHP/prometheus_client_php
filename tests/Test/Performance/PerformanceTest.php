@@ -149,8 +149,8 @@ class PerformanceTest extends TestCase
         $results = [];
         foreach ($this::NUM_APC_KEYS as $num_apc_keys) {
             foreach ($this::NUM_PROM_METRICS as $num_metrics) {
-                $this->initializeAPC($num_apc_keys);
                 foreach (['Prometheus\Storage\APC', 'Prometheus\Storage\APCng'] as $driverClass) {
+                    $this->initializeAPC($num_apc_keys);
                     $apc      = new $driverClass();
                     $registry = new CollectorRegistry($apc);
                     for ($i = 0; $i < $num_metrics; $i++) {

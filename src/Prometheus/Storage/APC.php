@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Prometheus\Storage;
 
-use APCUIterator;
+use APCuIterator;
 use Prometheus\Exception\StorageException;
 use Prometheus\Math;
 use Prometheus\MetricFamilySamples;
@@ -178,7 +178,7 @@ class APC implements Adapter
         //                        .+  | at least one additional character
         $matchAll = sprintf('/^%s:.+/', $this->prometheusPrefix);
 
-        foreach (new APCUIterator($matchAll) as $key => $value) {
+        foreach (new APCuIterator($matchAll) as $key => $value) {
             apcu_delete($key);
         }
     }
@@ -241,7 +241,7 @@ class APC implements Adapter
     private function collectCounters(): array
     {
         $counters = [];
-        foreach (new APCUIterator('/^' . $this->prometheusPrefix . ':counter:.*:meta/') as $counter) {
+        foreach (new APCuIterator('/^' . $this->prometheusPrefix . ':counter:.*:meta/') as $counter) {
             $metaData = json_decode($counter['value'], true);
             $data = [
                 'name' => $metaData['name'],
@@ -250,7 +250,7 @@ class APC implements Adapter
                 'labelNames' => $metaData['labelNames'],
                 'samples' => [],
             ];
-            foreach (new APCUIterator('/^' . $this->prometheusPrefix . ':counter:' . $metaData['name'] . ':.*:value/') as $value) {
+            foreach (new APCuIterator('/^' . $this->prometheusPrefix . ':counter:' . $metaData['name'] . ':.*:value/') as $value) {
                 $parts = explode(':', $value['key']);
                 $labelValues = $parts[3];
                 $data['samples'][] = [
@@ -272,7 +272,7 @@ class APC implements Adapter
     private function collectGauges(): array
     {
         $gauges = [];
-        foreach (new APCUIterator('/^' . $this->prometheusPrefix . ':gauge:.*:meta/') as $gauge) {
+        foreach (new APCuIterator('/^' . $this->prometheusPrefix . ':gauge:.*:meta/') as $gauge) {
             $metaData = json_decode($gauge['value'], true);
             $data = [
                 'name' => $metaData['name'],
@@ -281,7 +281,7 @@ class APC implements Adapter
                 'labelNames' => $metaData['labelNames'],
                 'samples' => [],
             ];
-            foreach (new APCUIterator('/^' . $this->prometheusPrefix . ':gauge:' . $metaData['name'] . ':.*:value/') as $value) {
+            foreach (new APCuIterator('/^' . $this->prometheusPrefix . ':gauge:' . $metaData['name'] . ':.*:value/') as $value) {
                 $parts = explode(':', $value['key']);
                 $labelValues = $parts[3];
                 $data['samples'][] = [
@@ -304,7 +304,7 @@ class APC implements Adapter
     private function collectHistograms(): array
     {
         $histograms = [];
-        foreach (new APCUIterator('/^' . $this->prometheusPrefix . ':histogram:.*:meta/') as $histogram) {
+        foreach (new APCuIterator('/^' . $this->prometheusPrefix . ':histogram:.*:meta/') as $histogram) {
             $metaData = json_decode($histogram['value'], true);
             $data = [
                 'name' => $metaData['name'],
@@ -318,7 +318,7 @@ class APC implements Adapter
             $data['buckets'][] = '+Inf';
 
             $histogramBuckets = [];
-            foreach (new APCUIterator('/^' . $this->prometheusPrefix . ':histogram:' . $metaData['name'] . ':.*:value/') as $value) {
+            foreach (new APCuIterator('/^' . $this->prometheusPrefix . ':histogram:' . $metaData['name'] . ':.*:value/') as $value) {
                 $parts = explode(':', $value['key']);
                 $labelValues = $parts[3];
                 $bucket = $parts[4];
@@ -380,7 +380,7 @@ class APC implements Adapter
     {
         $math = new Math();
         $summaries = [];
-        foreach (new APCUIterator('/^' . $this->prometheusPrefix . ':summary:.*:meta/') as $summary) {
+        foreach (new APCuIterator('/^' . $this->prometheusPrefix . ':summary:.*:meta/') as $summary) {
             $metaData = $summary['value'];
             $data = [
                 'name' => $metaData['name'],
@@ -392,11 +392,11 @@ class APC implements Adapter
                 'samples' => [],
             ];
 
-            foreach (new APCUIterator('/^' . $this->prometheusPrefix . ':summary:' . $metaData['name'] . ':.*:value$/') as $value) {
+            foreach (new APCuIterator('/^' . $this->prometheusPrefix . ':summary:' . $metaData['name'] . ':.*:value$/') as $value) {
                 $encodedLabelValues = $value['value'];
                 $decodedLabelValues = $this->decodeLabelValues($encodedLabelValues);
                 $samples = [];
-                foreach (new APCUIterator('/^' . $this->prometheusPrefix . ':summary:' . $metaData['name'] . ':' . str_replace('/', '\\/', preg_quote($encodedLabelValues)) . ':value:.*/') as $sample) {
+                foreach (new APCuIterator('/^' . $this->prometheusPrefix . ':summary:' . $metaData['name'] . ':' . str_replace('/', '\\/', preg_quote($encodedLabelValues)) . ':value:.*/') as $sample) {
                     $samples[] = $sample['value'];
                 }
 

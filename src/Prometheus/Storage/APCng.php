@@ -4,30 +4,41 @@ declare(strict_types=1);
 
 namespace Prometheus\Storage;
 
-use APCUIterator;
+use APCuIterator;
 use Prometheus\Exception\StorageException;
 use Prometheus\Math;
 use Prometheus\MetricFamilySamples;
 use RuntimeException;
+use UnexpectedValueException;
 
 class APCng implements Adapter
 {
     /** @var string Default prefix to use for APCu keys. */
     const PROMETHEUS_PREFIX = 'prom';
 
-    /** @var int Number of retries before we give on apcu_cas(). This can prevent an infinite-loop if we fill up APCu. */
-    const CAS_LOOP_RETRIES = 2000;
+    private const MAX_LOOPS = 10;
 
-    /** @var int Number of seconds for cache object to live in APCu. When new metrics are created by other threads, this is the maximum delay until they are discovered.
-                 Setting this to a value less than 1 will disable the cache, which will negatively impact performance when making multiple collect*() function-calls.
-                 If more than a few thousand metrics are being tracked, disabling cache will be faster, due to apcu_store/fetch serialization being slow. */
-    private $metainfoCacheTTL = 1;
+    /**
+     * @var int
+     */
+    private $precisionMultiplier;
 
     /** @var string APCu key where array of all discovered+created metainfo keys is stored */
     private $metainfoCacheKey;
 
+    /** @var string APCu key where count of all added metainfo keys is stored */
+    private $metaInfoCounterKey;
+
+    /** @var string APCu key pattern where array of all added metainfo keys is stored */
+    private $metaInfoCountedMetricKeyPattern;
+
     /** @var string Prefix to use for APCu keys. */
     private $prometheusPrefix;
+
+    /**
+     * @var array<string, array<mixed>>
+     */
+    private $metaCache = [];
 
     /**
      * APCng constructor.
@@ -36,7 +47,7 @@ class APCng implements Adapter
      *
      * @throws StorageException
      */
-    public function __construct(string $prometheusPrefix = self::PROMETHEUS_PREFIX)
+    public function __construct(string $prometheusPrefix = self::PROMETHEUS_PREFIX, int $decimalPrecision = 3)
     {
         if (!extension_loaded('apcu')) {
             throw new StorageException('APCu extension is not loaded');
@@ -47,6 +58,16 @@ class APCng implements Adapter
 
         $this->prometheusPrefix = $prometheusPrefix;
         $this->metainfoCacheKey = implode(':', [ $this->prometheusPrefix, 'metainfocache' ]);
+        $this->metaInfoCounterKey = implode(':', [ $this->prometheusPrefix, 'metainfocounter' ]);
+        $this->metaInfoCountedMetricKeyPattern = implode(':', [ $this->prometheusPrefix, 'metainfocountedmetric_#COUNTER#' ]);
+
+        if ($decimalPrecision < 0 || $decimalPrecision > 6) {
+            throw new UnexpectedValueException(
+                sprintf('Decimal precision %d is not from interval <0;6>.', $decimalPrecision)
+            );
+        }
+
+        $this->precisionMultiplier = 10 ** $decimalPrecision;
     }
 
     /**
@@ -70,22 +91,17 @@ class APCng implements Adapter
         // Initialize or atomically increment the sum
         // Taken from https://github.com/prometheus/client_golang/blob/66058aac3a83021948e5fb12f1f408ff556b9037/prometheus/value.go#L91
         $sumKey = $this->histogramBucketValueKey($data, 'sum');
-        $done = false;
-        $loopCatcher = self::CAS_LOOP_RETRIES;
-        while (!$done && $loopCatcher-- > 0) {
-            $old = apcu_fetch($sumKey);
-            if ($old !== false) {
-                $done = apcu_cas($sumKey, $old, $this->toBinaryRepresentationAsInteger($this->fromBinaryRepresentationAsInteger($old) + $data['value']));
-            } else {
-                // If sum does not exist, initialize it, store the metadata for the new histogram
-                apcu_add($sumKey, $this->toBinaryRepresentationAsInteger(0));
-                apcu_store($this->metaKey($data), json_encode($this->metaData($data)));
-                $this->storeLabelKeys($data);
-            }
+
+        $old = apcu_fetch($sumKey);
+
+        if ($old === false) {
+            // If sum does not exist, initialize it, store the metadata for the new histogram
+            apcu_add($sumKey, 0, 0);
+            $this->storeMetadata($data);
+            $this->storeLabelKeys($data);
         }
-        if ($loopCatcher <= 0) {
-            throw new RuntimeException('Caught possible infinite loop in ' . __METHOD__ . '()');
-        }
+
+        $this->incrementKeyWithValue($sumKey, $data['value']);
 
         // Figure out in which bucket the observation belongs
         $bucketToIncrease = '+Inf';
@@ -118,29 +134,25 @@ class APCng implements Adapter
     {
         // store value key; store metadata & labels if new
         $valueKey = $this->valueKey($data);
-        $new = apcu_add($valueKey, $this->encodeLabelValues($data['labelValues']));
+        $new = apcu_add($valueKey, $this->encodeLabelValues($data['labelValues']), 0);
         if ($new) {
-            apcu_add($this->metaKey($data), $this->metaData($data));
+            $this->storeMetadata($data, false);
             $this->storeLabelKeys($data);
         }
         $sampleKeyPrefix = $valueKey . ':' . time();
         $sampleCountKey = $sampleKeyPrefix . ':observations';
 
-        // Check if sample counter for this timestamp already exists, so we can deterministically store observations+counts, one key per second
+        // Check if sample counter for this timestamp already exists, so we can deterministically
+        // store observations+counts, one key per second
         // Atomic increment of the observation counter, or initialize if new
-        $done = false;
-        $loopCatcher = self::CAS_LOOP_RETRIES;
-        while (!$done && $loopCatcher-- > 0) {
-            $sampleCount = apcu_fetch($sampleCountKey);
-            if ($sampleCount !== false) {
-                $done = apcu_cas($sampleCountKey, $sampleCount, $sampleCount + 1);
-            } else {
-                apcu_add($sampleCountKey, 0, $data['maxAgeSeconds']);
-            }
+        $sampleCount = apcu_fetch($sampleCountKey);
+
+        if ($sampleCount === false) {
+            $sampleCount = 0;
+            apcu_add($sampleCountKey, $sampleCount, $data['maxAgeSeconds']);
         }
-        if ($loopCatcher <= 0) {
-            throw new RuntimeException('Caught possible infinite loop in ' . __METHOD__ . '()');
-        }
+
+        $this->doIncrementKeyWithValue($sampleCountKey, 1);
 
         // We now have a deterministic keyname for this observation; let's save the observed value
         $sampleKey = $sampleKeyPrefix . '.' . $sampleCount;
@@ -155,26 +167,25 @@ class APCng implements Adapter
     {
         $valueKey = $this->valueKey($data);
         if ($data['command'] === Adapter::COMMAND_SET) {
-            apcu_store($valueKey, $this->toBinaryRepresentationAsInteger($data['value']));
-            apcu_store($this->metaKey($data), json_encode($this->metaData($data)));
+            apcu_store($valueKey, $this->convertToIncrementalInteger($data['value']), 0);
+            $this->storeMetadata($data);
             $this->storeLabelKeys($data);
-        } else {
-            // Taken from https://github.com/prometheus/client_golang/blob/66058aac3a83021948e5fb12f1f408ff556b9037/prometheus/value.go#L91
-            $done = false;
-            $loopCatcher = self::CAS_LOOP_RETRIES;
-            while (!$done && $loopCatcher-- > 0) {
-                $old = apcu_fetch($valueKey);
-                if ($old !== false) {
-                    $done = apcu_cas($valueKey, $old, $this->toBinaryRepresentationAsInteger($this->fromBinaryRepresentationAsInteger($old) + $data['value']));
-                } else {
-                    apcu_add($valueKey, $this->toBinaryRepresentationAsInteger(0));
-                    apcu_store($this->metaKey($data), json_encode($this->metaData($data)));
-                    $this->storeLabelKeys($data);
-                }
-            }
-            if ($loopCatcher <= 0) {
-                throw new RuntimeException('Caught possible infinite loop in ' . __METHOD__ . '()');
-            }
+
+            return;
+        }
+
+        $old = apcu_fetch($valueKey);
+
+        if ($old === false) {
+            apcu_add($valueKey, 0, 0);
+            $this->storeMetadata($data);
+            $this->storeLabelKeys($data);
+        }
+
+        if ($data['value'] > 0) {
+            $this->incrementKeyWithValue($valueKey, $data['value']);
+        } elseif ($data['value'] < 0) {
+            $this->decrementKeyWithValue($valueKey, -$data['value']);
         }
     }
 
@@ -184,23 +195,16 @@ class APCng implements Adapter
      */
     public function updateCounter(array $data): void
     {
-        // Taken from https://github.com/prometheus/client_golang/blob/66058aac3a83021948e5fb12f1f408ff556b9037/prometheus/value.go#L91
         $valueKey = $this->valueKey($data);
-        $done = false;
-        $loopCatcher = self::CAS_LOOP_RETRIES;
-        while (!$done && $loopCatcher-- > 0) {
-            $old = apcu_fetch($valueKey);
-            if ($old !== false) {
-                $done = apcu_cas($valueKey, $old, $this->toBinaryRepresentationAsInteger($this->fromBinaryRepresentationAsInteger($old) + $data['value']));
-            } else {
-                apcu_add($valueKey, 0);
-                apcu_store($this->metaKey($data), json_encode($this->metaData($data)));
-                $this->storeLabelKeys($data);
-            }
+        $old = apcu_fetch($valueKey);
+
+        if ($old === false) {
+            apcu_add($valueKey, 0, 0);
+            $this->storeMetadata($data);
+            $this->storeLabelKeys($data);
         }
-        if ($loopCatcher <= 0) {
-            throw new RuntimeException('Caught possible infinite loop in ' . __METHOD__ . '()');
-        }
+
+        $this->incrementKeyWithValue($valueKey, $data['value']);
     }
 
     /**
@@ -249,7 +253,7 @@ class APCng implements Adapter
         $_item = $this->encodeLabelKey($item);
         if (!array_key_exists($_item, $arr)) {
             $arr[$_item] = 1;
-            apcu_store($key, $arr);
+            apcu_store($key, $arr, 0);
         }
     }
 
@@ -270,20 +274,12 @@ class APCng implements Adapter
         //                        .+  | at least one additional character
         $matchAll = sprintf('/^%s:.+/', $this->prometheusPrefix);
 
-        foreach (new APCUIterator($matchAll) as $key => $value) {
+        foreach (new APCuIterator($matchAll, APC_ITER_KEY) as $key) {
             apcu_delete($key);
         }
-    }
 
-    /**
-     * Sets the metainfo cache TTL; how long to retain metainfo before scanning APCu keyspace again (default 1 second)
-     *
-     * @param int $ttl
-     * @return void
-     */
-    public function setMetainfoTTL(int $ttl): void
-    {
-        $this->metainfoCacheTTL = $ttl;
+        apcu_delete($this->metaInfoCounterKey);
+        apcu_delete($this->metainfoCacheKey);
     }
 
     /**
@@ -297,21 +293,50 @@ class APCng implements Adapter
      * The cache TTL is very short (default: 1sec), so if new metrics are tracked after the cache is built, they will
      * be readable at most 1 second after being written.
      *
-     * Setting $apc_ttl less than 1 will disable the cache.
-     *
-     * @param int $apc_ttl
-     * @return array<string>
+     * @return array<string, array<array{key: string, value: array<mixed>}>>
      */
-    private function scanAndBuildMetainfoCache(int $apc_ttl = 1): array
+    private function scanAndBuildMetainfoCache(): array
     {
         $arr = [];
-        $matchAllMeta = sprintf('/^%s:.*:meta/', $this->prometheusPrefix);
-        foreach (new APCUIterator($matchAllMeta) as $apc_record) {
-            $arr[] = $apc_record['key'];
+
+        $counter = (int) apcu_fetch($this->metaInfoCounterKey);
+
+        for ($i = 1; $i <= $counter; $i++) {
+            $metaCounterKey = $this->metaCounterKey($i);
+            $metaKey = apcu_fetch($metaCounterKey);
+
+            if (!is_string($metaKey)) {
+                throw new UnexpectedValueException(
+                    sprintf('Invalid meta counter key: %s', $metaCounterKey)
+                );
+            }
+
+            if (preg_match('/' . $this->prometheusPrefix . ':([^:]+):.*:meta/', $metaKey, $matches) !== 1) {
+                throw new UnexpectedValueException(
+                    sprintf('Invalid meta key: %s', $metaKey)
+                );
+            }
+
+            $type = $matches[1];
+
+            if (!isset($arr[$type])) {
+                $arr[$type] = [];
+            }
+
+            /** @var array<mixed>|false $metaInfo */
+            $metaInfo = apcu_fetch($metaKey);
+
+            if ($metaInfo === false) {
+                throw new UnexpectedValueException(
+                    sprintf('Meta info missing for meta key: %s', $metaKey)
+                );
+            }
+
+            $arr[$type][] = ['key' => $metaKey, 'value' => $metaInfo];
         }
-        if ($apc_ttl >= 1) {
-            apcu_store($this->metainfoCacheKey, $arr, $apc_ttl);
-        }
+
+        apcu_store($this->metainfoCacheKey, $arr, 0);
+
         return $arr;
     }
 
@@ -435,7 +460,7 @@ class APCng implements Adapter
                     'name' => $metaData['name'],
                     'labelNames' => [],
                     'labelValues' => $this->decodeLabelValues($labelValues),
-                    'value' => $this->fromBinaryRepresentationAsInteger($value['value']),
+                    'value' => $this->convertIncrementalIntegerToFloat($value['value']),
                 ];
             }
             $this->sortSamples($data['samples']);
@@ -453,16 +478,38 @@ class APCng implements Adapter
     private function getMetas(string $type): array /** @phpstan-ignore-line */
     {
         $arr = [];
-        $metaCache = apcu_fetch($this->metainfoCacheKey);
-        if (!is_array($metaCache)) {
-            $metaCache = $this->scanAndBuildMetainfoCache($this->metainfoCacheTTL);
+        $counterModified = 0;
+        $counterModifiedInfo = apcu_key_info($this->metaInfoCounterKey);
+
+        if ($counterModifiedInfo !== null) {
+            $counterModified = (int) $counterModifiedInfo['mtime'];
         }
-        foreach ($metaCache as $metaKey) {
-            if ((1 === preg_match('/' . $this->prometheusPrefix . ':' . $type . ':.*:meta/', $metaKey)) && false !== ($gauge = apcu_fetch($metaKey))) {
-                $arr[] = [ 'key' => $metaKey, 'value' => $gauge ];
-            }
+
+        $cacheModified = 0;
+        $cacheModifiedInfo = apcu_key_info($this->metainfoCacheKey);
+
+        if ($cacheModifiedInfo !== null) {
+            $cacheModified = (int) $cacheModifiedInfo['mtime'];
         }
-        return $arr;
+
+        $cacheNeedsRebuild = $counterModified >= $cacheModified || $cacheModified === 0;
+        $metaCache = null;
+
+        if (isset($this->metaCache[$type]) && !$cacheNeedsRebuild) {
+            return $this->metaCache[$type];
+        }
+
+        if ($cacheNeedsRebuild) {
+            $metaCache = $this->scanAndBuildMetainfoCache();
+        }
+
+        if ($metaCache === null) {
+            $metaCache = apcu_fetch($this->metainfoCacheKey);
+        }
+
+        $this->metaCache = $metaCache;
+
+        return $this->metaCache[$type] ?? [];
     }
 
     /**
@@ -487,6 +534,7 @@ class APCng implements Adapter
             $labels[] = $metaData['buckets'];
             $metaData['labelNames'][] = '__histogram_buckets';
         }
+
         $labelValuesList = $this->buildPermutationTree($metaData['labelNames'], $labels);
         unset($labels);
         $histogramBucket = '';
@@ -525,7 +573,7 @@ class APCng implements Adapter
                     'name' => $metaData['name'],
                     'labelNames' => [],
                     'labelValues' => $this->decodeLabelValues($labelValues),
-                    'value' => $this->fromBinaryRepresentationAsInteger($value['value']),
+                    'value' => $this->convertIncrementalIntegerToFloat($value['value']),
                 ];
             }
             $this->sortSamples($data['samples']);
@@ -602,7 +650,7 @@ class APCng implements Adapter
                     'name' => $metaData['name'] . '_sum',
                     'labelNames' => [],
                     'labelValues' => $decodedLabelValues,
-                    'value' => $this->fromBinaryRepresentationAsInteger($histogramBuckets[$labelValues]['sum']),
+                    'value' => $this->convertIncrementalIntegerToFloat($histogramBuckets[$labelValues]['sum']),
                 ];
             }
             $histograms[] = new MetricFamilySamples($data);
@@ -630,7 +678,7 @@ class APCng implements Adapter
             ];
 
             foreach ($this->getValues('summary', $metaData) as $value) {
-                $encodedLabelValues = $value['value'];
+                $encodedLabelValues = (string) $value['value'];
                 $decodedLabelValues = $this->decodeLabelValues($encodedLabelValues);
                 $samples = [];
 
@@ -704,37 +752,66 @@ class APCng implements Adapter
     }
 
     /**
-     * @param mixed $val
-     * @return int
-     * @throws RuntimeException
+     * @param int|float $val
      */
-    private function toBinaryRepresentationAsInteger($val): int
+    private function incrementKeyWithValue(string $key, $val): void
     {
-        $packedDouble = pack('d', $val);
-        if ((bool)$packedDouble !== false) {
-            $unpackedData = unpack("Q", $packedDouble);
-            if (is_array($unpackedData)) {
-                return $unpackedData[1];
-            }
+        $converted = $this->convertToIncrementalInteger($val);
+
+        $this->doIncrementKeyWithValue($key, $converted);
+    }
+
+    private function doIncrementKeyWithValue(string $key, int $val): void
+    {
+        if ($val === 0) {
+            return;
         }
-        throw new RuntimeException("Formatting from binary representation to integer did not work");
+
+        $loops = 0;
+
+        do {
+            $loops++;
+            $success = apcu_inc($key, $val);
+        } while ($success === false && $loops <= self::MAX_LOOPS); /** @phpstan-ignore-line */
+
+        if ($success === false) { /** @phpstan-ignore-line */
+            throw new RuntimeException('Caught possible infinite loop in ' . __METHOD__ . '()');
+        }
     }
 
     /**
-     * @param mixed $val
-     * @return float
-     * @throws RuntimeException
+     * @param int|float $val
      */
-    private function fromBinaryRepresentationAsInteger($val): float
+    private function decrementKeyWithValue(string $key, $val): void
     {
-        $packedBinary = pack('Q', $val);
-        if ((bool)$packedBinary !== false) {
-            $unpackedData = unpack("d", $packedBinary);
-            if (is_array($unpackedData)) {
-                return $unpackedData[1];
-            }
+        if ($val === 0 || $val === 0.0) {
+            return;
         }
-        throw new RuntimeException("Formatting from integer to binary representation did not work");
+
+        $converted = $this->convertToIncrementalInteger($val);
+        $loops = 0;
+
+        do {
+            $loops++;
+            $success = apcu_dec($key, $converted);
+        } while ($success === false && $loops <= self::MAX_LOOPS); /** @phpstan-ignore-line */
+
+        if ($success === false) { /** @phpstan-ignore-line */
+            throw new RuntimeException('Caught possible infinite loop in ' . __METHOD__ . '()');
+        }
+    }
+
+    /**
+     * @param int|float $val
+     */
+    private function convertToIncrementalInteger($val): int
+    {
+        return intval($val * $this->precisionMultiplier);
+    }
+
+    private function convertIncrementalIntegerToFloat(int $val): float
+    {
+        return floatval((float) $val / (float) $this->precisionMultiplier);
     }
 
     /**
@@ -800,5 +877,36 @@ class APCng implements Adapter
             throw new RuntimeException('Cannot base64 decode label key');
         }
         return $decodedKey;
+    }
+
+    /**
+     * @param mixed[] $data
+     */
+    private function storeMetadata(array $data, bool $encoded = true): void
+    {
+        $metaKey = $this->metaKey($data);
+        $metaData = $this->metaData($data);
+        $toStore = $metaData;
+
+        if ($encoded) {
+            $toStore = json_encode($metaData);
+        }
+
+        $stored = apcu_add($metaKey, $toStore, 0);
+
+        if (!$stored) {
+            return;
+        }
+
+        apcu_add($this->metaInfoCounterKey, 0, 0);
+        $counter = apcu_inc($this->metaInfoCounterKey);
+
+        $newCountedMetricKey = $this->metaCounterKey($counter);
+        apcu_store($newCountedMetricKey, $metaKey, 0);
+    }
+
+    private function metaCounterKey(int $counter): string
+    {
+        return str_replace('#COUNTER#', (string) $counter, $this->metaInfoCountedMetricKeyPattern);
     }
 }

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Prometheus;
 
+use RuntimeException;
+
 class RenderTextFormat implements RendererInterface
 {
     const MIME_TYPE = 'text/plain; version=0.0.4';
@@ -64,6 +66,11 @@ class RenderTextFormat implements RendererInterface
         $escapedLabels = [];
 
         $labels = array_combine(array_merge($labelNames, $sample->getLabelNames()), $sample->getLabelValues());
+
+        /** @phpstan-ignore-next-line */
+        if ($labels === false) {
+            throw new RuntimeException('Unable to combine labels.');
+        }
 
         foreach ($labels as $labelName => $labelValue) {
             $escapedLabels[] = $labelName . '="' . $this->escapeLabelValue((string)$labelValue) . '"';
