@@ -311,7 +311,6 @@ LUA
             $done = $this->redis->set($sampleKey, $data['value'], ['NX', 'EX' => $data['maxAgeSeconds']]);
             $this->redis->sAdd($summaryKey . ':' . $data["name"] . ":value:keys", $sampleKey);
         }
-
     }
 
     /**
