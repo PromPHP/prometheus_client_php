@@ -365,7 +365,7 @@ class APC implements Adapter
                     'name' => $metaData['name'] . '_sum',
                     'labelNames' => [],
                     'labelValues' => $decodedLabelValues,
-                    'value' => $this->fromBinaryRepresentationAsInteger($histogramBuckets[$labelValues]['sum']),
+                    'value' => $this->fromBinaryRepresentationAsInteger($histogramBuckets[$labelValues]['sum'] ?? 0),
                 ];
             }
             $histograms[] = new MetricFamilySamples($data);
