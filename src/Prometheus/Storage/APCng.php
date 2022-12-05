@@ -650,7 +650,7 @@ class APCng implements Adapter
                     'name' => $metaData['name'] . '_sum',
                     'labelNames' => [],
                     'labelValues' => $decodedLabelValues,
-                    'value' => $this->convertIncrementalIntegerToFloat($histogramBuckets[$labelValues]['sum']),
+                    'value' => $this->convertIncrementalIntegerToFloat($histogramBuckets[$labelValues]['sum'] ?? 0),
                 ];
             }
             $histograms[] = new MetricFamilySamples($data);
