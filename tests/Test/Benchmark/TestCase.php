@@ -9,6 +9,7 @@ use Prometheus\RegistryInterface;
 use Prometheus\RenderTextFormat;
 use Prometheus\Storage\Adapter;
 use Prometheus\Storage\Redis;
+use Prometheus\Storage\Rediser;
 use Prometheus\Storage\RedisNg;
 
 class TestCase
@@ -165,10 +166,10 @@ class TestCase
                     $config = $this->getRedisConfig();
                     $this->adapter = new RedisNg($config);
                     break;
-//                case AdapterType::REDISPI:
-//                    $config = $this->getRedisConfig();
-//                    $this->adapter = new RedisPi($config);
-//                    break;
+                case AdapterType::REDISER:
+                    $config = $this->getRedisConfig();
+                    $this->adapter = new Rediser($config);
+                    break;
                 default:
                     break;
             }

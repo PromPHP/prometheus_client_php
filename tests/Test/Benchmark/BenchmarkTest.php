@@ -52,6 +52,10 @@ class BenchmarkTest extends TestCase
             [AdapterType::REDISNG, MetricType::SUMMARY, 2000, 10],
             [AdapterType::REDISNG, MetricType::SUMMARY, 5000, 10],
             [AdapterType::REDISNG, MetricType::SUMMARY, 10000, 10],
+            [AdapterType::REDISER, MetricType::SUMMARY, 1000, 10],
+            [AdapterType::REDISER, MetricType::SUMMARY, 2000, 10],
+            [AdapterType::REDISER, MetricType::SUMMARY, 5000, 10],
+            [AdapterType::REDISER, MetricType::SUMMARY, 10000, 10],
         ];
     }
 

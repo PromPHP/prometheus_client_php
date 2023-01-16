@@ -8,7 +8,7 @@ class AdapterType
 {
 	const REDIS = 1<<0;
 	const REDISNG = 1<<1;
-	const REDISPI = 1<<2;
+	const REDISER = 1<<2;
 
 	/**
 	 * @param int $type
@@ -20,9 +20,9 @@ class AdapterType
 			case AdapterType::REDIS:
 				return 'redis';
 			case AdapterType::REDISNG:
-				return 'redis-ng';
-//			case AdapterType::REDISPI:
-//				return 'redis-ar';
+				return 'redisng';
+			case AdapterType::REDISER:
+				return 'rediser';
 		}
 
 		throw new InvalidArgumentException("Invalid adapter type: {$type}");
