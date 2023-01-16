@@ -16,6 +16,8 @@ if ($adapterName === 'redis') {
     $adapter = new Prometheus\Storage\APCng();
 } elseif ($adapterName === 'in-memory') {
     $adapter = new Prometheus\Storage\InMemory();
+} elseif ($adapterName === 'redistxn') {
+    $adapter = new Prometheus\Storage\RedisTxn(['host' => $_SERVER['REDIS_HOST'] ?? '127.0.0.1']);
 }
 
 $adapter->wipeStorage();
