@@ -90,7 +90,7 @@ class MetricBuilder
         // durable and unique in the sorted set in accordance with best-practice guidelines described in the article,
         // "Redis Best Practices: Sorted Set Time Series" [1].
         //
-        // See RedixTxn::updateSummary() for the complementary part of this operation.
+        // See RedisTxn::updateSummary() for the complementary part of this operation.
         //
         // [1] https://redis.com/redis-best-practices/time-series/sorted-set-time-series/
         $typedSamples = array_map(function ($sample) {

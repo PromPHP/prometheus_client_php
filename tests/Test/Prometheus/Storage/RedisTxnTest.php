@@ -31,7 +31,7 @@ class RedisTxnTest extends TestCase
      */
     public function itShouldThrowAnExceptionOnConnectionFailure(): void
     {
-        $redis = new RedixTxn(['host' => '/dev/null']);
+        $redis = new RedisTxn(['host' => '/dev/null']);
 
         $this->expectException(StorageException::class);
         $this->expectExceptionMessage("Can't connect to Redis server");
@@ -50,7 +50,7 @@ class RedisTxnTest extends TestCase
         self::expectException(StorageException::class);
         self::expectExceptionMessage('Connection to Redis server not established');
 
-        RedixTxn::fromExistingConnection($connection);
+        RedisTxn::fromExistingConnection($connection);
     }
 
     /**
@@ -60,7 +60,7 @@ class RedisTxnTest extends TestCase
     {
         $this->redisConnection->set('not a prometheus metric key', 'data');
 
-        $redis    = RedixTxn::fromExistingConnection($this->redisConnection);
+        $redis    = RedisTxn::fromExistingConnection($this->redisConnection);
         $registry = new CollectorRegistry($redis);
 
         // ensure flush is working correctly on large number of metrics
@@ -89,7 +89,7 @@ class RedisTxnTest extends TestCase
         $expectedClientId = 'id=' . ($clientId + 1) . ' ';
         $notExpectedClientId = 'id=' . ($clientId + 2) . ' ';
 
-        $redis = new RedixTxn(['host' => REDIS_HOST]);
+        $redis = new RedisTxn(['host' => REDIS_HOST]);
 
         $redis->collect();
 
@@ -123,7 +123,7 @@ class RedisTxnTest extends TestCase
         $expectedClientId = 'id=' . $clientId . ' ';
         $notExpectedClientId = 'id=' . ($clientId + 1) . ' ';
 
-        $redis = RedixTxn::fromExistingConnection($this->redisConnection);
+        $redis = RedisTxn::fromExistingConnection($this->redisConnection);
 
         $redis->collect();
 

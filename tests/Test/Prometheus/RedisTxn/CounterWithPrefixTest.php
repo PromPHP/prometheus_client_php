@@ -20,7 +20,7 @@ class CounterWithPrefixTest extends AbstractCounterTest
 
         $connection->setOption(\Redis::OPT_PREFIX, 'prefix:');
 
-        $this->adapter = RedixTxn::fromExistingConnection($connection);
+        $this->adapter = RedisTxn::fromExistingConnection($connection);
         $this->adapter->wipeStorage();
     }
 }

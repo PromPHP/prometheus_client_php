@@ -168,7 +168,7 @@ class TestCase
                     break;
                 case AdapterType::REDISTXN:
                     $config = $this->getRedisConfig();
-                    $this->adapter = new RedixTxn($config);
+                    $this->adapter = new RedisTxn($config);
                     break;
                 default:
                     break;
