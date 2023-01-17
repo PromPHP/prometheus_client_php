@@ -19,26 +19,10 @@ class BenchmarkTest extends TestCase
      */
     public static function setUpBeforeClass(): void
     {
-        file_put_contents(self::RESULT_FILENAME, implode(',', [
-            'adapter',
-            'metric',
-            'num-keys',
-            'num-samples',
-            'write-p50',
-            'write-p75',
-            'write-p95',
-            'write-p99',
-            'write-min',
-            'write-max',
-            'write-avg',
-            'render-p50',
-            'render-p75',
-            'render-p95',
-            'render-p99',
-            'render-min',
-            'render-max',
-            'render-avg',
-        ]));
+        file_put_contents(
+            self::RESULT_FILENAME,
+            implode(',', TestCaseResult::getCsvHeaders())
+        );
         parent::setUpBeforeClass();
     }
 
@@ -48,10 +32,34 @@ class BenchmarkTest extends TestCase
     public function benchmarkProvider(): array
     {
         return [
+            [AdapterType::REDISNG, MetricType::COUNTER, 1000, 10],
+            [AdapterType::REDISNG, MetricType::COUNTER, 2000, 10],
+            [AdapterType::REDISNG, MetricType::COUNTER, 5000, 10],
+            [AdapterType::REDISNG, MetricType::COUNTER, 10000, 10],
+            [AdapterType::REDISNG, MetricType::GAUGE, 1000, 10],
+            [AdapterType::REDISNG, MetricType::GAUGE, 2000, 10],
+            [AdapterType::REDISNG, MetricType::GAUGE, 5000, 10],
+            [AdapterType::REDISNG, MetricType::GAUGE, 10000, 10],
+            [AdapterType::REDISNG, MetricType::HISTOGRAM, 1000, 10],
+            [AdapterType::REDISNG, MetricType::HISTOGRAM, 2000, 10],
+            [AdapterType::REDISNG, MetricType::HISTOGRAM, 5000, 10],
+            [AdapterType::REDISNG, MetricType::HISTOGRAM, 10000, 10],
             [AdapterType::REDISNG, MetricType::SUMMARY, 1000, 10],
             [AdapterType::REDISNG, MetricType::SUMMARY, 2000, 10],
             [AdapterType::REDISNG, MetricType::SUMMARY, 5000, 10],
             [AdapterType::REDISNG, MetricType::SUMMARY, 10000, 10],
+            [AdapterType::REDISTXN, MetricType::COUNTER, 1000, 10],
+            [AdapterType::REDISTXN, MetricType::COUNTER, 2000, 10],
+            [AdapterType::REDISTXN, MetricType::COUNTER, 5000, 10],
+            [AdapterType::REDISTXN, MetricType::COUNTER, 10000, 10],
+            [AdapterType::REDISTXN, MetricType::GAUGE, 1000, 10],
+            [AdapterType::REDISTXN, MetricType::GAUGE, 2000, 10],
+            [AdapterType::REDISTXN, MetricType::GAUGE, 5000, 10],
+            [AdapterType::REDISTXN, MetricType::GAUGE, 10000, 10],
+            [AdapterType::REDISTXN, MetricType::HISTOGRAM, 1000, 10],
+            [AdapterType::REDISTXN, MetricType::HISTOGRAM, 2000, 10],
+            [AdapterType::REDISTXN, MetricType::HISTOGRAM, 5000, 10],
+            [AdapterType::REDISTXN, MetricType::HISTOGRAM, 10000, 10],
             [AdapterType::REDISTXN, MetricType::SUMMARY, 1000, 10],
             [AdapterType::REDISTXN, MetricType::SUMMARY, 2000, 10],
             [AdapterType::REDISTXN, MetricType::SUMMARY, 5000, 10],
@@ -76,6 +84,8 @@ class BenchmarkTest extends TestCase
         int $numSamples
     ): void
     {
+        ini_set('memory_limit','1024M');
+
         // Create and execute test case
         $testCase = BenchmarkTestCase::newBuilder()
             ->withAdapterType($adapter)
