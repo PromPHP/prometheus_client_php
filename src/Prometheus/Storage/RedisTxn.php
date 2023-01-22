@@ -30,6 +30,7 @@ use function \sort;
  * "collect" operations of each metric type within a single Redis transaction.
  *
  * @todo Only summary metrics have been refactored so far. Complete refactor for counter, gauge, and histogram metrics.
+ * @todo Reimplement wipeStorage() to account for reorganized keys in Redis.
  * @todo Reimplement all Redis scripts with redis.pcall() to trap runtime errors that are ignored by redis.call().
  */
 class RedisTxn implements Adapter
