@@ -4,10 +4,8 @@ namespace Prometheus\Storage\RedisTxn\Updater;
 
 use Prometheus\Storage\RedisTxn\Metric\MetadataBuilder;
 use Prometheus\Storage\RedisTxn\RedisScript\RedisScript;
-use Prometheus\Storage\RedisTxn\RedisScript\RedisScriptHelper;
-use Redis;
 
-class CounterUpdater implements UpdaterInterface
+class CounterUpdater extends AbstractUpdater
 {
     /**
      * @var string
@@ -47,41 +45,6 @@ return didUpdate
 LUA;
 
     /**
-     * @var RedisScriptHelper
-     */
-    private $helper;
-
-    /**
-     * @var Redis
-     */
-    private $redis;
-
-    /**
-     * @param Redis $redis
-     */
-    public function __construct(Redis $redis)
-    {
-        $this->helper = new RedisScriptHelper();
-        $this->redis = $redis;
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public function getHelper(): RedisScriptHelper
-    {
-        return $this->helper;
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public function getRedis(): Redis
-    {
-        return $this->redis;
-    }
-
-    /**
      * @inheritDoc
      */
     public function getRedisScript(array $data): RedisScript
@@ -114,13 +77,5 @@ LUA;
             ->withArgs($scriptArgs)
             ->withNumKeys(3)
             ->build();
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public function update(array $data)
-    {
-        return $this->getRedisScript($data)->eval($this->redis);
     }
 }
