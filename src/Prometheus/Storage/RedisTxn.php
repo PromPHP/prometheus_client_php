@@ -33,6 +33,7 @@ use function \sort;
  * "collect" operations of each metric type within a single Redis transaction.
  *
  * @todo Only summary metrics have been refactored so far. Complete refactor for counter, gauge, and histogram metrics.
+ * @todo Reimplement all Redis scripts with redis.pcall() to trap runtime errors that are ignored by redis.call().
  */
 class RedisTxn implements Adapter
 {
@@ -371,34 +372,74 @@ LUA
     public function updateGauge(array $data): void
     {
         $this->ensureOpenConnection();
-        $metaData = $data;
-        unset($metaData['value'], $metaData['labelValues'], $metaData['command']);
-        $this->redis->eval(
-            <<<LUA
-local result = redis.call(ARGV[1], KEYS[1], ARGV[2], ARGV[3])
 
-if ARGV[1] == 'hSet' then
-    if result == 1 then
-        redis.call('hSet', KEYS[1], '__meta', ARGV[4])
-        redis.call('sAdd', KEYS[2], KEYS[1])
-    end
-else
-    if result == ARGV[3] then
-        redis.call('hSet', KEYS[1], '__meta', ARGV[4])
-        redis.call('sAdd', KEYS[2], KEYS[1])
-    end
+        // Prepare metadata
+        $metadata = $this->toMetadata($data);
+
+        // Create Redis keys
+        $metricKey = $this->getMetricKey($metadata);
+        $registryKey = $this->getMetricRegistryKey($metadata->getType());
+        $metadataKey = $this->getMetadataKey($metadata->getType());
+
+        // Prepare script and input
+        $command = $this->getRedisCommand($metadata->getCommand());
+        $value = $data['value'];
+        $ttl = $metadata->getMaxAgeSeconds() ?? self::DEFAULT_TTL_SECONDS;
+        $numKeys = 3;
+        $scriptArgs = [
+            $registryKey,
+            $metadataKey,
+            $metricKey,
+            $metadata->toJson(),
+            $command,
+            $value,
+            $ttl
+        ];
+        $script = <<<LUA
+-- Parse script input
+local registryKey = KEYS[1]
+local metadataKey = KEYS[2]
+local metricKey = KEYS[3]
+local metadata = ARGV[1]
+local command = ARGV[2]
+local value = ARGV[3]
+local ttl = tonumber(ARGV[4])
+
+-- Update metric value
+local didUpdate = false
+if command == "set" then
+    local result = redis.call(command, metricKey, value) 
+    didUpdate = result["ok"] == "OK"
+else -- {incrby, incrbyfloat}
+    local result = redis.call(command, metricKey, value) 
+    didUpdate = tostring(result) == value
 end
-LUA
-            ,
-            [
-                $this->toMetricKey($data),
-                self::$prefix . Gauge::TYPE . self::PROMETHEUS_METRIC_KEYS_SUFFIX,
-                $this->getRedisCommand($data['command']),
-                json_encode($data['labelValues']),
-                $data['value'],
-                json_encode($metaData),
-            ],
-            2
+
+-- Update metric metadata
+if didUpdate == true then
+    -- Set metric TTL
+    if ttl > 0 then
+        redis.call('expire', metricKey, ttl)
+    else
+       redis.call('persist', metricKey)
+    end
+    
+    -- Register metric value
+    redis.call('sadd', registryKey, metricKey)
+
+    -- Register metric metadata
+    redis.call('hset', metadataKey, metricKey, metadata)
+end
+
+-- Report script result
+return didUpdate
+LUA;
+
+        // Call script
+        $this->redis->eval(
+            $script,
+            $scriptArgs,
+            $numKeys
         );
     }
 
@@ -419,11 +460,54 @@ LUA
         $metadataKey = $this->getMetadataKey($metadata->getType());
 
         // Prepare script input
-        $command = $metadata->getCommand() === Adapter::COMMAND_INCREMENT_INTEGER  ? 'incrby' : 'incrbyfloat';
+        $command = $this->getRedisCommand($metadata->getCommand());
         $value = $data['value'];
-        $ttl = time() + ($metadata->getMaxAgeSeconds() ?? self::DEFAULT_TTL_SECONDS);
+        $ttl = $metadata->getMaxAgeSeconds() ?? self::DEFAULT_TTL_SECONDS;
+        $scriptArgs = [
+            $registryKey,
+            $metadataKey,
+            $metricKey,
+            $metadata->toJson(),
+            $command,
+            $value,
+            $ttl
+        ];
+        $numKeyArgs = 3;
+        $script = <<<LUA
+-- Parse script input
+local registryKey = KEYS[1]
+local metadataKey = KEYS[2]
+local metricKey = KEYS[3]
+local metadata = ARGV[1]
+local command = ARGV[2]
+local value = ARGV[3]
+local ttl = tonumber(ARGV[4])
 
-        $this->redis->eval(<<<LUA
+-- Update metric value
+local result = redis.call(command, metricKey, value) 
+local didUpdate = tostring(result) == value
+
+-- Update metric metadata
+if didUpdate == true then
+    -- Set metric TTL
+    if ttl > 0 then
+        redis.call('expire', metricKey, ttl)
+    else
+       redis.call('persist', metricKey)
+    end
+    
+    -- Register metric value
+    redis.call('sadd', registryKey, metricKey)
+
+    -- Register metric metadata
+    redis.call('hset', metadataKey, metricKey, metadata)
+end
+
+-- Report script result
+return didUpdate
+LUA;
+
+        $oldScript = <<<LUA
 -- Parse script input
 local registryKey = KEYS[1]
 local metadataKey = KEYS[2]
@@ -442,17 +526,13 @@ redis.call('hset', metadataKey, metricKey, metadata)
 -- Update metric value
 redis.call(observeCommand, metricKey, value)
 redis.call('expire', metricKey, ttl)
-LUA
-            , [
-            $registryKey,
-            $metadataKey,
-            $metricKey,
-            $metadata->toJson(),
-            $command,
-            $value,
-            $ttl
-        ],
-            3
+LUA;
+
+        // Call script
+        $result = $this->redis->eval(
+            $script,
+            $scriptArgs,
+            $numKeyArgs
         );
     }
 
@@ -655,26 +735,68 @@ LUA
      */
     private function collectGauges(): array
     {
-        $keys = $this->redis->sMembers(self::$prefix . Gauge::TYPE . self::PROMETHEUS_METRIC_KEYS_SUFFIX);
-        sort($keys);
+        // Create Redis keys
+        $registryKey = $this->getMetricRegistryKey(Gauge::TYPE);
+        $metadataKey = $this->getMetadataKey(Gauge::TYPE);
+
+        // Execute transaction to collect metrics
+        $result = $this->redis->eval(<<<LUA
+-- Parse script input
+local registryKey = KEYS[1]
+local metadataKey = KEYS[2]
+
+-- Process each registered metric
+local result = {}
+local metricKeys = redis.call('smembers', registryKey)
+for i, metricKey in ipairs(metricKeys) do
+    local doesExist = redis.call('exists', metricKey)
+    if doesExist then
+        -- Get metric metadata
+        local metadata = redis.call('hget', metadataKey, metricKey)
+        
+        -- Get metric sample
+        local sample = redis.call('get', metricKey)
+        
+        -- Add the processed metric to the set of results
+        result[metricKey] = {}
+        result[metricKey]["metadata"] = metadata
+        result[metricKey]["samples"] = sample
+    else
+        -- Remove metadata for expired key
+        redis.call('srem', registryKey, metricKey)
+        redis.call('hdel', metadataKey, metricKey)
+    end 
+end
+
+-- Return the set of collected metrics
+return cjson.encode(result)
+LUA
+            , [
+                $registryKey,
+                $metadataKey,
+            ],
+            2
+        );
+
+        // Collate metrics by metric name
+        $metrics = [];
+        $redisGauges = json_decode($result, true);
+        foreach ($redisGauges as $gauge) {
+            // Get metadata
+            $phpMetadata = json_decode($gauge['metadata'], true);
+            $metadata = MetadataBuilder::fromArray($phpMetadata)->build();
+
+            // Create or update metric
+            $metricName = $metadata->getName();
+            $builder = $metrics[$metricName] ?? Metric::newScalarMetricBuilder()->withMetadata($metadata);
+            $builder->withSample($gauge['samples'], $metadata->getLabelValues());
+            $metrics[$metricName] = $builder;
+        }
+
+        // Format metrics and hand them off to the calling collector
         $gauges = [];
-        foreach ($keys as $key) {
-            $raw = $this->redis->hGetAll(str_replace($this->redis->_prefix(''), '', $key));
-            $gauge = json_decode($raw['__meta'], true);
-            unset($raw['__meta']);
-            $gauge['samples'] = [];
-            foreach ($raw as $k => $value) {
-                $gauge['samples'][] = [
-                    'name' => $gauge['name'],
-                    'labelNames' => [],
-                    'labelValues' => json_decode($k, true),
-                    'value' => $value,
-                ];
-            }
-            usort($gauge['samples'], function ($a, $b): int {
-                return strcmp(implode("", $a['labelValues']), implode("", $b['labelValues']));
-            });
-            $gauges[] = $gauge;
+        foreach ($metrics as $_ => $metric) {
+            $gauges[] = $metric->build()->toArray();
         }
         return $gauges;
     }
@@ -696,24 +818,24 @@ local metadataKey = KEYS[2]
 
 -- Process each registered counter metric
 local result = {}
-local counterKeys = redis.call('smembers', registryKey)
-for i, counterKey in ipairs(counterKeys) do
-    local doesExist = redis.call('exists', counterKey)
+local metricKeys = redis.call('smembers', registryKey)
+for i, metricKey in ipairs(metricKeys) do
+    local doesExist = redis.call('exists', metricKey)
     if doesExist then
         -- Get counter metadata
-        local metadata = redis.call('hget', metadataKey, counterKey)
+        local metadata = redis.call('hget', metadataKey, metricKey)
         
         -- Get counter sample
-        local sample = redis.call('get', counterKey)
+        local sample = redis.call('get', metricKey)
         
         -- Add the processed metric to the set of results
-        result[counterKey] = {}
-        result[counterKey]["metadata"] = metadata
-        result[counterKey]["samples"] = sample
+        result[metricKey] = {}
+        result[metricKey]["metadata"] = metadata
+        result[metricKey]["samples"] = sample
     else
         -- Remove metadata for expired key
-        redis.call('srem', registryKey, counterKey)
-        redis.call('hdel', metadataKey, counterKey)
+        redis.call('srem', registryKey, metricKey)
+        redis.call('hdel', metadataKey, metricKey)
     end 
 end
 
@@ -758,11 +880,11 @@ LUA
     {
         switch ($cmd) {
             case Adapter::COMMAND_INCREMENT_INTEGER:
-                return 'hIncrBy';
+                return 'incrby';
             case Adapter::COMMAND_INCREMENT_FLOAT:
-                return 'hIncrByFloat';
+                return 'incrbyfloat';
             case Adapter::COMMAND_SET:
-                return 'hSet';
+                return 'set';
             default:
                 throw new InvalidArgumentException("Unknown command");
         }
