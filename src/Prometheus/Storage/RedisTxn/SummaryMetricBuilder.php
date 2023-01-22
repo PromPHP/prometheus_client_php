@@ -8,69 +8,62 @@ use Prometheus\Math;
 /**
  * Fluent-builder for the {@see \Prometheus\Storage\RedisTxn\Metric} data structure.
  */
-class MetricBuilder
+class SummaryMetricBuilder
 {
-	/**
-	 * @var Metadata|null
-	 */
-	private $metadata = null;
+    /**
+     * @var Metadata|null
+     */
+    private $metadata = null;
 
-	/**
-	 * @var array|null
-	 */
-	private $samples = null;
+    /**
+     * @var array|null
+     */
+    private $samples = null;
 
-	/**
-	 * @param string $jsonMetadata JSON-encoded array of metadata fields.
-	 * @return MetricBuilder
-	 */
-	public function withMetadata(string $jsonMetadata): MetricBuilder
-	{
-		$metadata = json_decode($jsonMetadata, true);
-		$this->metadata = Metadata::newBuilder()
-			->withName($metadata['name'])
-			->withHelp($metadata['help'] ?? null)
-			->withLabelNames($metadata['labelNames'] ?? null)
-            ->withLabelValues($metadata['labelValues'] ?? null)
-			->withMaxAgeSeconds($metadata['maxAgeSeconds'] ?? null)
-			->withQuantiles($metadata['quantiles'] ?? null)
-			->build();
-		return $this;
-	}
+    /**
+     * @param string $jsonMetadata JSON-encoded array of metadata fields.
+     * @return SummaryMetricBuilder
+     */
+    public function withMetadata(string $jsonMetadata): SummaryMetricBuilder
+    {
+        $metadata = json_decode($jsonMetadata, true);
+        $this->metadata = MetadataBuilder::fromArray($metadata)->build();
+        return $this;
+    }
 
-	/**
-	 * @param array $samples
-	 * @return MetricBuilder
-	 */
-	public function withSamples(array $samples): MetricBuilder
-	{
-		$this->samples = $this->processSamples($samples);
-		return $this;
-	}
+    /**
+     * @param array $samples
+     * @return SummaryMetricBuilder
+     */
+    public function withSamples(array $samples): SummaryMetricBuilder
+    {
+        $this->samples = $this->processSummarySamples($samples);
+        return $this;
+    }
 
-	/**
-	 * @return Metric
-	 */
-	public function build(): Metric
-	{
-		$this->validate();
-		return new Metric($this->metadata, $this->samples);
-	}
+    /**
+     * @return Metric
+     */
+    public function build(): Metric
+    {
+        $this->validate();
+        return new Metric($this->metadata, $this->samples);
+    }
 
-	/**
-	 * @return void
-	 * @throws InvalidArgumentException
-	 */
-	private function validate(): void
-	{
-		if ($this->metadata === null) {
-			throw new InvalidArgumentException('Summary metadata field is required.');
-		}
+    /**
+     * @return void
+     * @throws InvalidArgumentException
+     */
+    private function validate(): void
+    {
+        if ($this->metadata === null) {
+            throw new InvalidArgumentException('Summary metadata field is required.');
+        }
 
-		if ($this->samples === null) {
-			throw new InvalidArgumentException('Summary samples field is required.');
-		}
-	}
+        if ($this->samples === null) {
+            throw new InvalidArgumentException('Summary samples field is required.');
+        }
+    }
 
     /**
      * Calculates the configured quantiles, count, and sum for a summary metric given a set of observed values.
@@ -78,7 +71,7 @@ class MetricBuilder
      * @param array $sourceSamples
      * @return array
      */
-    private function processSamples(array $sourceSamples): array
+    private function processSummarySamples(array $sourceSamples): array
     {
         // Return value
         $samples = [];

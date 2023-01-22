@@ -9,115 +9,141 @@ namespace Prometheus\Storage\RedisTxn;
  */
 class Metadata
 {
-	/**
-	 * @var string
-	 */
-	private $name;
+    /**
+     * @var string
+     */
+    private $name;
 
-	/**
-	 * @var string
-	 */
-	private $help;
+    /**
+     * @var string
+     */
+    private $type;
 
-	/**
-	 * @var string[]
-	 */
-	private $labelNames;
+    /**
+     * @var string
+     */
+    private $help;
 
-	/**
-	 * @var mixed[]
-	 */
-	private $labelValues;
+    /**
+     * @var string[]
+     */
+    private $labelNames;
 
-	/**
-	 * @var int
-	 */
-	private $maxAgeSeconds;
+    /**
+     * @var mixed[]
+     */
+    private $labelValues;
 
-	/**
-	 * @var float[]
-	 */
-	private $quantiles;
+    /**
+     * @var int
+     */
+    private $maxAgeSeconds;
 
-	/**
-	 * @return MetadataBuilder
-	 */
-	public static function newBuilder(): MetadataBuilder
-	{
-		return new MetadataBuilder();
-	}
+    /**
+     * @var float[]
+     */
+    private $quantiles;
 
-	/**
-	 * @param string $name
-	 * @param string $help
-	 * @param array $labelNames
-	 * @param array $labelValues
-	 * @param int $maxAgeSeconds
-	 * @param array $quantiles
-	 */
-	public function __construct(
-		string $name,
-		string $help,
-		array $labelNames,
-		array $labelValues,
-		int $maxAgeSeconds,
-		array $quantiles
-	)
-	{
-		$this->name = $name;
-		$this->help = $help;
-		$this->labelNames = $labelNames;
-		$this->labelValues = $labelValues;
-		$this->maxAgeSeconds = $maxAgeSeconds;
-		$this->quantiles = $quantiles;
-	}
+    /**
+     * @var int
+     */
+    private $command;
 
-	/**
+    /**
+     * @return MetadataBuilder
+     */
+    public static function newBuilder(): MetadataBuilder
+    {
+        return new MetadataBuilder();
+    }
+
+    /**
+     * @param string $name
+     * @param string $type
+     * @param string $help
+     * @param array $labelNames
+     * @param array $labelValues
+     * @param int $maxAgeSeconds
+     * @param array $quantiles
+     * @param int $command
+     */
+    public function __construct(
+        string $name,
+        string $type,
+        string $help,
+        array $labelNames,
+        array $labelValues,
+        int $maxAgeSeconds,
+        array $quantiles,
+        int $command
+    )
+    {
+        $this->name = $name;
+        $this->type = $type;
+        $this->help = $help;
+        $this->labelNames = $labelNames;
+        $this->labelValues = $labelValues;
+        $this->maxAgeSeconds = $maxAgeSeconds;
+        $this->quantiles = $quantiles;
+        $this->command = $command;
+    }
+
+    /**
      * Prometheus metric name.
      *
-	 * @return string
-	 */
-	public function getName(): string
-	{
-		return $this->name;
-	}
+     * @return string
+     */
+    public function getName(): string
+    {
+        return $this->name;
+    }
 
-	/**
+    /**
+     * Prometheus metric type.
+     *
+     * @return string
+     */
+    public function getType(): string
+    {
+        return $this->type;
+    }
+
+    /**
      * Prometheus metric help description.
      *
      * @internal Optional.
-	 * @return string
-	 */
-	public function getHelp(): string
-	{
-		return $this->help;
-	}
+     * @return string
+     */
+    public function getHelp(): string
+    {
+        return $this->help;
+    }
 
-	/**
+    /**
      * Prometheus metric label names.
      *
      * Note that each label introduces a degree of cardinality for a given metric.
      *
      * @internal Optional. It is permissible to have no label names.
-	 * @return string[]
-	 */
-	public function getLabelNames(): array
-	{
-		return $this->labelNames;
-	}
+     * @return string[]
+     */
+    public function getLabelNames(): array
+    {
+        return $this->labelNames;
+    }
 
-	/**
+    /**
      * Prometheus metric label values.
      *
      * Note that each label value should correspond to a label name.
      *
      * @internal Optional.
-	 * @return mixed[]
-	 */
-	public function getLabelValues(): array
-	{
-		return $this->labelValues;
-	}
+     * @return mixed[]
+     */
+    public function getLabelValues(): array
+    {
+        return $this->labelValues;
+    }
 
     /**
      * Prometheus metric label values encoded for storage in Redis.
@@ -132,27 +158,35 @@ class Metadata
         return base64_encode(json_encode($this->labelValues));
     }
 
-	/**
+    /**
      * Prometheus metric time-to-live (TTL) in seconds.
      *
      * This property is used internally by the storage adapter to enforce a TTL for metrics stored in Redis.
      *
-	 * @return int
-	 */
-	public function getMaxAgeSeconds(): int
-	{
-		return $this->maxAgeSeconds;
-	}
+     * @return int
+     */
+    public function getMaxAgeSeconds(): int
+    {
+        return $this->maxAgeSeconds;
+    }
 
-	/**
+    /**
      * Prometheus metric metadata that describes the set of quantiles to report for a summary-type metric.
      *
-	 * @return array
-	 */
-	public function getQuantiles(): array
-	{
-		return $this->quantiles;
-	}
+     * @return array
+     */
+    public function getQuantiles(): array
+    {
+        return $this->quantiles;
+    }
+
+    /**
+     * @return int
+     */
+    public function getCommand(): int
+    {
+        return $this->command;
+    }
 
     /**
      * Represents this data structure as a JSON object.
@@ -163,11 +197,13 @@ class Metadata
     {
         return json_encode([
             'name' => $this->getName(),
+            'type' => $this->getType(),
             'help' => $this->getHelp(),
             'labelNames' => $this->getLabelNames(),
             'labelValues' => $this->getLabelValuesEncoded(),
             'maxAgeSeconds' => $this->getMaxAgeSeconds(),
             'quantiles' => $this->getQuantiles(),
+            'command' => $this->getCommand(),
         ]);
     }
 }
