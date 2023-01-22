@@ -1,6 +1,8 @@
 <?php
 
-namespace Prometheus\Storage\RedisTxn;
+namespace Prometheus\Storage\RedisTxn\Metric;
+
+use Prometheus\MetricFamilySamples;
 
 /**
  * This structure represents all the data associated with a single, unique metric that this library
@@ -56,15 +58,11 @@ class Metric
     }
 
     /**
-     * Represents this data structure as a PHP associative array.
-     *
-     * This array generally conforms to the expectations of the {@see \Prometheus\MetricFamilySamples} structure.
-     *
-     * @return array
+     * @return MetricFamilySamples
      */
-    public function toArray(): array
+    public function toMetricFamilySamples(): MetricFamilySamples
     {
-        return [
+        return new MetricFamilySamples([
             'name' => $this->metadata->getName(),
             'help' => $this->metadata->getHelp(),
             'type' => $this->metadata->getType(),
@@ -72,6 +70,6 @@ class Metric
             'maxAgeSeconds' => $this->metadata->getMaxAgeSeconds(),
             'quantiles' => $this->metadata->getQuantiles() ?? [],
             'samples' => $this->samples,
-        ];
+        ]);
     }
 }

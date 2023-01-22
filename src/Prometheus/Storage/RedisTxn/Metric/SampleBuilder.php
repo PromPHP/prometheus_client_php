@@ -1,11 +1,11 @@
 <?php
 
-namespace Prometheus\Storage\RedisTxn;
+namespace Prometheus\Storage\RedisTxn\Metric;
 
 use InvalidArgumentException;
 
 /**
- * Fluent-builder for the {@see \Prometheus\Storage\RedisTxn\Sample} structure.
+ * Fluent-builder for the {@see \Prometheus\Storage\RedisTxn\Metric\Sample} structure.
  */
 class SampleBuilder
 {

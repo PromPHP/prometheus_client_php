@@ -1,12 +1,14 @@
 <?php
 
-namespace Prometheus\Storage\RedisTxn;
+namespace Prometheus\Storage\RedisTxn\Metric;
 
 use InvalidArgumentException;
 use Prometheus\Math;
+use function \count;
+use function \sort;
 
 /**
- * Fluent-builder for the {@see \Prometheus\Storage\RedisTxn\Metric} data structure.
+ * Fluent-builder for the {@see \Prometheus\Storage\RedisTxn\Metric\Metric} data structure.
  */
 class SummaryMetricBuilder
 {

@@ -1,12 +1,12 @@
 <?php
 
-namespace Prometheus\Storage\RedisTxn;
+namespace Prometheus\Storage\RedisTxn\Metric;
 
 use InvalidArgumentException;
 use Prometheus\Storage\Adapter;
 
 /**
- * Fluent-builder for the {@see \Prometheus\Storage\RedisTxn\Metadata} structure.
+ * Fluent-builder for the {@see \Prometheus\Storage\RedisTxn\Metric\Metadata} structure.
  */
 class MetadataBuilder
 {

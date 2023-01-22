@@ -1,6 +1,6 @@
 <?php
 
-namespace Prometheus\Storage\RedisTxn;
+namespace Prometheus\Storage\RedisTxn\Metric;
 
 /**
  * This structure represent a single observed value for a metric.

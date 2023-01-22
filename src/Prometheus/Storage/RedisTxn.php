@@ -4,18 +4,15 @@ declare(strict_types=1);
 
 namespace Prometheus\Storage;
 
-use InvalidArgumentException;
-use Prometheus\Counter;
 use Prometheus\Exception\StorageException;
-use Prometheus\Gauge;
 use Prometheus\Histogram;
 use Prometheus\MetricFamilySamples;
-use Prometheus\Storage\RedisTxn\Metadata;
-use Prometheus\Storage\RedisTxn\MetadataBuilder;
-use Prometheus\Storage\RedisTxn\Metric;
-use Prometheus\Summary;
-use RedisException;
-use RuntimeException;
+use Prometheus\Storage\RedisTxn\Collecter\CounterCollecter;
+use Prometheus\Storage\RedisTxn\Collecter\GaugeCollecter;
+use Prometheus\Storage\RedisTxn\Collecter\SummaryCollecter;
+use Prometheus\Storage\RedisTxn\Updater\CounterUpdater;
+use Prometheus\Storage\RedisTxn\Updater\GaugeUpdater;
+use Prometheus\Storage\RedisTxn\Updater\SummaryUpdater;
 use function \sort;
 
 /**
@@ -40,8 +37,6 @@ class RedisTxn implements Adapter
     const PROMETHEUS_METRIC_KEYS_SUFFIX = '_METRIC_KEYS';
 
     const PROMETHEUS_METRIC_META_SUFFIX = '_METRIC_META';
-
-    const DEFAULT_TTL_SECONDS = 600;
 
     /**
      * @var mixed[]
@@ -104,22 +99,6 @@ class RedisTxn implements Adapter
     }
 
     /**
-     * @param mixed[] $options
-     */
-    public static function setDefaultOptions(array $options): void
-    {
-        self::$defaultOptions = array_merge(self::$defaultOptions, $options);
-    }
-
-    /**
-     * @param string $prefix
-     */
-    public static function setPrefix(string $prefix): void
-    {
-        self::$prefix = $prefix;
-    }
-
-    /**
      * @throws StorageException
      * @deprecated use replacement method wipeStorage from Adapter interface
      */
@@ -164,48 +143,31 @@ LUA
     }
 
     /**
-     * @param mixed[] $data
-     *
-     * @return string
-     */
-    private function metaKey(array $data): string
-    {
-        return implode(':', [
-            $data['name'],
-            'meta'
-        ]);
-    }
-
-    /**
-     * @param mixed[] $data
-     *
-     * @return string
-     */
-    private function valueKey(array $data): string
-    {
-        return implode(':', [
-            $data['name'],
-            $this->encodeLabelValues($data['labelValues']),
-            'value'
-        ]);
-    }
-
-    /**
      * @return MetricFamilySamples[]
      * @throws StorageException
      */
     public function collect(): array
     {
+        // Ensure Redis connection
         $this->ensureOpenConnection();
+
         $metrics = $this->collectHistograms();
-        $metrics = array_merge($metrics, $this->collectGauges());
-        $metrics = array_merge($metrics, $this->collectCounters());
-        $metrics = array_merge($metrics, $this->collectSummaries());
-        return array_map(
+        $metricFamilySamples = array_map(
             function (array $metric): MetricFamilySamples {
                 return new MetricFamilySamples($metric);
             },
             $metrics
+        );
+
+        // Collect all metrics
+        $counters = $this->collectCounters();
+        $gauges = $this->collectGauges();
+        $summaries = $this->collectSummaries();
+        return array_merge(
+            $metricFamilySamples,
+            $counters,
+            $gauges,
+            $summaries
         );
     }
 
@@ -298,261 +260,42 @@ LUA
     }
 
     /**
-     * @param array $data
-     * @return void
-     * @throws StorageException
-     * @throws RedisException
+     * @inheritDoc
      */
     public function updateSummary(array $data): void
     {
+        // Ensure Redis connection
         $this->ensureOpenConnection();
 
-        // Prepare metadata
-        $metadata = $this->toMetadata($data);
-        $ttl = $metadata->getMaxAgeSeconds();
-
-        // Create Redis keys
-        $metricKey = $this->getMetricKey($metadata);
-        $registryKey = $this->getMetricRegistryKey($metadata->getType());
-        $metadataKey = $this->getMetadataKey($metadata->getType());
-
-        // Get summary sample
-        //
-        // NOTE: When we persist a summary metric sample into Redis, we write it into a Redis sorted set.
-        // We append the current time in microseconds as a suffix on the observed value to make each observed value
-        // durable and unique in the sorted set in accordance with best-practice guidelines described in the article,
-        // "Redis Best Practices: Sorted Set Time Series" [1].
-        //
-        // See MetricBuilder::processSamples() for the complementary part of this operation.
-        //
-        // [1] https://redis.com/redis-best-practices/time-series/sorted-set-time-series/
-        $value = implode(':', [$data['value'], microtime(true)]);
-        $currentTime = time();
-
-        // Commit the observed metric value
-        $this->redis->eval(<<<LUA
--- Parse script input
-local summaryRegistryKey = KEYS[1]
-local metaHashKey = KEYS[2]
-local summaryKey = KEYS[3]
-local summaryMetadata = ARGV[1]
-local summaryValue = ARGV[2]
-local currentTime = ARGV[3]
-local ttlFieldValue = ARGV[4]
-
--- NOTE: We must construct this key on the Redis server to account for cases where 
--- a global key prefix has been configured on a Redis client. If we construct this
--- key in the application, we will inadvertently omit any configured global key prefix.
-local ttlFieldName = summaryKey .. ":ttl"
-
--- Persist the observed metric value
-redis.call('sadd', summaryRegistryKey, summaryKey)
-redis.call('zadd', summaryKey, currentTime, summaryValue)
-redis.call('hset', metaHashKey, summaryKey, summaryMetadata)
-redis.call('hset', metaHashKey, ttlFieldName, ttlFieldValue)
-LUA
-            ,
-            [
-                $registryKey,
-                $metadataKey,
-                $metricKey,
-                $metadata->toJson(),
-                $value,
-                $currentTime,
-                $ttl,
-            ],
-            3
-        );
+        // Update metric
+        $updater = new SummaryUpdater($this->redis);
+        $updater->update($data);
     }
 
     /**
-     * @param mixed[] $data
-     * @throws StorageException
+     * @inheritDoc
      */
     public function updateGauge(array $data): void
     {
+        // Ensure Redis connection
         $this->ensureOpenConnection();
 
-        // Prepare metadata
-        $metadata = $this->toMetadata($data);
-
-        // Create Redis keys
-        $metricKey = $this->getMetricKey($metadata);
-        $registryKey = $this->getMetricRegistryKey($metadata->getType());
-        $metadataKey = $this->getMetadataKey($metadata->getType());
-
-        // Prepare script and input
-        $command = $this->getRedisCommand($metadata->getCommand());
-        $value = $data['value'];
-        $ttl = $metadata->getMaxAgeSeconds() ?? self::DEFAULT_TTL_SECONDS;
-        $numKeys = 3;
-        $scriptArgs = [
-            $registryKey,
-            $metadataKey,
-            $metricKey,
-            $metadata->toJson(),
-            $command,
-            $value,
-            $ttl
-        ];
-        $script = <<<LUA
--- Parse script input
-local registryKey = KEYS[1]
-local metadataKey = KEYS[2]
-local metricKey = KEYS[3]
-local metadata = ARGV[1]
-local command = ARGV[2]
-local value = ARGV[3]
-local ttl = tonumber(ARGV[4])
-
--- Update metric value
-local didUpdate = false
-if command == "set" then
-    local result = redis.call(command, metricKey, value) 
-    didUpdate = result["ok"] == "OK"
-else -- {incrby, incrbyfloat}
-    local result = redis.call(command, metricKey, value) 
-    didUpdate = tostring(result) == value
-end
-
--- Update metric metadata
-if didUpdate == true then
-    -- Set metric TTL
-    if ttl > 0 then
-        redis.call('expire', metricKey, ttl)
-    else
-       redis.call('persist', metricKey)
-    end
-    
-    -- Register metric value
-    redis.call('sadd', registryKey, metricKey)
-
-    -- Register metric metadata
-    redis.call('hset', metadataKey, metricKey, metadata)
-end
-
--- Report script result
-return didUpdate
-LUA;
-
-        // Call script
-        $this->redis->eval(
-            $script,
-            $scriptArgs,
-            $numKeys
-        );
+        // Update metric
+        $updater = new GaugeUpdater($this->redis);
+        $updater->update($data);
     }
 
     /**
-     * @param mixed[] $data
-     * @throws StorageException
+     * @inheritDoc
      */
     public function updateCounter(array $data): void
     {
+        // Ensure Redis connection
         $this->ensureOpenConnection();
 
-        // Prepare metadata
-        $metadata = $this->toMetadata($data);
-
-        // Create Redis keys
-        $metricKey = $this->getMetricKey($metadata);
-        $registryKey = $this->getMetricRegistryKey($metadata->getType());
-        $metadataKey = $this->getMetadataKey($metadata->getType());
-
-        // Prepare script input
-        $command = $this->getRedisCommand($metadata->getCommand());
-        $value = $data['value'];
-        $ttl = $metadata->getMaxAgeSeconds() ?? self::DEFAULT_TTL_SECONDS;
-        $scriptArgs = [
-            $registryKey,
-            $metadataKey,
-            $metricKey,
-            $metadata->toJson(),
-            $command,
-            $value,
-            $ttl
-        ];
-        $numKeyArgs = 3;
-        $script = <<<LUA
--- Parse script input
-local registryKey = KEYS[1]
-local metadataKey = KEYS[2]
-local metricKey = KEYS[3]
-local metadata = ARGV[1]
-local command = ARGV[2]
-local value = ARGV[3]
-local ttl = tonumber(ARGV[4])
-
--- Update metric value
-local result = redis.call(command, metricKey, value) 
-local didUpdate = tostring(result) == value
-
--- Update metric metadata
-if didUpdate == true then
-    -- Set metric TTL
-    if ttl > 0 then
-        redis.call('expire', metricKey, ttl)
-    else
-       redis.call('persist', metricKey)
-    end
-    
-    -- Register metric value
-    redis.call('sadd', registryKey, metricKey)
-
-    -- Register metric metadata
-    redis.call('hset', metadataKey, metricKey, metadata)
-end
-
--- Report script result
-return didUpdate
-LUA;
-
-        $oldScript = <<<LUA
--- Parse script input
-local registryKey = KEYS[1]
-local metadataKey = KEYS[2]
-local metricKey = KEYS[3]
-local metadata = ARGV[1]
-local observeCommand = ARGV[2]
-local value = ARGV[3]
-local ttl = ARGV[4]
-
--- Register metric value
-redis.call('sadd', registryKey, metricKey)
-
--- Register metric metadata
-redis.call('hset', metadataKey, metricKey, metadata)
-
--- Update metric value
-redis.call(observeCommand, metricKey, value)
-redis.call('expire', metricKey, ttl)
-LUA;
-
-        // Call script
-        $result = $this->redis->eval(
-            $script,
-            $scriptArgs,
-            $numKeyArgs
-        );
-    }
-
-
-    /**
-     * @param mixed[] $data
-     * @return Metadata
-     */
-    private function toMetadata(array $data): Metadata
-    {
-        return Metadata::newBuilder()
-            ->withName($data['name'])
-            ->withType($data['type'])
-            ->withHelp($data['help'])
-            ->withLabelNames($data['labelNames'])
-            ->withLabelValues($data['labelValues'])
-            ->withQuantiles($data['quantiles'] ?? null)
-            ->withMaxAgeSeconds($data['maxAgeSeconds'] ?? null)
-            ->withCommand($data['command'] ?? null)
-            ->build();
+        // Update metric
+        $updater = new CounterUpdater($this->redis);
+        $updater->update($data);
     }
 
     /**
@@ -633,261 +376,30 @@ LUA;
     }
 
     /**
-     * @param string $key
-     *
-     * @return string
-     */
-    private function removePrefixFromKey(string $key): string
-    {
-        // @phpstan-ignore-next-line false positive, phpstan thinks getOptions returns int
-        if ($this->redis->getOption(\Redis::OPT_PREFIX) === null) {
-            return $key;
-        }
-        // @phpstan-ignore-next-line false positive, phpstan thinks getOptions returns int
-        return substr($key, strlen($this->redis->getOption(\Redis::OPT_PREFIX)));
-    }
-
-    /**
-     * @return array
+     * @return MetricFamilySamples[]
      */
     private function collectSummaries(): array
     {
-        // Register summary key
-        $keyPrefix = self::$prefix . Summary::TYPE . self::PROMETHEUS_METRIC_KEYS_SUFFIX;
-        $summaryRegistryKey = implode(':', [$keyPrefix, 'keys']);
-        $metadataKey = $this->getMetadataKey(Summary::TYPE);
-        $currentTime = time();
-
-        $result = $this->redis->eval(<<<LUA
--- Parse script input
-local summaryRegistryKey = KEYS[1]
-local metadataKey = KEYS[2]
-local currentTime = tonumber(ARGV[1])
-
--- Process each registered summary metric
-local result = {}
-local summaryKeys = redis.call('smembers', summaryRegistryKey)
-for i, summaryKey in ipairs(summaryKeys) do
-    -- Get metric sample TTL
-    local ttlFieldName = summaryKey .. ":ttl"
-    redis.call('set', 'foo', ttlFieldName)
-    local summaryTtl = redis.call("hget", metadataKey, ttlFieldName)
-    if summaryTtl ~= nil then
-        summaryTtl = tonumber(summaryTtl)
-    end
-    
-    -- Remove TTL'd metric samples
-    local startScore = "-inf"
-    if summaryTtl ~= nil and currentTime ~= nil and summaryTtl > 0 and summaryTtl < currentTime then
-        local startScore = currentTime - summaryTtl
-	    redis.call("zremrangebyscore", summaryKey, "-inf", startScore)
-    end
-    
-    -- Retrieve the set of remaining metric samples
-    local numSamples = redis.call('zcard', summaryKey)
-	local summaryMetadata = {}
-	local summarySamples = {}
-    if numSamples > 0 then
-        -- Configure results
-        summaryMetadata = redis.call("hget", metadataKey, summaryKey)
-        summarySamples = redis.call("zrange", summaryKey, startScore, "+inf", "byscore")
-    else            
-        -- Remove the metric's associated metadata if there are no associated samples remaining
-        redis.call('srem', summaryRegistryKey, summaryKey)    
-        redis.call('hdel', metadataKey, summaryKey)
-        redis.call('hdel', metadataKey, ttlFieldName)
-    end 
-	
-    -- Add the processed metric to the set of results
-	result[summaryKey] = {}
-	result[summaryKey]["metadata"] = summaryMetadata
-	result[summaryKey]["samples"] = summarySamples
-end
-
--- Return the set of summary metrics
-return cjson.encode(result)
-LUA
-            ,
-            [
-                $summaryRegistryKey,
-                $metadataKey,
-                $currentTime,
-            ],
-            2
-        );
-
-        // Format metrics and hand them off to the calling collector
-        $summaries = [];
-        $redisSummaries = json_decode($result, true);
-        foreach ($redisSummaries as $summary) {
-            $serializedSummary = Metric::newSummaryMetricBuilder()
-                ->withMetadata($summary['metadata'])
-                ->withSamples($summary['samples'])
-                ->build()
-                ->toArray();
-            $summaries[] = $serializedSummary;
-        }
-        return $summaries;
+        $collector = new SummaryCollecter($this->redis);
+        return $collector->getMetricFamilySamples();
     }
 
     /**
-     * @return mixed[]
+     * @return MetricFamilySamples[]
      */
     private function collectGauges(): array
     {
-        // Create Redis keys
-        $registryKey = $this->getMetricRegistryKey(Gauge::TYPE);
-        $metadataKey = $this->getMetadataKey(Gauge::TYPE);
-
-        // Execute transaction to collect metrics
-        $result = $this->redis->eval(<<<LUA
--- Parse script input
-local registryKey = KEYS[1]
-local metadataKey = KEYS[2]
-
--- Process each registered metric
-local result = {}
-local metricKeys = redis.call('smembers', registryKey)
-for i, metricKey in ipairs(metricKeys) do
-    local doesExist = redis.call('exists', metricKey)
-    if doesExist then
-        -- Get metric metadata
-        local metadata = redis.call('hget', metadataKey, metricKey)
-        
-        -- Get metric sample
-        local sample = redis.call('get', metricKey)
-        
-        -- Add the processed metric to the set of results
-        result[metricKey] = {}
-        result[metricKey]["metadata"] = metadata
-        result[metricKey]["samples"] = sample
-    else
-        -- Remove metadata for expired key
-        redis.call('srem', registryKey, metricKey)
-        redis.call('hdel', metadataKey, metricKey)
-    end 
-end
-
--- Return the set of collected metrics
-return cjson.encode(result)
-LUA
-            , [
-                $registryKey,
-                $metadataKey,
-            ],
-            2
-        );
-
-        // Collate metrics by metric name
-        $metrics = [];
-        $redisGauges = json_decode($result, true);
-        foreach ($redisGauges as $gauge) {
-            // Get metadata
-            $phpMetadata = json_decode($gauge['metadata'], true);
-            $metadata = MetadataBuilder::fromArray($phpMetadata)->build();
-
-            // Create or update metric
-            $metricName = $metadata->getName();
-            $builder = $metrics[$metricName] ?? Metric::newScalarMetricBuilder()->withMetadata($metadata);
-            $builder->withSample($gauge['samples'], $metadata->getLabelValues());
-            $metrics[$metricName] = $builder;
-        }
-
-        // Format metrics and hand them off to the calling collector
-        $gauges = [];
-        foreach ($metrics as $_ => $metric) {
-            $gauges[] = $metric->build()->toArray();
-        }
-        return $gauges;
+        $collector = new GaugeCollecter($this->redis);
+        return $collector->getMetricFamilySamples();
     }
 
     /**
-     * @return mixed[]
+     * @return MetricFamilySamples[]
      */
     private function collectCounters(): array
     {
-        // Create Redis keys
-        $registryKey = $this->getMetricRegistryKey(Counter::TYPE);
-        $metadataKey = $this->getMetadataKey(Counter::TYPE);
-
-        // Execute transaction to collect metrics
-        $result = $this->redis->eval(<<<LUA
--- Parse script input
-local registryKey = KEYS[1]
-local metadataKey = KEYS[2]
-
--- Process each registered counter metric
-local result = {}
-local metricKeys = redis.call('smembers', registryKey)
-for i, metricKey in ipairs(metricKeys) do
-    local doesExist = redis.call('exists', metricKey)
-    if doesExist then
-        -- Get counter metadata
-        local metadata = redis.call('hget', metadataKey, metricKey)
-        
-        -- Get counter sample
-        local sample = redis.call('get', metricKey)
-        
-        -- Add the processed metric to the set of results
-        result[metricKey] = {}
-        result[metricKey]["metadata"] = metadata
-        result[metricKey]["samples"] = sample
-    else
-        -- Remove metadata for expired key
-        redis.call('srem', registryKey, metricKey)
-        redis.call('hdel', metadataKey, metricKey)
-    end 
-end
-
--- Return the set of collected metrics
-return cjson.encode(result)
-LUA
-            , [
-                $registryKey,
-                $metadataKey,
-            ],
-            2
-        );
-
-        // Collate counter metrics by metric name
-        $metrics = [];
-        $redisCounters = json_decode($result, true);
-        foreach ($redisCounters as $counter) {
-            // Get metadata
-            $phpMetadata = json_decode($counter['metadata'], true);
-            $metadata = MetadataBuilder::fromArray($phpMetadata)->build();
-
-            // Create or update metric
-            $metricName = $metadata->getName();
-            $builder = $metrics[$metricName] ?? Metric::newScalarMetricBuilder()->withMetadata($metadata);
-            $builder->withSample($counter['samples'], $metadata->getLabelValues());
-            $metrics[$metricName] = $builder;
-        }
-
-        // Format metrics and hand them off to the calling collector
-        $counters = [];
-        foreach ($metrics as $_ => $metric) {
-            $counters[] = $metric->build()->toArray();
-        }
-        return $counters;
-    }
-
-    /**
-     * @param int $cmd
-     * @return string
-     */
-    private function getRedisCommand(int $cmd): string
-    {
-        switch ($cmd) {
-            case Adapter::COMMAND_INCREMENT_INTEGER:
-                return 'incrby';
-            case Adapter::COMMAND_INCREMENT_FLOAT:
-                return 'incrbyfloat';
-            case Adapter::COMMAND_SET:
-                return 'set';
-            default:
-                throw new InvalidArgumentException("Unknown command");
-        }
+        $collector = new CounterCollecter($this->redis);
+        return $collector->getMetricFamilySamples();
     }
 
     /**
@@ -897,69 +409,5 @@ LUA
     private function toMetricKey(array $data): string
     {
         return implode(':', [self::$prefix, $data['type'], $data['name']]);
-    }
-
-    /**
-     * @param mixed[] $values
-     * @return string
-     * @throws RuntimeException
-     */
-    private function encodeLabelValues(array $values): string
-    {
-        $json = json_encode($values);
-        if (false === $json) {
-            throw new RuntimeException(json_last_error_msg());
-        }
-        return base64_encode($json);
-    }
-
-    /**
-     * @param string $values
-     * @return mixed[]
-     * @throws RuntimeException
-     */
-    private function decodeLabelValues(string $values): array
-    {
-        $json = base64_decode($values, true);
-        if (false === $json) {
-            throw new RuntimeException('Cannot base64 decode label values');
-        }
-        $decodedValues = json_decode($json, true);
-        if (false === $decodedValues) {
-            throw new RuntimeException(json_last_error_msg());
-        }
-        return $decodedValues;
-    }
-
-    /**
-     * @param string $metricType
-     * @return string
-     */
-    private function getMetricRegistryKey(string $metricType): string
-    {
-        $keyPrefix = self::$prefix . $metricType . self::PROMETHEUS_METRIC_KEYS_SUFFIX;
-        return implode(':', [$keyPrefix, 'keys']);
-    }
-
-    /**
-     * @param string $metricType
-     * @return string
-     */
-    private function getMetadataKey(string $metricType): string
-    {
-        return self::$prefix . $metricType . self::PROMETHEUS_METRIC_META_SUFFIX;
-    }
-
-    /**
-     * @param Metadata $metadata
-     * @return string
-     */
-    private function getMetricKey(Metadata $metadata): string
-    {
-        $type = $metadata->getType();
-        $name = $metadata->getName();
-        $labelValues = $metadata->getLabelValuesEncoded();
-        $keyPrefix = self::$prefix . $type . self::PROMETHEUS_METRIC_KEYS_SUFFIX;
-        return implode(':', [$keyPrefix, $name, $labelValues]);
     }
 }

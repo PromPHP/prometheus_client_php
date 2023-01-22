@@ -1,6 +1,6 @@
 <?php
 
-namespace Prometheus\Storage\RedisTxn;
+namespace Prometheus\Storage\RedisTxn\Metric;
 
 use InvalidArgumentException;
 
