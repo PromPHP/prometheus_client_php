@@ -257,7 +257,7 @@ class TestCase
                 $registry->getOrRegisterHistogram(self::DEFAULT_METRIC_NAMESPACE, $key, self::DEFAULT_METRIC_HELP)->observe($value);
 				break;
 			case MetricType::SUMMARY:
-				$key = uniqid('timer_', false);
+				$key = uniqid('summary_', false);
                 $value = random_int(1, PHP_INT_MAX);
                 $registry->getOrRegisterSummary(self::DEFAULT_METRIC_NAMESPACE, $key, self::DEFAULT_METRIC_HELP)->observe($value);
 				break;

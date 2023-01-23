@@ -25,7 +25,7 @@ class MetricType
 			case MetricType::HISTOGRAM:
 				return 'histogram';
 			case MetricType::SUMMARY:
-				return 'timer';
+				return 'summary';
 		}
 
 		throw new InvalidArgumentException("Invalid adapter type: {$type}");
