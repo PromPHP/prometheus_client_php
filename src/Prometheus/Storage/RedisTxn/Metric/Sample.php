@@ -61,6 +61,38 @@ class Sample
 		$this->value = $value;
 	}
 
+    /**
+     * @return string
+     */
+    public function getName(): string
+    {
+        return $this->name;
+    }
+
+    /**
+     * @return array|string[]
+     */
+    public function getLabelNames(): array
+    {
+        return $this->labelNames;
+    }
+
+    /**
+     * @return array
+     */
+    public function getLabelValues(): array
+    {
+        return $this->labelValues;
+    }
+
+    /**
+     * @return float|int
+     */
+    public function getValue()
+    {
+        return $this->value;
+    }
+
 	/**
      * Represents this structure as a PHP associative array.
      * 

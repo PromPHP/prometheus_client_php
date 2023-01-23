@@ -43,6 +43,11 @@ class MetadataBuilder
     /**
      * @var float[]|null
      */
+    private $buckets;
+
+    /**
+     * @var float[]|null
+     */
     private $quantiles;
 
     /**
@@ -63,6 +68,7 @@ class MetadataBuilder
             ->withLabelNames($metadata['labelNames'] ?? null)
             ->withLabelValues($metadata['labelValues'] ?? null)
             ->withMaxAgeSeconds($metadata['maxAgeSeconds'] ?? null)
+            ->withBuckets($metadata['buckets'] ?? null)
             ->withQuantiles($metadata['quantiles'] ?? null)
             ->withCommand($metadata['command'] ?? null);
     }
@@ -133,6 +139,28 @@ class MetadataBuilder
     }
 
     /**
+     * @param float[]|null $buckets
+     * @return MetadataBuilder
+     */
+    public function withBuckets(?array $buckets): MetadataBuilder
+    {
+        $this->buckets = $buckets;
+        if ($buckets !== null) {
+            // Stringify bucket keys
+            // NOTE: We do this because PHP implicitly truncates floats to int values when used as associative array keys.
+            $this->buckets = array_map(function ($key) {
+                return strval($key);
+            }, $this->buckets);
+
+            // Add +Inf bucket
+            if (!in_array('+Inf', $this->buckets)) {
+                $this->buckets[] = '+Inf';
+            }
+        }
+        return $this;
+    }
+
+    /**
      * @param float[]|null $quantiles
      * @return MetadataBuilder
      */
@@ -165,6 +193,7 @@ class MetadataBuilder
             $this->labelNames ?? [],
             $this->labelValues ?? [],
             $this->maxAgeSeconds ?? 0,
+            $this->buckets ?? [],
             $this->quantiles ?? [],
             $this->command ?? Adapter::COMMAND_INCREMENT_FLOAT
         );

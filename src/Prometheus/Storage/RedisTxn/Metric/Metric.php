@@ -24,11 +24,11 @@ class Metric
     private $samples;
 
     /**
-     * @return SummaryMetricBuilder
+     * @return HistogramMetricBuilder
      */
-    public static function newSummaryMetricBuilder(): SummaryMetricBuilder
+    public static function newHistogramMetricBuilder(): HistogramMetricBuilder
     {
-        return new SummaryMetricBuilder();
+        return new HistogramMetricBuilder();
     }
 
     /**
@@ -37,6 +37,14 @@ class Metric
     public static function newScalarMetricBuilder(): ScalarMetricBuilder
     {
         return new ScalarMetricBuilder();
+    }
+
+    /**
+     * @return SummaryMetricBuilder
+     */
+    public static function newSummaryMetricBuilder(): SummaryMetricBuilder
+    {
+        return new SummaryMetricBuilder();
     }
 
     /**

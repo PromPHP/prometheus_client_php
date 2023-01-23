@@ -39,7 +39,7 @@ class SummaryMetricBuilder
      */
     public function withSamples(array $samples): SummaryMetricBuilder
     {
-        $this->samples = $this->processSummarySamples($samples);
+        $this->samples = $this->processSamples($samples);
         return $this;
     }
 
@@ -73,7 +73,7 @@ class SummaryMetricBuilder
      * @param array $sourceSamples
      * @return array
      */
-    private function processSummarySamples(array $sourceSamples): array
+    private function processSamples(array $sourceSamples): array
     {
         // Return value
         $samples = [];

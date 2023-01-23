@@ -42,6 +42,11 @@ class Metadata
     /**
      * @var float[]
      */
+    private $buckets;
+
+    /**
+     * @var float[]
+     */
     private $quantiles;
 
     /**
@@ -64,6 +69,7 @@ class Metadata
      * @param array $labelNames
      * @param array $labelValues
      * @param int $maxAgeSeconds
+     * @param array $buckets
      * @param array $quantiles
      * @param int $command
      */
@@ -74,6 +80,7 @@ class Metadata
         array $labelNames,
         array $labelValues,
         int $maxAgeSeconds,
+        array $buckets,
         array $quantiles,
         int $command
     )
@@ -84,6 +91,7 @@ class Metadata
         $this->labelNames = $labelNames;
         $this->labelValues = $labelValues;
         $this->maxAgeSeconds = $maxAgeSeconds;
+        $this->buckets = $buckets;
         $this->quantiles = $quantiles;
         $this->command = $command;
     }
@@ -171,6 +179,14 @@ class Metadata
     }
 
     /**
+     * @return float[]
+     */
+    public function getBuckets(): array
+    {
+        return $this->buckets;
+    }
+
+    /**
      * Prometheus metric metadata that describes the set of quantiles to report for a summary-type metric.
      *
      * @return array
@@ -202,6 +218,7 @@ class Metadata
             'labelNames' => $this->getLabelNames(),
             'labelValues' => $this->getLabelValuesEncoded(),
             'maxAgeSeconds' => $this->getMaxAgeSeconds(),
+            'buckets' => $this->getBuckets(),
             'quantiles' => $this->getQuantiles(),
             'command' => $this->getCommand(),
         ]);

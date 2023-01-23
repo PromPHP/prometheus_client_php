@@ -9,9 +9,11 @@ use Prometheus\Histogram;
 use Prometheus\MetricFamilySamples;
 use Prometheus\Storage\RedisTxn\Collecter\CounterCollecter;
 use Prometheus\Storage\RedisTxn\Collecter\GaugeCollecter;
+use Prometheus\Storage\RedisTxn\Collecter\HistogramCollecter;
 use Prometheus\Storage\RedisTxn\Collecter\SummaryCollecter;
 use Prometheus\Storage\RedisTxn\Updater\CounterUpdater;
 use Prometheus\Storage\RedisTxn\Updater\GaugeUpdater;
+use Prometheus\Storage\RedisTxn\Updater\HistogramUpdater;
 use Prometheus\Storage\RedisTxn\Updater\SummaryUpdater;
 use function \sort;
 
@@ -35,10 +37,6 @@ use function \sort;
  */
 class RedisTxn implements Adapter
 {
-    const PROMETHEUS_METRIC_KEYS_SUFFIX = '_METRIC_KEYS';
-
-    const PROMETHEUS_METRIC_META_SUFFIX = '_METRIC_META';
-
     /**
      * @var mixed[]
      */
@@ -152,21 +150,14 @@ LUA
         // Ensure Redis connection
         $this->ensureOpenConnection();
 
-        $metrics = $this->collectHistograms();
-        $metricFamilySamples = array_map(
-            function (array $metric): MetricFamilySamples {
-                return new MetricFamilySamples($metric);
-            },
-            $metrics
-        );
-
         // Collect all metrics
         $counters = $this->collectCounters();
+        $histograms = $this->collectHistograms();
         $gauges = $this->collectGauges();
         $summaries = $this->collectSummaries();
         return array_merge(
-            $metricFamilySamples,
             $counters,
+            $histograms,
             $gauges,
             $summaries
         );
@@ -221,43 +212,16 @@ LUA
     }
 
     /**
-     * @param mixed[] $data
-     * @throws StorageException
+     * @inheritDoc
      */
     public function updateHistogram(array $data): void
     {
+        // Ensure Redis connection
         $this->ensureOpenConnection();
-        $bucketToIncrease = '+Inf';
-        foreach ($data['buckets'] as $bucket) {
-            if ($data['value'] <= $bucket) {
-                $bucketToIncrease = $bucket;
-                break;
-            }
-        }
-        $metaData = $data;
-        unset($metaData['value'], $metaData['labelValues']);
 
-        $this->redis->eval(
-            <<<LUA
-local result = redis.call('hIncrByFloat', KEYS[1], ARGV[1], ARGV[3])
-redis.call('hIncrBy', KEYS[1], ARGV[2], 1)
-if tonumber(result) >= tonumber(ARGV[3]) then
-    redis.call('hSet', KEYS[1], '__meta', ARGV[4])
-    redis.call('sAdd', KEYS[2], KEYS[1])
-end
-return result
-LUA
-            ,
-            [
-                $this->toMetricKey($data),
-                self::$prefix . Histogram::TYPE . self::PROMETHEUS_METRIC_KEYS_SUFFIX,
-                json_encode(['b' => 'sum', 'labelValues' => $data['labelValues']]),
-                json_encode(['b' => $bucketToIncrease, 'labelValues' => $data['labelValues']]),
-                $data['value'],
-                json_encode($metaData),
-            ],
-            2
-        );
+        // Update metric
+        $updater = new HistogramUpdater($this->redis);
+        $updater->update($data);
     }
 
     /**
@@ -300,80 +264,12 @@ LUA
     }
 
     /**
-     * @return mixed[]
+     * @return MetricFamilySamples[]
      */
     private function collectHistograms(): array
     {
-        $keys = $this->redis->sMembers(self::$prefix . Histogram::TYPE . self::PROMETHEUS_METRIC_KEYS_SUFFIX);
-        sort($keys);
-        $histograms = [];
-        foreach ($keys as $key) {
-            $raw = $this->redis->hGetAll(str_replace($this->redis->_prefix(''), '', $key));
-            $histogram = json_decode($raw['__meta'], true);
-            unset($raw['__meta']);
-            $histogram['samples'] = [];
-
-            // Add the Inf bucket so we can compute it later on
-            $histogram['buckets'][] = '+Inf';
-
-            $allLabelValues = [];
-            foreach (array_keys($raw) as $k) {
-                $d = json_decode($k, true);
-                if ($d['b'] == 'sum') {
-                    continue;
-                }
-                $allLabelValues[] = $d['labelValues'];
-            }
-
-            // We need set semantics.
-            // This is the equivalent of array_unique but for arrays of arrays.
-            $allLabelValues = array_map("unserialize", array_unique(array_map("serialize", $allLabelValues)));
-            sort($allLabelValues);
-
-            foreach ($allLabelValues as $labelValues) {
-                // Fill up all buckets.
-                // If the bucket doesn't exist fill in values from
-                // the previous one.
-                $acc = 0;
-                foreach ($histogram['buckets'] as $bucket) {
-                    $bucketKey = json_encode(['b' => $bucket, 'labelValues' => $labelValues]);
-                    if (!isset($raw[$bucketKey])) {
-                        $histogram['samples'][] = [
-                            'name' => $histogram['name'] . '_bucket',
-                            'labelNames' => ['le'],
-                            'labelValues' => array_merge($labelValues, [$bucket]),
-                            'value' => $acc,
-                        ];
-                    } else {
-                        $acc += $raw[$bucketKey];
-                        $histogram['samples'][] = [
-                            'name' => $histogram['name'] . '_bucket',
-                            'labelNames' => ['le'],
-                            'labelValues' => array_merge($labelValues, [$bucket]),
-                            'value' => $acc,
-                        ];
-                    }
-                }
-
-                // Add the count
-                $histogram['samples'][] = [
-                    'name' => $histogram['name'] . '_count',
-                    'labelNames' => [],
-                    'labelValues' => $labelValues,
-                    'value' => $acc,
-                ];
-
-                // Add the sum
-                $histogram['samples'][] = [
-                    'name' => $histogram['name'] . '_sum',
-                    'labelNames' => [],
-                    'labelValues' => $labelValues,
-                    'value' => $raw[json_encode(['b' => 'sum', 'labelValues' => $labelValues])],
-                ];
-            }
-            $histograms[] = $histogram;
-        }
-        return $histograms;
+        $collector = new HistogramCollecter($this->redis);
+        return $collector->getMetricFamilySamples();
     }
 
     /**
@@ -401,14 +297,5 @@ LUA
     {
         $collector = new CounterCollecter($this->redis);
         return $collector->getMetricFamilySamples();
-    }
-
-    /**
-     * @param mixed[] $data
-     * @return string
-     */
-    private function toMetricKey(array $data): string
-    {
-        return implode(':', [self::$prefix, $data['type'], $data['name']]);
     }
 }
