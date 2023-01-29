@@ -169,12 +169,12 @@ LUA
      * @return MetricFamilySamples[]
      * @throws StorageException
      */
-    public function collect(): array
+    public function collect(bool $sortMetrics = true): array
     {
         $this->ensureOpenConnection();
         $metrics = $this->collectHistograms();
-        $metrics = array_merge($metrics, $this->collectGauges());
-        $metrics = array_merge($metrics, $this->collectCounters());
+        $metrics = array_merge($metrics, $this->collectGauges($sortMetrics));
+        $metrics = array_merge($metrics, $this->collectCounters($sortMetrics));
         $metrics = array_merge($metrics, $this->collectSummaries());
         return array_map(
             function (array $metric): MetricFamilySamples {
@@ -572,7 +572,7 @@ LUA
     /**
      * @return mixed[]
      */
-    private function collectGauges(): array
+    private function collectGauges(bool $sortMetrics = true): array
     {
         $keys = $this->redis->sMembers(self::$prefix . Gauge::TYPE . self::PROMETHEUS_METRIC_KEYS_SUFFIX);
         sort($keys);
@@ -590,9 +590,13 @@ LUA
                     'value' => $value,
                 ];
             }
-            usort($gauge['samples'], function ($a, $b): int {
-                return strcmp(implode("", $a['labelValues']), implode("", $b['labelValues']));
-            });
+
+            if ($sortMetrics) {
+                usort($gauge['samples'], function ($a, $b): int {
+                    return strcmp(implode("", $a['labelValues']), implode("", $b['labelValues']));
+                });
+            }
+
             $gauges[] = $gauge;
         }
         return $gauges;
@@ -601,7 +605,7 @@ LUA
     /**
      * @return mixed[]
      */
-    private function collectCounters(): array
+    private function collectCounters(bool $sortMetrics = true): array
     {
         $keys = $this->redis->sMembers(self::$prefix . Counter::TYPE . self::PROMETHEUS_METRIC_KEYS_SUFFIX);
         sort($keys);
@@ -619,9 +623,13 @@ LUA
                     'value' => $value,
                 ];
             }
-            usort($counter['samples'], function ($a, $b): int {
-                return strcmp(implode("", $a['labelValues']), implode("", $b['labelValues']));
-            });
+
+            if ($sortMetrics) {
+                usort($counter['samples'], function ($a, $b): int {
+                    return strcmp(implode("", $a['labelValues']), implode("", $b['labelValues']));
+                });
+            }
+
             $counters[] = $counter;
         }
         return $counters;
