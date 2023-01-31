@@ -5,8 +5,6 @@ on: [ push, pull_request ]
 jobs:
   test:
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: true
 
     name: Code Checks
     steps:
@@ -29,5 +27,36 @@ jobs:
         run: composer install --prefer-dist --no-interaction --no-suggest
       - name: Run PHP Code Sniffer
         run: ./vendor/bin/phpcs
+
+  phpstan:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php:
+          - "7.4"
+          - "8.0"
+          - "8.1"
+          - "8.2"
+    name: PHPStan on PHP ${{ matrix.php }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Cache dependencies
+        uses: actions/cache@v2
+        with:
+          path: ~/.composer/cache/files
+          key: dependencies-code-checks
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+          tools: "cs2pr"
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-interaction --no-suggest
       - name: Run PHPStan
-        run: php vendor/bin/phpstan analyse --autoload-file tests/bootstrap.php
+        run: "vendor/bin/phpstan analyse --autoload-file tests/bootstrap.php --error-format=checkstyle | cs2pr"

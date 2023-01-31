@@ -1,0 +1,6 @@
+parameters:
+    ignoreErrors:
+        -
+            message: "#^Strict comparison using === between array\\<string, mixed\\> and false will always evaluate to false\\.$#"
+            count: 1
+            path: ../src/Prometheus/RenderTextFormat.php
