@@ -291,8 +291,7 @@ LUA
         if (false === $json) {
             throw new RuntimeException(json_last_error_msg());
         }
-        $this->redis->setNx($metaKey, $json);
-        /** @phpstan-ignore-line */
+        $this->redis->setnx($metaKey, $json);
 
         // store value key
         $valueKey = $summaryKey . ':' . $this->valueKey($data);
@@ -301,8 +300,7 @@ LUA
         if (false === $json) {
             throw new RuntimeException(json_last_error_msg());
         }
-        $this->redis->setNx($valueKey, $json);
-        /** @phpstan-ignore-line */
+        $this->redis->setnx($valueKey, $json);
 
         // trick to handle uniqid collision
         $done = false;
@@ -528,9 +526,14 @@ LUA
                 }
             }
             if (count($samples) === 0) {
-                $this->redis->del($valueKey);
+                if (isset($valueKey)) {
+                    $this->redis->del($valueKey);
+                }
+
                 continue;
             }
+
+            assert(isset($decodedLabelValues));
 
             // Compute quantiles
             sort($samples);
@@ -560,11 +563,7 @@ LUA
             ];
 
 
-            if (count($data['samples']) > 0) {
-                $summaries[] = $data;
-            } else {
-                $this->redis->del($metaKey);
-            }
+            $summaries[] = $data;
         }
         return $summaries;
     }
