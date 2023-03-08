@@ -123,6 +123,7 @@ class Redis implements Adapter
 
         $this->redis->eval(
             <<<LUA
+redis.replicate_commands()
 local cursor = "0"
 repeat 
     local results = redis.call('SCAN', cursor, 'MATCH', ARGV[1])
