@@ -113,8 +113,11 @@ class APCng implements Adapter
         }
 
         // Initialize and increment the bucket
-        apcu_add($this->histogramBucketValueKey($data, $bucketToIncrease), 0);
-        apcu_inc($this->histogramBucketValueKey($data, $bucketToIncrease));
+        $bucketKey = $this->histogramBucketValueKey($data, $bucketToIncrease);
+        if (!apcu_exists($bucketKey)) {
+            apcu_add($bucketKey, 0);
+        }
+        apcu_inc($bucketKey);
     }
 
     /**
