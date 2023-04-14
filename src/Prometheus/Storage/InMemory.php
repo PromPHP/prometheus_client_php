@@ -33,10 +33,10 @@ class InMemory implements Adapter
     /**
      * @return MetricFamilySamples[]
      */
-    public function collect(): array
+    public function collect(bool $sortMetrics = true): array
     {
-        $metrics = $this->internalCollect($this->counters);
-        $metrics = array_merge($metrics, $this->internalCollect($this->gauges));
+        $metrics = $this->internalCollect($this->counters, $sortMetrics);
+        $metrics = array_merge($metrics, $this->internalCollect($this->gauges, $sortMetrics));
         $metrics = array_merge($metrics, $this->collectHistograms());
         $metrics = array_merge($metrics, $this->collectSummaries());
         return $metrics;
@@ -215,7 +215,7 @@ class InMemory implements Adapter
      * @param mixed[] $metrics
      * @return MetricFamilySamples[]
      */
-    protected function internalCollect(array $metrics): array
+    protected function internalCollect(array $metrics, bool $sortMetrics = true): array
     {
         $result = [];
         foreach ($metrics as $metric) {
@@ -237,7 +237,11 @@ class InMemory implements Adapter
                     'value' => $value,
                 ];
             }
-            $this->sortSamples($data['samples']);
+
+            if ($sortMetrics) {
+                $this->sortSamples($data['samples']);
+            }
+
             $result[] = new MetricFamilySamples($data);
         }
         return $result;

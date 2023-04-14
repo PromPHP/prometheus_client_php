@@ -40,11 +40,11 @@ class APC implements Adapter
     /**
      * @return MetricFamilySamples[]
      */
-    public function collect(): array
+    public function collect(bool $sortMetrics = true): array
     {
         $metrics = $this->collectHistograms();
-        $metrics = array_merge($metrics, $this->collectGauges());
-        $metrics = array_merge($metrics, $this->collectCounters());
+        $metrics = array_merge($metrics, $this->collectGauges($sortMetrics));
+        $metrics = array_merge($metrics, $this->collectCounters($sortMetrics));
         $metrics = array_merge($metrics, $this->collectSummaries());
         return $metrics;
     }
@@ -249,7 +249,7 @@ class APC implements Adapter
     /**
      * @return MetricFamilySamples[]
      */
-    private function collectCounters(): array
+    private function collectCounters(bool $sortMetrics = true): array
     {
         $counters = [];
         foreach (new APCuIterator('/^' . $this->prometheusPrefix . ':counter:.*:meta/') as $counter) {
@@ -271,7 +271,11 @@ class APC implements Adapter
                     'value' => $this->fromBinaryRepresentationAsInteger($value['value']),
                 ];
             }
-            $this->sortSamples($data['samples']);
+
+            if ($sortMetrics) {
+                $this->sortSamples($data['samples']);
+            }
+
             $counters[] = new MetricFamilySamples($data);
         }
         return $counters;
@@ -280,7 +284,7 @@ class APC implements Adapter
     /**
      * @return MetricFamilySamples[]
      */
-    private function collectGauges(): array
+    private function collectGauges(bool $sortMetrics = true): array
     {
         $gauges = [];
         foreach (new APCuIterator('/^' . $this->prometheusPrefix . ':gauge:.*:meta/') as $gauge) {
@@ -303,7 +307,10 @@ class APC implements Adapter
                 ];
             }
 
-            $this->sortSamples($data['samples']);
+            if ($sortMetrics) {
+                $this->sortSamples($data['samples']);
+            }
+
             $gauges[] = new MetricFamilySamples($data);
         }
         return $gauges;
