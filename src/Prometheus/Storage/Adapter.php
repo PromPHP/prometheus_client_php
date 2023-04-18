@@ -16,7 +16,7 @@ interface Adapter
     /**
      * @return MetricFamilySamples[]
      */
-    public function collect(bool $sortMetrics = true): array;
+    public function collect(): array;
 
     /**
      * @param mixed[] $data

@@ -17,7 +17,7 @@ interface RegistryInterface
     /**
      * @return MetricFamilySamples[]
      */
-    public function getMetricFamilySamples(bool $sortMetrics = true): array;
+    public function getMetricFamilySamples(): array;
 
     /**
      * @param string   $namespace e.g. cms
