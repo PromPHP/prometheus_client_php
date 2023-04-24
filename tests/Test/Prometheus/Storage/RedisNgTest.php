@@ -11,7 +11,7 @@ use Prometheus\Exception\StorageException;
 /**
  * @requires extension redis
  */
-class RedisTest extends TestCase
+class RedisNgTest extends TestCase
 {
     /**
      * @var \Redis
@@ -145,34 +145,5 @@ class RedisTest extends TestCase
             $notExpectedClientId,
             $this->redisConnection->rawCommand('client', 'list')
         );
-    }
-
-    /**
-     * @test
-     */
-    public function itShouldCollectMetricsAndIgnoreInvalidMetricsWithoutMetaData(): void
-    {
-        $redisConnection = $this->createMock(\Redis::class);
-        $redisConnection->method('isConnected')->willReturn(true);
-        $redisConnection->method('_prefix')->willReturnArgument(0);
-        $redisConnection->method('keys')->with('PROMETHEUS_summary_METRIC_KEYS:*:meta')->willReturn([]);
-        $redisConnection->method('sMembers')
-            ->withConsecutive(
-                ['PROMETHEUS_histogram_METRIC_KEYS'],
-                ['PROMETHEUS_gauge_METRIC_KEYS'],
-                ['PROMETHEUS_counter_METRIC_KEYS']
-            )
-            ->willReturnOnConsecutiveCalls(
-                ['key_histogramm'],
-                ['key_gauge'],
-                ['key_counter'],
-            )
-        ;
-        $redisConnection->method('hGetAll')->willReturn(['any_invalid_data' => '']);
-
-        $redis = Redis::fromExistingConnection($redisConnection);
-        $metrics = $redis->collect();
-
-        self::assertEquals([], $metrics);
     }
 }
