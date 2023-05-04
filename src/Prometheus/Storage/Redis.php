@@ -21,7 +21,7 @@ class Redis implements Adapter
     /**
      * @var mixed[]
      */
-    private static $defaultOptions = [
+    protected static $defaultOptions = [
         'host' => '127.0.0.1',
         'port' => 6379,
         'timeout' => 0.1,
@@ -33,22 +33,22 @@ class Redis implements Adapter
     /**
      * @var string
      */
-    private static $prefix = 'PROMETHEUS_';
+    protected static $prefix = 'PROMETHEUS_';
 
     /**
      * @var mixed[]
      */
-    private $options = [];
+    protected $options = [];
 
     /**
      * @var \Redis
      */
-    private $redis;
+    protected $redis;
 
     /**
      * @var boolean
      */
-    private $connectionInitialized = false;
+    protected $connectionInitialized = false;
 
     /**
      * Redis constructor.
@@ -63,9 +63,9 @@ class Redis implements Adapter
     /**
      * @param \Redis $redis
      * @return self
-     * @throws StorageException
+     * @throws StorageException|\RedisException
      */
-    public static function fromExistingConnection(\Redis $redis): self
+    public static function fromExistingConnection($redis): self
     {
         if ($redis->isConnected() === false) {
             throw new StorageException('Connection to Redis server not established');
@@ -143,7 +143,7 @@ LUA
      *
      * @return string
      */
-    private function metaKey(array $data): string
+    protected function metaKey(array $data): string
     {
         return implode(':', [
             $data['name'],
@@ -156,7 +156,7 @@ LUA
      *
      * @return string
      */
-    private function valueKey(array $data): string
+    protected function valueKey(array $data): string
     {
         return implode(':', [
             $data['name'],
@@ -187,7 +187,7 @@ LUA
     /**
      * @throws StorageException
      */
-    private function ensureOpenConnection(): void
+    protected function ensureOpenConnection(): void
     {
         if ($this->connectionInitialized === true) {
             return;
@@ -211,7 +211,7 @@ LUA
     /**
      * @throws StorageException
      */
-    private function connectToServer(): void
+    protected function connectToServer(): void
     {
         try {
             $connection_successful = false;
@@ -379,7 +379,7 @@ LUA
      * @param mixed[] $data
      * @return mixed[]
      */
-    private function metaData(array $data): array
+    protected function metaData(array $data): array
     {
         $metricsMetaData = $data;
         unset($metricsMetaData['value'], $metricsMetaData['command'], $metricsMetaData['labelValues']);
@@ -389,7 +389,7 @@ LUA
     /**
      * @return mixed[]
      */
-    private function collectHistograms(): array
+    protected function collectHistograms(): array
     {
         $keys = $this->redis->sMembers(self::$prefix . Histogram::TYPE . self::PROMETHEUS_METRIC_KEYS_SUFFIX);
         sort($keys);
@@ -471,7 +471,7 @@ LUA
      *
      * @return string
      */
-    private function removePrefixFromKey(string $key): string
+    protected function removePrefixFromKey(string $key): string
     {
         // @phpstan-ignore-next-line false positive, phpstan thinks getOptions returns int
         if ($this->redis->getOption(\Redis::OPT_PREFIX) === null) {
@@ -484,7 +484,7 @@ LUA
     /**
      * @return mixed[]
      */
-    private function collectSummaries(): array
+    protected function collectSummaries(): array
     {
         $math = new Math();
         $summaryKey = self::$prefix . Summary::TYPE . self::PROMETHEUS_METRIC_KEYS_SUFFIX;
@@ -572,7 +572,7 @@ LUA
     /**
      * @return mixed[]
      */
-    private function collectGauges(bool $sortMetrics = true): array
+    protected function collectGauges(bool $sortMetrics = true): array
     {
         $keys = $this->redis->sMembers(self::$prefix . Gauge::TYPE . self::PROMETHEUS_METRIC_KEYS_SUFFIX);
         sort($keys);
@@ -608,7 +608,7 @@ LUA
     /**
      * @return mixed[]
      */
-    private function collectCounters(bool $sortMetrics = true): array
+    protected function collectCounters(bool $sortMetrics = true): array
     {
         $keys = $this->redis->sMembers(self::$prefix . Counter::TYPE . self::PROMETHEUS_METRIC_KEYS_SUFFIX);
         sort($keys);
@@ -645,7 +645,7 @@ LUA
      * @param int $cmd
      * @return string
      */
-    private function getRedisCommand(int $cmd): string
+    protected function getRedisCommand(int $cmd): string
     {
         switch ($cmd) {
             case Adapter::COMMAND_INCREMENT_INTEGER:
@@ -663,7 +663,7 @@ LUA
      * @param mixed[] $data
      * @return string
      */
-    private function toMetricKey(array $data): string
+    protected function toMetricKey(array $data): string
     {
         return implode(':', [self::$prefix, $data['type'], $data['name']]);
     }
@@ -673,7 +673,7 @@ LUA
      * @return string
      * @throws RuntimeException
      */
-    private function encodeLabelValues(array $values): string
+    protected function encodeLabelValues(array $values): string
     {
         $json = json_encode($values);
         if (false === $json) {
@@ -687,7 +687,7 @@ LUA
      * @return mixed[]
      * @throws RuntimeException
      */
-    private function decodeLabelValues(string $values): array
+    protected function decodeLabelValues(string $values): array
     {
         $json = base64_decode($values, true);
         if (false === $json) {
