@@ -45,7 +45,7 @@ class BlackBoxTest extends TestCase
 
         ];
 
-        Promise\settle($promises)->wait();
+        Promise\Utils::settle($promises)->wait();
         $end = microtime(true);
         echo "\ntime: " . ($end - $start) . "\n";
 
@@ -84,7 +84,7 @@ class BlackBoxTest extends TestCase
             $n += $increment;
         }
 
-        Promise\settle($promises)->wait();
+        Promise\Utils::settle($promises)->wait();
         $end = microtime(true);
         echo "\ntime: " . ($end - $start) . "\n";
 
@@ -124,7 +124,7 @@ class BlackBoxTest extends TestCase
             $this->client->getAsync('/examples/some_histogram.php?c=9&adapter=' . $this->adapter),
         ];
 
-        Promise\settle($promises)->wait();
+        Promise\Utils::settle($promises)->wait();
         $end = microtime(true);
         echo "\ntime: " . ($end - $start) . "\n";
 
@@ -168,7 +168,7 @@ EOF
             $this->client->getAsync('/examples/some_summary.php?c=10&adapter=' . $this->adapter),
         ];
 
-        Promise\settle($promises)->wait();
+        Promise\Utils::settle($promises)->wait();
         $end = microtime(true);
         echo "\ntime: " . ($end - $start) . "\n";
 
