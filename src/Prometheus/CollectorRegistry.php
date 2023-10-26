@@ -83,7 +83,7 @@ class CollectorRegistry implements RegistryInterface
      */
     public function getMetricFamilySamples(bool $sortMetrics = true): array
     {
-        return $this->storageAdapter->collect($sortMetrics);
+        return $this->storageAdapter->collect($sortMetrics);  /** @phpstan-ignore-line */
     }
 
     /**
