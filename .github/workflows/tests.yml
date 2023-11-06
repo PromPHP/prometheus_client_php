@@ -11,9 +11,9 @@ jobs:
         os: [ ubuntu-latest ]
         php: [ 7.4, 8.0, 8.1, 8.2 ]
         dependency-version: [ prefer-lowest, prefer-stable ]
-        redis-version: [ 6 ]
+        redis-version: [ 5, 6, 7 ]
 
-    name: P${{ matrix.php }} - ${{ matrix.dependency-version }} - ${{ matrix.os }}
+    name: P${{ matrix.php }} - ${{ matrix.dependency-version }} - ${{ matrix.os }} - ${{ matrix.redis-version }}
 
     env:
       # The hostname used to communicate with the Redis service container
