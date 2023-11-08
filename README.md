@@ -1,4 +1,4 @@
-# A prometheus client library written in PHP
+# A prometheus client library written in PHP. Forked from [promphp/prometheus_client_php](https://github.com/PromPHP/prometheus_client_php)
 
 ![Tests](https://github.com/promphp/prometheus_client_php/workflows/Tests/badge.svg)
 
