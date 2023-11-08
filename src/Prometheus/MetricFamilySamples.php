@@ -40,8 +40,10 @@ class MetricFamilySamples
         $this->type = $data['type'];
         $this->help = $data['help'];
         $this->labelNames = $data['labelNames'];
-        foreach ($data['samples'] as $sampleData) {
-            $this->samples[] = new Sample($sampleData);
+        if (isset($data['samples'])) {
+            foreach ($data['samples'] as $sampleData) {
+                $this->samples[] = new Sample($sampleData);
+            }
         }
     }
 
