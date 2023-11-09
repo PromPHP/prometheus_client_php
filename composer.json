@@ -1,19 +1,18 @@
 {
-    "name": "gp/prometheus_client_php",
-    "description": "Prometheus instrumentation library for PHP applications. Forked from https://github.com/PromPHP/prometheus_client_php",
+    "name": "promphp/prometheus_client_php",
+    "description": "Prometheus instrumentation library for PHP applications.",
     "type": "library",
     "license": "Apache-2.0",
     "authors": [
         {
-            "name": "Daniel Eiserman",
-            "email": "deizerman@team.amocrm.com"
+            "name": "Lukas Kämmerling",
+            "email": "kontakt@lukas-kaemmerling.de"
         }
     ],
     "replace": {
         "jimdo/prometheus_client_php": "*",
         "endclothing/prometheus_client_php": "*",
-        "lkaemmerling/prometheus_client_php": "*",
-        "promphp/prometheus_client_php",
+        "lkaemmerling/prometheus_client_php": "*"
     },
     "require": {
         "php": "^7.2|^8.0",
