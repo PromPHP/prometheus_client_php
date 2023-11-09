@@ -72,6 +72,13 @@ class APC implements Adapter
             $old = apcu_fetch($sumKey);
             if ($old !== false) {
                 $done = apcu_cas($sumKey, $old, $this->toBinaryRepresentationAsInteger($this->fromBinaryRepresentationAsInteger($old) + $data['value']));
+            } else {
+                $new = apcu_add($sumKey, $this->toBinaryRepresentationAsInteger(0));
+
+                // If sum does not exist, assume a new histogram and store the metadata
+                if ($new) {
+                    apcu_store($this->metaKey($data), json_encode($this->metaData($data)));
+                }
             }
         }
 
@@ -139,6 +146,11 @@ class APC implements Adapter
                 $old = apcu_fetch($valueKey);
                 if ($old !== false) {
                     $done = apcu_cas($valueKey, $old, $this->toBinaryRepresentationAsInteger($this->fromBinaryRepresentationAsInteger($old) + $data['value']));
+                } else {
+                    $new = apcu_add($valueKey, $this->toBinaryRepresentationAsInteger(0));
+                    if ($new) {
+                        apcu_store($this->metaKey($data), json_encode($this->metaData($data)));
+                    }
                 }
             }
         }
@@ -162,6 +174,9 @@ class APC implements Adapter
             $old = apcu_fetch($valueKey);
             if ($old !== false) {
                 $done = apcu_cas($valueKey, $old, $this->toBinaryRepresentationAsInteger($this->fromBinaryRepresentationAsInteger($old) + $data['value']));
+            } else {
+                apcu_add($this->valueKey($data), 0);
+                apcu_store($this->metaKey($data), json_encode($this->metaData($data)));
             }
         }
     }
