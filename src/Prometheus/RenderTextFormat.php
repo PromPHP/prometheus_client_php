@@ -40,7 +40,7 @@ class RenderTextFormat implements RendererInterface
     {
         $labelNames = $metric->getLabelNames();
         if ($metric->hasLabelNames() || $sample->hasLabelNames()) {
-            $escapedLabels = $this->escapeAllLabels($labelNames, $sample);
+            $escapedLabels = $this->escapeAllLabels($metric, $labelNames, $sample);
             return $sample->getName() . '{' . implode(',', $escapedLabels) . '} ' . $sample->getValue();
         }
         return $sample->getName() . ' ' . $sample->getValue();
@@ -56,19 +56,20 @@ class RenderTextFormat implements RendererInterface
     }
 
     /**
+     * @param MetricFamilySamples $metric
      * @param string[] $labelNames
      * @param Sample $sample
      *
      * @return string[]
      */
-    private function escapeAllLabels(array $labelNames, Sample $sample): array
+    private function escapeAllLabels(MetricFamilySamples $metric, array $labelNames, Sample $sample): array
     {
         $escapedLabels = [];
 
         $labels = array_combine(array_merge($labelNames, $sample->getLabelNames()), $sample->getLabelValues());
 
         if ($labels === false) {
-            throw new RuntimeException('Unable to combine labels.');
+            throw new RuntimeException('Unable to combine labels for metric named ' . $metric->getName());
         }
 
         foreach ($labels as $labelName => $labelValue) {
