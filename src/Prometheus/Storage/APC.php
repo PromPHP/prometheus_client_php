@@ -123,11 +123,32 @@ class APC implements Adapter
     public function updateGauge(array $data): void
     {
         $valueKey = $this->valueKey($data);
+        $old = apcu_fetch($valueKey);
         if ($data['command'] === Adapter::COMMAND_SET) {
-            apcu_store($valueKey, $this->toBinaryRepresentationAsInteger($data['value']));
-            apcu_store($this->metaKey($data), json_encode($this->metaData($data)));
+            $new = $this->toBinaryRepresentationAsInteger($data['value']);
+            if ($old === false) {
+                apcu_store($valueKey, $new);
+                apcu_store($this->metaKey($data), json_encode($this->metaData($data)));
+                return;
+            } else {
+                // Taken from https://github.com/prometheus/client_golang/blob/66058aac3a83021948e5fb12f1f408ff556b9037/prometheus/value.go#L91
+                while (true) {
+                    if ($old !== false) {
+                        if (apcu_cas($valueKey, $old, $new)) {
+                            return;
+                        } else {
+                            $old = apcu_fetch($valueKey);
+                        }
+                    } else {
+                        // Cache got evicted under our feet? Just consider it a fresh/new insert and move on.
+                        apcu_store($valueKey, $new);
+                        apcu_store($this->metaKey($data), json_encode($this->metaData($data)));
+                        return;
+                    }
+                }
+            }
         } else {
-            if (!apcu_exists($valueKey)) {
+            if ($old === false) {
                 $new = apcu_add($valueKey, $this->toBinaryRepresentationAsInteger(0));
                 if ($new) {
                     apcu_store($this->metaKey($data), json_encode($this->metaData($data)));

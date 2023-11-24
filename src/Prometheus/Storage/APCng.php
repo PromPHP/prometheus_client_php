@@ -169,15 +169,33 @@ class APCng implements Adapter
     public function updateGauge(array $data): void
     {
         $valueKey = $this->valueKey($data);
+        $old = apcu_fetch($valueKey);
         if ($data['command'] === Adapter::COMMAND_SET) {
-            apcu_store($valueKey, $this->convertToIncrementalInteger($data['value']), 0);
-            $this->storeMetadata($data);
-            $this->storeLabelKeys($data);
+            $new = $this->convertToIncrementalInteger($data['value']);
+            if ($old === false) {
+                apcu_store($valueKey, $new, 0);
+                $this->storeMetadata($data);
+                $this->storeLabelKeys($data);
+
+                return;
+            }
+
+            for ($loops = 0; $loops < self::MAX_LOOPS; $loops++) {
+                if (apcu_cas($valueKey, $old, $new)) {
+                    break;
+                }
+                $old = apcu_fetch($valueKey);
+                if ($old === false) {
+                    apcu_store($valueKey, $new, 0);
+                    $this->storeMetadata($data);
+                    $this->storeLabelKeys($data);
+
+                    return;
+                }
+            }
 
             return;
         }
-
-        $old = apcu_fetch($valueKey);
 
         if ($old === false) {
             apcu_add($valueKey, 0, 0);
@@ -896,6 +914,10 @@ class APCng implements Adapter
     private function storeMetadata(array $data, bool $encoded = true): void
     {
         $metaKey = $this->metaKey($data);
+        if (apcu_exists($metaKey)) {
+            return;
+        }
+
         $metaData = $this->metaData($data);
         $toStore = $metaData;
 
