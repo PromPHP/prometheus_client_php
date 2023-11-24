@@ -226,10 +226,17 @@ LUA
                 $connection_successful = $this->redis->connect($this->options['host'], (int) $this->options['port'], (float) $this->options['timeout']);
             }
             if (!$connection_successful) {
-                throw new StorageException("Can't connect to Redis server", 0);
+                throw new StorageException(
+                    sprintf("Can't connect to Redis server. %s", $this->redis->getLastError()),
+                    0
+                );
             }
         } catch (\RedisException $e) {
-            throw new StorageException("Can't connect to Redis server", 0, $e);
+            throw new StorageException(
+                sprintf("Can't connect to Redis server. %s", $e->getMessage()),
+                $e->getCode(),
+                $e
+            );
         }
     }
 
