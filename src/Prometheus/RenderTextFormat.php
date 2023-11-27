@@ -66,14 +66,17 @@ class RenderTextFormat implements RendererInterface
     {
         $escapedLabels = [];
 
-        $labels = array_combine(array_merge($labelNames, $sample->getLabelNames()), $sample->getLabelValues());
+        if (count($labelNames) === count($sample->getLabelNames())) {
 
-        if ($labels === false) {
-            throw new RuntimeException('Unable to combine labels for metric named ' . $metric->getName());
-        }
+            $labels = array_combine(array_merge($labelNames, $sample->getLabelNames()), $sample->getLabelValues());
 
-        foreach ($labels as $labelName => $labelValue) {
-            $escapedLabels[] = $labelName . '="' . $this->escapeLabelValue((string)$labelValue) . '"';
+            if ($labels === false) {
+                throw new RuntimeException('Unable to combine labels for metric named ' . $metric->getName());
+            }
+
+            foreach ($labels as $labelName => $labelValue) {
+                $escapedLabels[] = $labelName . '="' . $this->escapeLabelValue((string)$labelValue) . '"';
+            }
         }
 
         return $escapedLabels;
