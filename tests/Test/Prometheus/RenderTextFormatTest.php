@@ -10,6 +10,8 @@ use Prometheus\MetricFamilySamples;
 use Prometheus\RenderTextFormat;
 use PHPUnit\Framework\TestCase;
 use Prometheus\Storage\InMemory;
+use Prometheus\Storage\Redis;
+use ValueError;
 
 class RenderTextFormatTest extends TestCase
 {
@@ -69,5 +71,58 @@ mynamespace_summary_count{label1="bob",label2="alice"} 1
 mynamespace_summary_sum{label1="bob",label2="alice"} 5
 
 TEXTPLAIN;
+    }
+
+    public function testValueErrorThrownWithInvalidSamples(): void
+    {
+        $namespace = 'foo';
+        $counter = 'bar';
+        $storage = new Redis(['host' => REDIS_HOST]);
+        $storage->wipeStorage();
+
+        $registry = new CollectorRegistry($storage, false);
+        $registry->registerCounter($namespace, $counter, 'counter-help-text', ['label1', 'label2'])
+            ->inc(['bob', 'alice']);
+
+        // Reload the registry with an updated counter config
+        $registry = new CollectorRegistry($storage, false);
+        $registry->registerCounter($namespace, $counter, 'counter-help-text', ['label1', 'label2', 'label3'])
+            ->inc(['bob', 'alice', 'eve']);
+
+        $this->expectException(ValueError::class);
+
+        $renderer = new RenderTextFormat();
+        $renderer->render($registry->getMetricFamilySamples());
+    }
+
+    public function testOutputWithInvalidSamplesSkipped(): void
+    {
+        $namespace = 'foo';
+        $counter = 'bar';
+        $storage = new Redis(['host' => REDIS_HOST]);
+        $storage->wipeStorage();
+
+        $registry = new CollectorRegistry($storage, false);
+        $registry->registerCounter($namespace, $counter, 'counter-help-text', ['label1', 'label2'])
+            ->inc(['bob', 'alice']);
+
+        // Reload the registry with an updated counter config
+        $registry = new CollectorRegistry($storage, false);
+        $registry->registerCounter($namespace, $counter, 'counter-help-text', ['label1', 'label2', 'label3'])
+            ->inc(['bob', 'alice', 'eve']);
+
+        $expectedOutput = '
+# HELP foo_bar counter-help-text
+# TYPE foo_bar counter
+foo_bar{label1="bob",label2="alice"} 1
+# Error: array_combine(): Argument #1 ($keys) and argument #2 ($values) must have the same number of elements
+#   Labels: ["label1","label2"]
+#   Values: ["bob","alice","eve"]
+';
+
+        $renderer = new RenderTextFormat();
+        $output = $renderer->render($registry->getMetricFamilySamples(), true);
+
+        self::assertSame(trim($expectedOutput), trim($output));
     }
 }
