@@ -93,7 +93,6 @@ TEXTPLAIN;
 
         $renderer = new RenderTextFormat();
         $renderer->render($registry->getMetricFamilySamples());
-
     }
 
     public function testOutputWithInvalidSamplesSkipped(): void
