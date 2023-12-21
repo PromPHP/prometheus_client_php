@@ -42,7 +42,7 @@ abstract class Collector
     public function __construct(Adapter $storageAdapter, string $namespace, string $name, string $help, array $labels = [])
     {
         $this->storageAdapter = $storageAdapter;
-        $metricName = ($namespace !== '' ? $namespace . '_' : '') . $name;
+        $metricName = ($namespace !== '' ? $namespace . ':' : '') . $name;
         self::assertValidMetricName($metricName);
         $this->name = $metricName;
         $this->help = $help;
