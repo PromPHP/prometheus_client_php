@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Prometheus;
 
 use RuntimeException;
+use Throwable;
 
 class RenderTextFormat implements RendererInterface
 {
@@ -12,9 +13,10 @@ class RenderTextFormat implements RendererInterface
 
     /**
      * @param MetricFamilySamples[] $metrics
+     * @param bool $silent If true, render value errors as comments instead of throwing them.
      * @return string
      */
-    public function render(array $metrics): string
+    public function render(array $metrics, bool $silent = false): string
     {
         usort($metrics, function (MetricFamilySamples $a, MetricFamilySamples $b): int {
             return strcmp($a->getName(), $b->getName());
@@ -25,7 +27,20 @@ class RenderTextFormat implements RendererInterface
             $lines[] = "# HELP " . $metric->getName() . " {$metric->getHelp()}";
             $lines[] = "# TYPE " . $metric->getName() . " {$metric->getType()}";
             foreach ($metric->getSamples() as $sample) {
-                $lines[] = $this->renderSample($metric, $sample);
+                try {
+                    $lines[] = $this->renderSample($metric, $sample);
+                } catch (Throwable $e) {
+                    // Redis and RedisNg allow samples with mismatching labels to be stored, which could cause ValueError
+                    // to be thrown when rendering. If this happens, users can decide whether to ignore the error or not.
+                    // These errors will normally disappear after the storage is flushed.
+                    if (!$silent) {
+                        throw $e;
+                    }
+
+                    $lines[] = "# Error: {$e->getMessage()}";
+                    $lines[] = "#   Labels: " . json_encode(array_merge($metric->getLabelNames(), $sample->getLabelNames()));
+                    $lines[] = "#   Values: " . json_encode(array_merge($sample->getLabelValues()));
+                }
             }
         }
         return implode("\n", $lines) . "\n";
