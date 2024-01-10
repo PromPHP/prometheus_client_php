@@ -13,6 +13,8 @@ use Prometheus\Storage\InMemory;
 use Prometheus\Storage\Redis;
 use ValueError;
 
+use const INF;
+
 class RenderTextFormatTest extends TestCase
 {
     public function testOutputMatchesExpectations(): void
@@ -37,6 +39,10 @@ class RenderTextFormatTest extends TestCase
                  ->inc(['bob', 'al\ice']);
         $registry->getOrRegisterGauge($namespace, 'gauge', 'gauge-help-text', ['label1', 'label2'])
                  ->inc(["bo\nb", 'ali\"ce']);
+        $registry->getOrRegisterGauge($namespace, 'gauge2', '', ['label1'])
+                 ->set(INF, ["infinity"]);
+        $registry->getOrRegisterGauge($namespace, 'gauge2', '', ['label1'])
+                 ->set(-INF, ["infinity-negative"]);
         $registry->getOrRegisterHistogram($namespace, 'histogram', 'histogram-help-text', ['label1', 'label2'], [0, 10, 100])
                  ->observe(5, ['bob', 'alice']);
         $registry->getOrRegisterSummary($namespace, 'summary', 'summary-help-text', ['label1', 'label2'], 60, [0.1, 0.5, 0.9])
@@ -54,6 +60,10 @@ mynamespace_counter{label1="bob",label2="al\\\\ice"} 1
 # HELP mynamespace_gauge gauge-help-text
 # TYPE mynamespace_gauge gauge
 mynamespace_gauge{label1="bo\\nb",label2="ali\\\\\"ce"} 1
+# HELP mynamespace_gauge2 
+# TYPE mynamespace_gauge2 gauge
+mynamespace_gauge2{label1="infinity"} +Inf
+mynamespace_gauge2{label1="infinity-negative"} -Inf
 # HELP mynamespace_histogram histogram-help-text
 # TYPE mynamespace_histogram histogram
 mynamespace_histogram_bucket{label1="bob",label2="alice",le="0"} 0
