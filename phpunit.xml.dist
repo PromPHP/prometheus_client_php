@@ -25,6 +25,7 @@
     <groups>
         <exclude>
             <group>Performance</group>
+            <group>Benchmark</group>
         </exclude>
     </groups>
 </phpunit>

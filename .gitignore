@@ -1,6 +1,7 @@
 /vendor/
 *.iml
 /.idea/
+benchmark.csv
 composer.lock
 composer.phar
 .phpunit.result.cache
