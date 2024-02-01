@@ -202,6 +202,21 @@ class APC implements Adapter
         }
     }
 
+    public function initHistogram(array $data): void
+    {
+        throw new \RuntimeException('APC driver currently doesn\'t support this feature');
+    }
+
+    public function initGauge(array $data): void
+    {
+        throw new \RuntimeException('APC driver currently doesn\'t support this feature');
+    }
+
+    public function initCounter(array $data): void
+    {
+        throw new \RuntimeException('APC driver currently doesn\'t support this feature');
+    }
+
     /**
      * @deprecated use replacement method wipeStorage from Adapter interface
      *
