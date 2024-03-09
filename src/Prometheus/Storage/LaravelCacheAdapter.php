@@ -160,7 +160,7 @@ class LaravelCacheAdapter implements Adapter
     }
 
     /**
-     * @param mixed[] $summary
+     * @param mixed[] $summaries
      *
      * @return MetricFamilySamples[]
      */
