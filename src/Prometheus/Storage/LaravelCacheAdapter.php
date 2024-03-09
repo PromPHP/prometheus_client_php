@@ -118,17 +118,21 @@ class LaravelCacheAdapter implements Adapter
                         $data['samples'][] = [
                             'name'        => $metaData['name'] . '_bucket',
                             'labelNames'  => ['le'],
-                            'labelValues' => array_merge($decodedLabelValues,
-                                [$bucket]),
+                            'labelValues' => array_merge(
+                                $decodedLabelValues,
+                                [$bucket]
+                            ),
                             'value'       => $acc,
                         ];
                     } else {
                         $acc += $histogramBuckets[$labelValues][$bucket];
                         $data['samples'][] = [
-                            'name'        => $metaData['name'].'_'.'bucket',
+                            'name'        => $metaData['name'] . '_' . 'bucket',
                             'labelNames'  => ['le'],
-                            'labelValues' => array_merge($decodedLabelValues,
-                                [$bucket]),
+                            'labelValues' => array_merge(
+                                $decodedLabelValues,
+                                [$bucket]
+                            ),
                             'value'       => $acc,
                         ];
                     }
@@ -136,7 +140,7 @@ class LaravelCacheAdapter implements Adapter
 
                 // Add the count
                 $data['samples'][] = [
-                    'name'        => $metaData['name'].'_count',
+                    'name'        => $metaData['name'] . '_count',
                     'labelNames'  => [],
                     'labelValues' => $decodedLabelValues,
                     'value'       => $acc,
@@ -144,7 +148,7 @@ class LaravelCacheAdapter implements Adapter
 
                 // Add the sum
                 $data['samples'][] = [
-                    'name'        => $metaData['name'].'_sum',
+                    'name'        => $metaData['name'] . '_sum',
                     'labelNames'  => [],
                     'labelValues' => $decodedLabelValues,
                     'value'       => $histogramBuckets[$labelValues]['sum'],
@@ -156,9 +160,11 @@ class LaravelCacheAdapter implements Adapter
     }
 
     /**
+     * @param mixed[] $summary
+     *
      * @return MetricFamilySamples[]
      */
-    protected function collectSummaries($summaries): array
+    protected function collectSummaries(array $summaries): array
     {
         $math = new Math();
         $output = [];
@@ -174,17 +180,19 @@ class LaravelCacheAdapter implements Adapter
                 'samples'       => [],
             ];
 
-            foreach ($summary['samples'] as $key => &$values) {
+            foreach ($summary['samples'] as $key => $values) {
                 $parts = explode(':', $key);
                 $labelValues = $parts[2];
                 $decodedLabelValues = $this->decodeLabelValues($labelValues);
 
                 // Remove old data
-                $values = array_filter($values,
+                $values = array_filter(
+                    $values,
                     function (array $value) use ($data): bool {
                         return time() - $value['time']
                             <= $data['maxAgeSeconds'];
-                    });
+                    }
+                );
                 if (count($values) === 0) {
                     unset($summary['samples'][$key]);
                     continue;
@@ -202,16 +210,20 @@ class LaravelCacheAdapter implements Adapter
                     $data['samples'][] = [
                         'name'        => $metaData['name'],
                         'labelNames'  => ['quantile'],
-                        'labelValues' => array_merge($decodedLabelValues,
-                            [$quantile]),
-                        'value'       => $math->quantile(array_column($values,
-                            'value'), $quantile),
+                        'labelValues' => array_merge(
+                            $decodedLabelValues,
+                            [$quantile]
+                        ),
+                        'value'       => $math->quantile(array_column(
+                            $values,
+                            'value'
+                        ), $quantile),
                     ];
                 }
 
                 // Add the count
                 $data['samples'][] = [
-                    'name'        => $metaData['name'].'_count',
+                    'name'        => $metaData['name'] . '_count',
                     'labelNames'  => [],
                     'labelValues' => $decodedLabelValues,
                     'value'       => count($values),
@@ -219,7 +231,7 @@ class LaravelCacheAdapter implements Adapter
 
                 // Add the sum
                 $data['samples'][] = [
-                    'name'        => $metaData['name'].'_sum',
+                    'name'        => $metaData['name'] . '_sum',
                     'labelNames'  => [],
                     'labelValues' => $decodedLabelValues,
                     'value'       => array_sum(array_column($values, 'value')),
@@ -306,7 +318,8 @@ class LaravelCacheAdapter implements Adapter
         }
 
         $bucketKey = $this->histogramBucketValueKey($data, $bucketToIncrease);
-        if (array_key_exists($bucketKey, $histograms[$metaKey]['samples'])
+        if (
+            array_key_exists($bucketKey, $histograms[$metaKey]['samples'])
             === false
         ) {
             $histograms[$metaKey]['samples'][$bucketKey] = 0;
@@ -334,7 +347,8 @@ class LaravelCacheAdapter implements Adapter
         }
 
         $valueKey = $this->valueKey($data);
-        if (array_key_exists($valueKey, $summaries[$metaKey]['samples'])
+        if (
+            array_key_exists($valueKey, $summaries[$metaKey]['samples'])
             === false
         ) {
             $summaries[$metaKey]['samples'][$valueKey] = [];
@@ -363,7 +377,8 @@ class LaravelCacheAdapter implements Adapter
                 'samples' => [],
             ];
         }
-        if (array_key_exists($valueKey, $gauges[$metaKey]['samples'])
+        if (
+            array_key_exists($valueKey, $gauges[$metaKey]['samples'])
             === false
         ) {
             $gauges[$metaKey]['samples'][$valueKey] = 0;
@@ -392,7 +407,8 @@ class LaravelCacheAdapter implements Adapter
                 'samples' => [],
             ];
         }
-        if (array_key_exists($valueKey, $counters[$metaKey]['samples'])
+        if (
+            array_key_exists($valueKey, $counters[$metaKey]['samples'])
             === false
         ) {
             $counters[$metaKey]['samples'][$valueKey] = 0;
@@ -469,8 +485,10 @@ class LaravelCacheAdapter implements Adapter
     protected function sortSamples(array &$samples): void
     {
         usort($samples, function ($a, $b): int {
-            return strcmp(implode("", $a['labelValues']),
-                implode("", $b['labelValues']));
+            return strcmp(
+                implode("", $a['labelValues']),
+                implode("", $b['labelValues'])
+            );
         });
     }
 
@@ -511,7 +529,7 @@ class LaravelCacheAdapter implements Adapter
     /**
      * @param  string  $type
      *
-     * @return array<int,array<string,mixed>>
+     * @return mixed[]
      * @throws InvalidArgumentException
      */
     protected function fetch(string $type): array
@@ -521,7 +539,7 @@ class LaravelCacheAdapter implements Adapter
 
     /**
      * @param  string  $type
-     * @param  array<int,array<string,mixed>>  $data
+     * @param  mixed[]  $data
      *
      * @return void
      */
@@ -532,6 +550,6 @@ class LaravelCacheAdapter implements Adapter
 
     protected function cacheKey(string $type): string
     {
-        return static::CACHE_KEY_PREFIX.$type.static::CACHE_KEY_SUFFIX;
+        return static::CACHE_KEY_PREFIX . $type . static::CACHE_KEY_SUFFIX;
     }
 }
