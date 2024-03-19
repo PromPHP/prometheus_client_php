@@ -15,6 +15,15 @@ interface RegistryInterface
     public function wipeStorage(): void;
 
     /**
+     * Removes a specific previously stored metric from underlying storage adapter
+     *
+     * @param string $type
+     * @param string $name
+     * @return void
+     */
+    public function wipeKey(string $type, string $name): void;
+
+    /**
      * @return MetricFamilySamples[]
      */
     public function getMetricFamilySamples(): array;
