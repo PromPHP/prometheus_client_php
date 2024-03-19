@@ -231,6 +231,14 @@ class APC implements Adapter
     }
 
     /**
+     * @inheritDoc
+     */
+    public function wipeKey(string $type, string $key): void
+    {
+        // not implemented yet
+    }
+
+    /**
      * @param mixed[] $data
      * @return string
      */
