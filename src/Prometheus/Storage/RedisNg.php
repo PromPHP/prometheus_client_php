@@ -142,7 +142,7 @@ LUA
     /**
      * @inheritDoc
      */
-    public function wipeKey(string $type, string $key)
+    public function wipeKey(string $type, string $key): void
     {
         $this->ensureOpenConnection();
 
