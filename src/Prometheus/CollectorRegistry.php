@@ -83,6 +83,7 @@ class CollectorRegistry implements RegistryInterface
      *
      * @param string $type
      * @param string $name
+     *
      * @return void
      */
     public function wipeKey(string $type, string $name): void
