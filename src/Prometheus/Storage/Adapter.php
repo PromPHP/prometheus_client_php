@@ -58,5 +58,5 @@ interface Adapter
      * @throws StorageException
      * @return void
      */
-    public function wipeKey(): void;
+    public function wipeKey(string $type, string $key): void;
 }
