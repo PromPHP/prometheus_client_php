@@ -6,6 +6,7 @@ namespace Prometheus\Storage;
 
 use Prometheus\Counter;
 use Prometheus\Gauge;
+use Prometheus\Histogram;
 use Prometheus\Math;
 use Prometheus\MetricFamilySamples;
 use Prometheus\Summary;
@@ -63,6 +64,7 @@ class PDO implements Adapter
         $this->database->query("DELETE FROM `{$this->prefix}_metadata`");
         $this->database->query("DELETE FROM `{$this->prefix}_values`");
         $this->database->query("DELETE FROM `{$this->prefix}_summaries`");
+        $this->database->query("DELETE FROM `{$this->prefix}_histograms`");
     }
 
     /**
@@ -70,7 +72,79 @@ class PDO implements Adapter
      */
     protected function collectHistograms(): array
     {
-        return $this->collectStandard(Gauge::TYPE);
+        $result = [];
+
+        $meta_query = $this->database->prepare("SELECT name, metadata FROM `{$this->prefix}_metadata` WHERE type = :type");
+        $meta_query->execute([':type' => Histogram::TYPE]);
+
+        while ($row = $meta_query->fetch(\PDO::FETCH_ASSOC)) {
+            $data = json_decode($row['metadata'], true);
+            $data['samples'] = [];
+
+            // Add the Inf bucket, so we can compute it later on.
+            $data['buckets'][] = '+Inf';
+
+            $values_query = $this->database->prepare("SELECT name, labels_hash, labels, value, bucket FROM `{$this->prefix}_histograms` WHERE name = :name");
+            $values_query->execute([':name' => $data['name']]);
+
+            $values = [];
+            while ($value_row = $values_query->fetch(\PDO::FETCH_ASSOC)) {
+                $values[$value_row['labels_hash']][] = $value_row;
+            }
+
+            $histogram_buckets = [];
+            foreach ($values as $hash => $value) {
+                foreach ($value as $bucket_value) {
+                    $histogram_buckets[$bucket_value['labels']][$bucket_value['bucket']] = $bucket_value['value'];
+                }
+            }
+
+            // Compute all buckets
+            $labels = array_keys($histogram_buckets);
+            sort($labels);
+            foreach ($labels as $labelValues) {
+                $acc = 0;
+                $decoded_values = json_decode($labelValues, true);
+                foreach ($data['buckets'] as $bucket) {
+                    $bucket = (string)$bucket;
+                    if (!isset($histogram_buckets[$labelValues][$bucket])) {
+                        $data['samples'][] = [
+                            'name' => $data['name'] . '_bucket',
+                            'labelNames' => ['le'],
+                            'labelValues' => array_merge($decoded_values, [$bucket]),
+                            'value' => $acc,
+                        ];
+                    } else {
+                        $acc += $histogram_buckets[$labelValues][$bucket];
+                        $data['samples'][] = [
+                            'name' => $data['name'] . '_' . 'bucket',
+                            'labelNames' => ['le'],
+                            'labelValues' => array_merge($decoded_values, [$bucket]),
+                            'value' => $acc,
+                        ];
+                    }
+                }
+
+                // Add the count
+                $data['samples'][] = [
+                    'name' => $data['name'] . '_count',
+                    'labelNames' => [],
+                    'labelValues' => $decoded_values,
+                    'value' => $acc,
+                ];
+
+                // Add the sum
+                $data['samples'][] = [
+                    'name' => $data['name'] . '_sum',
+                    'labelNames' => [],
+                    'labelValues' => $decoded_values,
+                    'value' => $histogram_buckets[$labelValues]['sum'],
+                ];
+            }
+            $result[] = new MetricFamilySamples($data);
+        }
+
+        return $result;
     }
 
     /**
@@ -88,11 +162,8 @@ class PDO implements Adapter
             $data = json_decode($row['metadata'], true);
             $data['samples'] = [];
 
-            $values_query = $this->database->prepare("SELECT name, labels_hash, labels, value, time FROM `{$this->prefix}_summaries` WHERE name = :name AND type = :type");
-            $values_query->execute([
-                ':name' => $data['name'],
-                ':type' => Summary::TYPE,
-            ]);
+            $values_query = $this->database->prepare("SELECT name, labels_hash, labels, value, time FROM `{$this->prefix}_summaries` WHERE name = :name");
+            $values_query->execute([':name' => $data['name']]);
 
             $values = [];
             while ($value_row = $values_query->fetch(\PDO::FETCH_ASSOC)) {
@@ -196,7 +267,7 @@ class PDO implements Adapter
      */
     protected function collectGauges(): array
     {
-        return [];
+        return $this->collectStandard(Gauge::TYPE);
     }
 
     /**
@@ -205,7 +276,52 @@ class PDO implements Adapter
      */
     public function updateHistogram(array $data): void
     {
-        // TODO.
+        // TODO do we update metadata at all? If metadata changes then the old labels might not be correct any more?
+        $metadata_sql = <<<SQL
+INSERT INTO  `{$this->prefix}_metadata`
+  VALUES(:name, :type, :metadata)
+  ON CONFLICT(name, type) DO UPDATE SET
+    metadata=excluded.metadata;
+SQL;
+        $statement = $this->database->prepare($metadata_sql);
+        $statement->execute([
+            ':name' => $data['name'],
+            ':type' => Histogram::TYPE,
+            ':metadata' => $this->encodeMetadata($data),
+        ]);
+
+        $values_sql = <<<SQL
+INSERT INTO  `{$this->prefix}_histograms`(`name`, `labels_hash`, `labels`, `value`, `bucket`)
+  VALUES(:name,:hash,:labels,:value,:bucket)
+  ON CONFLICT(name, labels_hash, bucket) DO UPDATE SET
+    `value` = `value` + excluded.value;
+SQL;
+
+        $statement = $this->database->prepare($values_sql);
+        $label_values = $this->encodeLabelValues($data);
+        $statement->execute([
+            ':name' => $data['name'],
+            ':hash' => hash('sha256', $label_values),
+            ':labels' => $label_values,
+            ':value' => $data['value'],
+            ':bucket' => 'sum',
+        ]);
+
+        $bucket_to_increase = '+Inf';
+        foreach ($data['buckets'] as $bucket) {
+            if ($data['value'] <= $bucket) {
+                $bucket_to_increase = $bucket;
+                break;
+            }
+        }
+
+        $statement->execute([
+            ':name' => $data['name'],
+            ':hash' => hash('sha256', $label_values),
+            ':labels' => $label_values,
+            ':value' => 1,
+            ':bucket' => $bucket_to_increase,
+        ]);
     }
 
     /**
@@ -230,15 +346,14 @@ SQL;
         ]);
 
             $values_sql = <<<SQL
-INSERT INTO  `{$this->prefix}_summaries`(`name`, `type`, `labels_hash`, `labels`, `value`, `time`)
-  VALUES(:name,:type,:hash,:labels,:value,:time)
+INSERT INTO  `{$this->prefix}_summaries`(`name`, `labels_hash`, `labels`, `value`, `time`)
+  VALUES(:name,:hash,:labels,:value,:time)
 SQL;
 
         $statement = $this->database->prepare($values_sql);
         $label_values = $this->encodeLabelValues($data);
         $statement->execute([
             ':name' => $data['name'],
-            ':type' => Summary::TYPE,
             ':hash' => hash('sha256', $label_values),
             ':labels' => $label_values,
             ':value' => $data['value'],
@@ -336,13 +451,24 @@ SQL;
         $sql = <<<SQL
 CREATE TABLE IF NOT EXISTS `{$this->prefix}_summaries` (
     `name` varchar(255) NOT NULL,
-    `type` varchar(9) NOT NULL,
     `labels_hash` varchar(32) NOT NULL,
     `labels` TEXT NOT NULL,
     `value` DECIMAL({$this->precision[0]},{$this->precision[1]}) DEFAULT 0.0,
     `time` timestamp NOT NULL
 ); 
-CREATE INDEX `name_type` ON `{$this->prefix}_summaries`(`name`, `type`);
+CREATE INDEX `name` ON `{$this->prefix}_summaries`(`name`);
+SQL;
+        $this->database->query($sql);
+
+        $sql = <<<SQL
+CREATE TABLE IF NOT EXISTS `{$this->prefix}_histograms` (
+    `name` varchar(255) NOT NULL,
+    `labels_hash` varchar(32) NOT NULL,
+    `labels` TEXT NOT NULL,
+    `value` DECIMAL({$this->precision[0]},{$this->precision[1]}) DEFAULT 0.0,
+    `bucket` varchar(255) NOT NULL,
+    PRIMARY KEY (`name`, `labels_hash`, `bucket`)
+); 
 SQL;
         $this->database->query($sql);
     }
