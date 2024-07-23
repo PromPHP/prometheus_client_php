@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Prometheus\Storage;
 
 use Prometheus\Counter;
+use Prometheus\Gauge;
 use Prometheus\Math;
 use Prometheus\MetricFamilySamples;
 use Prometheus\Summary;
@@ -69,7 +70,7 @@ class PDO implements Adapter
      */
     protected function collectHistograms(): array
     {
-        return [];
+        return $this->collectStandard(Gauge::TYPE);
     }
 
     /**
@@ -156,10 +157,15 @@ class PDO implements Adapter
      */
     protected function collectCounters(): array
     {
+        return $this->collectStandard(Counter::TYPE);
+    }
+
+    protected function collectStandard(string $type): array
+    {
         $result = [];
 
         $meta_query = $this->database->prepare("SELECT name, metadata FROM `{$this->prefix}_metadata` WHERE type = :type");
-        $meta_query->execute([':type' => Counter::TYPE]);
+        $meta_query->execute([':type' => $type]);
 
         while ($row = $meta_query->fetch(\PDO::FETCH_ASSOC)) {
             $data = json_decode($row['metadata'], true);
@@ -168,7 +174,7 @@ class PDO implements Adapter
             $values_query = $this->database->prepare("SELECT name, labels, value FROM `{$this->prefix}_values` WHERE name = :name AND type = :type");
             $values_query->execute([
                 ':name' => $data['name'],
-                ':type' => Counter::TYPE,
+                ':type' => $type,
             ]);
             while ($value_row = $values_query->fetch(\PDO::FETCH_ASSOC)) {
                 $data['samples'][] = [
@@ -245,13 +251,21 @@ SQL;
      */
     public function updateGauge(array $data): void
     {
-        // TODO.
+        $this->updateStandard($data, Gauge::TYPE);
     }
 
     /**
      * @param mixed[] $data
      */
     public function updateCounter(array $data): void
+    {
+        $this->updateStandard($data, Counter::TYPE);
+    }
+
+    /**
+     * @param mixed[] $data
+     */
+    protected function updateStandard(array $data, string $type): void
     {
         // TODO do we update metadata at all? If metadata changes then the old labels might not be correct any more?
         $metadata_sql = <<<SQL
@@ -264,7 +278,7 @@ SQL;
         $statement = $this->database->prepare($metadata_sql);
         $statement->execute([
             ':name' => $data['name'],
-            ':type' => Counter::TYPE,
+            ':type' => $type,
             ':metadata' => $this->encodeMetadata($data),
         ]);
 
@@ -288,7 +302,7 @@ SQL;
         $label_values = $this->encodeLabelValues($data);
         $statement->execute([
             ':name' => $data['name'],
-            ':type' => Counter::TYPE,
+            ':type' => $type,
             ':hash' => hash('sha256', $label_values),
             ':labels' => $label_values,
             ':value' => $data['value'],
