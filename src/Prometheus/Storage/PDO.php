@@ -33,14 +33,15 @@ class PDO implements Adapter
      *  PDO database connection.
      * @param string $prefix
      *  Database table prefix (default: "prometheus_").
-     * @param array{0: int, 1: int} $precision
-     *  Precision of the 'value' DECIMAL column in the database table (default: 16, 2).
      */
-    public function __construct(\PDO $database, string $prefix = 'prometheus_', array $precision = [16, 2])
+    public function __construct(\PDO $database, string $prefix = 'prometheus_')
     {
+        if (!in_array($database->getAttribute(\PDO::ATTR_DRIVER_NAME), ['mysql', 'sqlite'], true)) {
+            throw new \RuntimeException('Only MySQL and SQLite are supported.');
+        }
+
         $this->database = $database;
         $this->prefix = $prefix;
-        $this->precision = $precision;
 
         $this->createTables();
     }
@@ -65,6 +66,14 @@ class PDO implements Adapter
         $this->database->query("DELETE FROM `{$this->prefix}_values`");
         $this->database->query("DELETE FROM `{$this->prefix}_summaries`");
         $this->database->query("DELETE FROM `{$this->prefix}_histograms`");
+    }
+
+    public function deleteTables(): void
+    {
+        $this->database->query("DROP TABLE `{$this->prefix}_metadata`");
+        $this->database->query("DROP TABLE `{$this->prefix}_values`");
+        $this->database->query("DROP TABLE `{$this->prefix}_summaries`");
+        $this->database->query("DROP TABLE `{$this->prefix}_histograms`");
     }
 
     /**
@@ -283,26 +292,31 @@ class PDO implements Adapter
      */
     public function updateHistogram(array $data): void
     {
-        // TODO do we update metadata at all? If metadata changes then the old labels might not be correct any more?
-        $metadata_sql = <<<SQL
-INSERT INTO  `{$this->prefix}_metadata`
-  VALUES(:name, :type, :metadata)
-  ON CONFLICT(name, type) DO UPDATE SET
-    metadata=excluded.metadata;
-SQL;
-        $statement = $this->database->prepare($metadata_sql);
-        $statement->execute([
-            ':name' => $data['name'],
-            ':type' => Histogram::TYPE,
-            ':metadata' => $this->encodeMetadata($data),
-        ]);
+        $this->updateMetadata($data, Histogram::TYPE);
 
-        $values_sql = <<<SQL
+        switch ($this->database->getAttribute(\PDO::ATTR_DRIVER_NAME)) {
+            case 'sqlite':
+                $values_sql = <<<SQL
 INSERT INTO  `{$this->prefix}_histograms`(`name`, `labels_hash`, `labels`, `value`, `bucket`)
   VALUES(:name,:hash,:labels,:value,:bucket)
   ON CONFLICT(name, labels_hash, bucket) DO UPDATE SET
     `value` = `value` + excluded.value;
 SQL;
+                break;
+
+            case 'mysql':
+                $values_sql = <<<SQL
+INSERT INTO  `{$this->prefix}_histograms`(`name`, `labels_hash`, `labels`, `value`, `bucket`)
+  VALUES(:name,:hash,:labels,:value,:bucket)
+  ON DUPLICATE KEY UPDATE
+    `value` = `value` + VALUES(`value`);
+SQL;
+                break;
+
+            default:
+                throw new \RuntimeException('Unsupported database type');
+        }
+
 
         $statement = $this->database->prepare($values_sql);
         $label_values = $this->encodeLabelValues($data);
@@ -337,22 +351,9 @@ SQL;
      */
     public function updateSummary(array $data): void
     {
-        // TODO do we update metadata at all? If metadata changes then the old labels might not be correct any more?
-        $metadata_sql = <<<SQL
-INSERT INTO  `{$this->prefix}_metadata`
-  VALUES(:name, :type, :metadata)
-  ON CONFLICT(name, type) DO UPDATE SET
-    metadata=excluded.metadata;
-SQL;
+        $this->updateMetadata($data, Summary::TYPE);
 
-        $statement = $this->database->prepare($metadata_sql);
-        $statement->execute([
-            ':name' => $data['name'],
-            ':type' => Summary::TYPE,
-            ':metadata' => $this->encodeMetadata($data),
-        ]);
-
-            $values_sql = <<<SQL
+        $values_sql = <<<SQL
 INSERT INTO  `{$this->prefix}_summaries`(`name`, `labels_hash`, `labels`, `value`, `time`)
   VALUES(:name,:hash,:labels,:value,:time)
 SQL;
@@ -387,37 +388,85 @@ SQL;
     /**
      * @param mixed[] $data
      */
-    protected function updateStandard(array $data, string $type): void
+    protected function updateMetadata(array $data, string $type): void
     {
         // TODO do we update metadata at all? If metadata changes then the old labels might not be correct any more?
-        $metadata_sql = <<<SQL
+        switch ($this->database->getAttribute(\PDO::ATTR_DRIVER_NAME)) {
+            case 'sqlite':
+                $metadata_sql = <<<SQL
 INSERT INTO  `{$this->prefix}_metadata`
   VALUES(:name, :type, :metadata)
   ON CONFLICT(name, type) DO UPDATE SET
-    metadata=excluded.metadata;
+    `metadata` = excluded.metadata;
 SQL;
+                break;
 
+            case 'mysql':
+                $metadata_sql = <<<SQL
+INSERT INTO  `{$this->prefix}_metadata`
+  VALUES(:name, :type, :metadata)
+  ON DUPLICATE KEY UPDATE
+    `metadata` = VALUES(`metadata`);
+SQL;
+                break;
+
+            default:
+                throw new \RuntimeException('Unsupported database type');
+        }
         $statement = $this->database->prepare($metadata_sql);
         $statement->execute([
             ':name' => $data['name'],
             ':type' => $type,
             ':metadata' => $this->encodeMetadata($data),
         ]);
+    }
 
-        if ($data['command'] === Adapter::COMMAND_SET) {
-            $values_sql = <<<SQL
+    /**
+     * @param mixed[] $data
+     */
+    protected function updateStandard(array $data, string $type): void
+    {
+        $this->updateMetadata($data, $type);
+
+        switch ($this->database->getAttribute(\PDO::ATTR_DRIVER_NAME)) {
+            case 'sqlite':
+                if ($data['command'] === Adapter::COMMAND_SET) {
+                    $values_sql = <<<SQL
 INSERT INTO  `{$this->prefix}_values`(`name`, `type`, `labels_hash`, `labels`, `value`)
   VALUES(:name,:type,:hash,:labels,:value)
   ON CONFLICT(name, type, labels_hash) DO UPDATE SET
     `value` = excluded.value;
 SQL;
-        } else {
-            $values_sql = <<<SQL
+                } else {
+                    $values_sql = <<<SQL
 INSERT INTO  `{$this->prefix}_values`(`name`, `type`, `labels_hash`, `labels`, `value`)
   VALUES(:name,:type,:hash,:labels,:value)
   ON CONFLICT(name, type, labels_hash) DO UPDATE SET
     `value` = `value` + excluded.value;
 SQL;
+                }
+                break;
+
+            case 'mysql':
+                if ($data['command'] === Adapter::COMMAND_SET) {
+                    $values_sql = <<<SQL
+INSERT INTO  `{$this->prefix}_values`(`name`, `type`, `labels_hash`, `labels`, `value`)
+  VALUES(:name,:type,:hash,:labels,:value)
+  ON DUPLICATE KEY UPDATE
+    `value` = VALUES(`value`);
+SQL;
+                } else {
+                    $values_sql = <<<SQL
+INSERT INTO  `{$this->prefix}_values`(`name`, `type`, `labels_hash`, `labels`, `value`)
+  VALUES(:name,:type,:hash,:labels,:value)
+  ON DUPLICATE KEY UPDATE
+    `value` = `value` + VALUES(`value`);
+SQL;
+                }
+                break;
+
+            default:
+                throw new \RuntimeException('Unsupported database type');
         }
 
         $statement = $this->database->prepare($values_sql);
@@ -433,6 +482,7 @@ SQL;
 
     protected function createTables(): void
     {
+        $driver = $this->database->getAttribute(\PDO::ATTR_DRIVER_NAME);
         $sql = <<<SQL
 CREATE TABLE IF NOT EXISTS `{$this->prefix}_metadata` (
     `name` varchar(255) NOT NULL,
@@ -443,36 +493,46 @@ CREATE TABLE IF NOT EXISTS `{$this->prefix}_metadata` (
 SQL;
         $this->database->query($sql);
 
+        $hash_size = $driver == 'sqlite' ? 32 : 64;
         $sql = <<<SQL
 CREATE TABLE IF NOT EXISTS `{$this->prefix}_values` (
     `name` varchar(255) NOT NULL,
     `type` varchar(9) NOT NULL,
-    `labels_hash` varchar(32) NOT NULL,
+    `labels_hash` varchar({$hash_size}) NOT NULL,
     `labels` TEXT NOT NULL,
-    `value` DECIMAL({$this->precision[0]},{$this->precision[1]}) DEFAULT 0.0,
+    `value` double DEFAULT 0.0,
     PRIMARY KEY (`name`, `type`, `labels_hash`)
 )
 SQL;
         $this->database->query($sql);
 
+        $timestamp_type = $driver == 'sqlite' ? 'timestamp' : 'int';
         $sql = <<<SQL
 CREATE TABLE IF NOT EXISTS `{$this->prefix}_summaries` (
     `name` varchar(255) NOT NULL,
-    `labels_hash` varchar(32) NOT NULL,
+    `labels_hash` varchar({$hash_size}) NOT NULL,
     `labels` TEXT NOT NULL,
-    `value` DECIMAL({$this->precision[0]},{$this->precision[1]}) DEFAULT 0.0,
-    `time` timestamp NOT NULL
-); 
-CREATE INDEX `name` ON `{$this->prefix}_summaries`(`name`);
+    `value` double DEFAULT 0.0,
+    `time` {$timestamp_type} NOT NULL
 SQL;
+        switch ($driver) {
+            case 'sqlite':
+                $sql .= "); CREATE INDEX `name` ON `{$this->prefix}_summaries`(`name`);";
+                break;
+
+            case 'mysql':
+                $sql .= ", KEY `name` (`name`));";
+                break;
+        }
+
         $this->database->query($sql);
 
         $sql = <<<SQL
 CREATE TABLE IF NOT EXISTS `{$this->prefix}_histograms` (
     `name` varchar(255) NOT NULL,
-    `labels_hash` varchar(32) NOT NULL,
+    `labels_hash` varchar({$hash_size}) NOT NULL,
     `labels` TEXT NOT NULL,
-    `value` DECIMAL({$this->precision[0]},{$this->precision[1]}) DEFAULT 0.0,
+    `value` double DEFAULT 0.0,
     `bucket` varchar(255) NOT NULL,
     PRIMARY KEY (`name`, `labels_hash`, `bucket`)
 ); 

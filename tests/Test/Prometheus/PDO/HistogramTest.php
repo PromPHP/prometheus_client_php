@@ -12,9 +12,25 @@ use Test\Prometheus\AbstractHistogramTest;
  */
 class HistogramTest extends AbstractHistogramTest
 {
+    /**
+     * @var \PDO|null
+     */
+    private $pdo;
+
     public function configureAdapter(): void
     {
-        $this->adapter = new PDO(new \PDO('sqlite::memory:'));
+        $this->pdo = new \PDO('sqlite::memory:');
+        //$this->pdo = new \PDO('mysql:host=db;dbname=db', 'db', 'db');
+        $prefix = 'test' . substr(hash('sha256', uniqid()), 0, 6) . '_';
+        $this->adapter = new PDO($this->pdo, $prefix);
         $this->adapter->wipeStorage();
+    }
+
+    public function tearDown(): void
+    {
+        parent::tearDown();
+        $this->adapter->deleteTables(); /** @phpstan-ignore-line */
+        $this->adapter = null; /** @phpstan-ignore-line */
+        $this->pdo = null;
     }
 }
