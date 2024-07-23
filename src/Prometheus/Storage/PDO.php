@@ -48,7 +48,7 @@ class PDO implements Adapter
     /**
      * @return MetricFamilySamples[]
      */
-    public function collect(bool $sortMetrics = true): array
+    public function collect(): array
     {
         $metrics = $this->collectHistograms();
         $metrics = array_merge($metrics, $this->collectGauges());
@@ -93,7 +93,7 @@ class PDO implements Adapter
             }
 
             $histogram_buckets = [];
-            foreach ($values as $hash => $value) {
+            foreach ($values as $_hash => $value) {
                 foreach ($value as $bucket_value) {
                     $histogram_buckets[$bucket_value['labels']][$bucket_value['bucket']] = $bucket_value['value'];
                 }
@@ -102,12 +102,12 @@ class PDO implements Adapter
             // Compute all buckets
             $labels = array_keys($histogram_buckets);
             sort($labels);
-            foreach ($labels as $labelValues) {
+            foreach ($labels as $label_values) {
                 $acc = 0;
-                $decoded_values = json_decode($labelValues, true);
+                $decoded_values = json_decode($label_values, true);  /** @phpstan-ignore-line */
                 foreach ($data['buckets'] as $bucket) {
                     $bucket = (string)$bucket;
-                    if (!isset($histogram_buckets[$labelValues][$bucket])) {
+                    if (!isset($histogram_buckets[$label_values][$bucket])) {
                         $data['samples'][] = [
                             'name' => $data['name'] . '_bucket',
                             'labelNames' => ['le'],
@@ -115,7 +115,7 @@ class PDO implements Adapter
                             'value' => $acc,
                         ];
                     } else {
-                        $acc += $histogram_buckets[$labelValues][$bucket];
+                        $acc += $histogram_buckets[$label_values][$bucket];
                         $data['samples'][] = [
                             'name' => $data['name'] . '_' . 'bucket',
                             'labelNames' => ['le'],
@@ -138,7 +138,7 @@ class PDO implements Adapter
                     'name' => $data['name'] . '_sum',
                     'labelNames' => [],
                     'labelValues' => $decoded_values,
-                    'value' => $histogram_buckets[$labelValues]['sum'],
+                    'value' => $histogram_buckets[$label_values]['sum'],
                 ];
             }
             $result[] = new MetricFamilySamples($data);
@@ -170,7 +170,7 @@ class PDO implements Adapter
                 $values[$value_row['labels_hash']][] = $value_row;
             }
 
-            foreach ($values as $labels_hash => $samples) {
+            foreach ($values as $_hash => $samples) {
                 $decoded_labels = json_decode(reset($samples)['labels'], true);
 
                 // Remove old data
@@ -231,6 +231,9 @@ class PDO implements Adapter
         return $this->collectStandard(Counter::TYPE);
     }
 
+    /**
+     * @return MetricFamilySamples[]
+     */
     protected function collectStandard(string $type): array
     {
         $result = [];
@@ -255,6 +258,10 @@ class PDO implements Adapter
                     'value' => $value_row['value'],
                 ];
             }
+
+            usort($data['samples'], function ($a, $b): int {
+                return strcmp(implode("", $a['labelValues']), implode("", $b['labelValues']));
+            });
 
             $result[] = new MetricFamilySamples($data);
         }
