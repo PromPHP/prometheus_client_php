@@ -102,6 +102,12 @@ $registry = new CollectorRegistry(new APC());
 ```
 (see the `README.APCng.md` file for more details)
 
+Using the PDO storage:
+```php
+$registry = new CollectorRegistry(new \PDO('mysql:host=localhost;dbname=prometheus', 'username', 'password'));
+ or
+$registry = new CollectorRegistry(new \PDO('sqlite::memory:'));
+```
 
 ### Advanced Usage
 
