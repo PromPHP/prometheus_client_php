@@ -12,6 +12,8 @@ use Test\Prometheus\AbstractGaugeTest;
  */
 class GaugeTest extends AbstractGaugeTest
 {
+    use PdoCredentialsTrait;
+
     /**
      * @var \PDO|null
      */
@@ -19,8 +21,7 @@ class GaugeTest extends AbstractGaugeTest
 
     public function configureAdapter(): void
     {
-        $this->pdo = new \PDO('sqlite::memory:');
-        //$this->pdo = new \PDO('mysql:host=db;dbname=db', 'db', 'db');
+        $this->pdo = new \PDO($this->getDsn(), $this->getUsername(), $this->getPassword());
         $prefix = 'test' . substr(hash('sha256', uniqid()), 0, 6) . '_';
         $this->adapter = new PDO($this->pdo, $prefix);
         $this->adapter->wipeStorage();
