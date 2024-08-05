@@ -14,7 +14,7 @@ trait PdoCredentialsTrait
 
     private function getDsn(): string
     {
-        return $this->getEnvironmentWithDefault('TEST_PDO_DSN', 'sqlite::memory:');
+        return $this->getEnvironmentWithDefault('TEST_PDO_DSN', 'sqlite::memory:'); /** @phpstan-ignore-line */
     }
 
     private function getUsername(): ?string
