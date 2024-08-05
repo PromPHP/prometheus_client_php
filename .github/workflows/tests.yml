@@ -9,7 +9,7 @@ jobs:
       fail-fast: true
       matrix:
         os: [ ubuntu-latest ]
-        php: [ 8.0, 8.1, 8.2, 8.3 ]
+        php: [ 8.1, 8.2, 8.3 ]
         dependency-version: [ prefer-lowest, prefer-stable ]
         redis-version: [ 5, 6, 7 ]
 
@@ -20,6 +20,11 @@ jobs:
       REDIS_HOST: redis
       # The default Redis port
       REDIS_PORT: 6379
+      # MySQL
+      DB_DATABASE: test
+      DB_USER: root
+      DB_PASSWORD: root
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -40,9 +45,23 @@ jobs:
 
       - name: Install dependencies
         run: composer update --${{ matrix.dependency-version }} --prefer-dist --no-interaction --no-suggest
+
       - name: Start Redis
         uses: supercharge/redis-github-action@1.1.0
         with:
           redis-version: ${{ matrix.redis-version }}
-      - name: Execute tests
+
+      - name: Execute tests (PDO with Sqlite)
         run: vendor/bin/phpunit
+
+      - name: Start MySQL
+        run: |
+          sudo /etc/init.d/mysql start
+          mysql -e "CREATE DATABASE IF NOT EXISTS $DB_DATABASE;" -u$DB_USER -p$DB_PASSWORD
+
+      - name: Execute PDO tests with MySQL
+        env:
+          TEST_PDO_DSN: 'mysql:host=localhost;dbname=test'
+          TEST_PDO_USERNAME: 'root'
+          TEST_PDO_PASSWORD: 'root'
+        run: vendor/bin/phpunit tests/Test/Prometheus/PDO
