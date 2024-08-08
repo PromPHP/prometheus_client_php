@@ -14,6 +14,14 @@ interface Adapter
     const COMMAND_SET = 3;
 
     /**
+     * Removes all previously stored metrics from underlying storage
+     *
+     * @throws StorageException
+     * @return void
+     */
+    public function wipeStorage(): void;
+
+    /**
      * @return MetricFamilySamples[]
      */
     public function collect(): array;
@@ -43,10 +51,21 @@ interface Adapter
     public function updateCounter(array $data): void;
 
     /**
-     * Removes all previously stored metrics from underlying storage
-     *
-     * @throws StorageException
+     * @param mixed[] $data
      * @return void
      */
-    public function wipeStorage(): void;
+    public function initHistogram(array $data): void;
+
+
+    /**
+     * @param mixed[] $data
+     * @return void
+     */
+    public function initGauge(array $data): void;
+
+    /**
+     * @param mixed[] $data
+     * @return void
+     */
+    public function initCounter(array $data): void;
 }
