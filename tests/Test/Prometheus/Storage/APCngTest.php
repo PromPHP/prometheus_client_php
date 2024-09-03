@@ -45,6 +45,29 @@ class APCngTest extends TestCase
     /**
      * @test
      */
+    public function nonStringLabelValuesAreCastToStrings(): void
+    {
+        apcu_clear_cache();
+
+        $adapter = new APCng();
+        $registry = new CollectorRegistry($adapter);
+        $registry->getOrRegisterCounter(
+            'ns',
+            'int_label_values',
+            'test int label values',
+            ['int_label'],
+        )->inc([3]);
+
+        $jsonLabels = json_encode(["3"]);
+        $encodedLabels = base64_encode($jsonLabels);
+
+        $counter = apcu_fetch("prom:counter:ns_int_label_values:{$encodedLabels}:value");
+        $this->assertSame(1000, $counter);
+    }
+
+    /**
+     * @test
+     */
     public function itShouldUseConfiguredPrefix(): void
     {
         $apc = new APCng('custom_prefix');
