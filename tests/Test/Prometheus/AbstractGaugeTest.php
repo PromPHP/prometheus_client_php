@@ -330,7 +330,6 @@ abstract class AbstractGaugeTest extends TestCase
         self::assertContainsOnlyInstancesOf(MetricFamilySamples::class, $metrics);
 
         $metric = reset($metrics);
-        self::assertInstanceOf(MetricFamilySamples::class, $metric);
         $samples = $metric->getSamples();
         self::assertContainsOnlyInstancesOf(Sample::class, $samples);
 
