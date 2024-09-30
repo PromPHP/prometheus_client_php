@@ -56,13 +56,10 @@ class APCngTest extends TestCase
             'int_label_values',
             'test int label values',
             ['int_label'],
-        )->inc([3]);
+        )->incBy(3, [3]);
 
-        $jsonLabels = json_encode(["3"]);
-        $encodedLabels = base64_encode($jsonLabels);
-
-        $counter = apcu_fetch("prom:counter:ns_int_label_values:{$encodedLabels}:value");
-        $this->assertSame(1000, $counter);
+        $counter = apcu_fetch("prom:counter:ns_int_label_values:WyIzIl0=:value");
+        self::assertSame(3000, $counter);
     }
 
     /**
