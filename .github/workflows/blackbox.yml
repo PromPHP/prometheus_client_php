@@ -22,20 +22,20 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: 8.2
+          php-version: 8.3
           coverage: none
 
       - name: Install dependencies
         run: composer install --prefer-dist --no-interaction --no-suggest
 
       - name: Compose Blackbox environment
-        run: docker-compose up -d
+        run: docker compose up -d
       - name: Run Blackbox with APC
-        run: docker-compose run phpunit env ADAPTER=apc vendor/bin/phpunit tests/Test/
+        run: docker compose run phpunit env ADAPTER=apc vendor/bin/phpunit tests/Test/
       - name: Run Blackbox with APCng
-        run: docker-compose run phpunit env ADAPTER=apcng vendor/bin/phpunit tests/Test/
+        run: docker compose run phpunit env ADAPTER=apcng vendor/bin/phpunit tests/Test/
       - name: Run Blackbox with Redis
-        run: docker-compose run phpunit env ADAPTER=redis vendor/bin/phpunit tests/Test/
+        run: docker compose run phpunit env ADAPTER=redis vendor/bin/phpunit tests/Test/
 
 
 

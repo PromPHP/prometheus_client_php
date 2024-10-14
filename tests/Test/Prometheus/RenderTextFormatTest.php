@@ -10,6 +10,10 @@ use Prometheus\MetricFamilySamples;
 use Prometheus\RenderTextFormat;
 use PHPUnit\Framework\TestCase;
 use Prometheus\Storage\InMemory;
+use Prometheus\Storage\Redis;
+use ValueError;
+
+use const INF;
 
 class RenderTextFormatTest extends TestCase
 {
@@ -35,6 +39,10 @@ class RenderTextFormatTest extends TestCase
                  ->inc(['bob', 'al\ice']);
         $registry->getOrRegisterGauge($namespace, 'gauge', 'gauge-help-text', ['label1', 'label2'])
                  ->inc(["bo\nb", 'ali\"ce']);
+        $registry->getOrRegisterGauge($namespace, 'gauge2', '', ['label1'])
+                 ->set(INF, ["infinity"]);
+        $registry->getOrRegisterGauge($namespace, 'gauge2', '', ['label1'])
+                 ->set(-INF, ["infinity-negative"]);
         $registry->getOrRegisterHistogram($namespace, 'histogram', 'histogram-help-text', ['label1', 'label2'], [0, 10, 100])
                  ->observe(5, ['bob', 'alice']);
         $registry->getOrRegisterSummary($namespace, 'summary', 'summary-help-text', ['label1', 'label2'], 60, [0.1, 0.5, 0.9])
@@ -52,6 +60,10 @@ mynamespace_counter{label1="bob",label2="al\\\\ice"} 1
 # HELP mynamespace_gauge gauge-help-text
 # TYPE mynamespace_gauge gauge
 mynamespace_gauge{label1="bo\\nb",label2="ali\\\\\"ce"} 1
+# HELP mynamespace_gauge2 
+# TYPE mynamespace_gauge2 gauge
+mynamespace_gauge2{label1="infinity"} +Inf
+mynamespace_gauge2{label1="infinity-negative"} -Inf
 # HELP mynamespace_histogram histogram-help-text
 # TYPE mynamespace_histogram histogram
 mynamespace_histogram_bucket{label1="bob",label2="alice",le="0"} 0
@@ -69,5 +81,58 @@ mynamespace_summary_count{label1="bob",label2="alice"} 1
 mynamespace_summary_sum{label1="bob",label2="alice"} 5
 
 TEXTPLAIN;
+    }
+
+    public function testValueErrorThrownWithInvalidSamples(): void
+    {
+        $namespace = 'foo';
+        $counter = 'bar';
+        $storage = new Redis(['host' => REDIS_HOST]);
+        $storage->wipeStorage();
+
+        $registry = new CollectorRegistry($storage, false);
+        $registry->registerCounter($namespace, $counter, 'counter-help-text', ['label1', 'label2'])
+            ->inc(['bob', 'alice']);
+
+        // Reload the registry with an updated counter config
+        $registry = new CollectorRegistry($storage, false);
+        $registry->registerCounter($namespace, $counter, 'counter-help-text', ['label1', 'label2', 'label3'])
+            ->inc(['bob', 'alice', 'eve']);
+
+        $this->expectException(ValueError::class);
+
+        $renderer = new RenderTextFormat();
+        $renderer->render($registry->getMetricFamilySamples());
+    }
+
+    public function testOutputWithInvalidSamplesSkipped(): void
+    {
+        $namespace = 'foo';
+        $counter = 'bar';
+        $storage = new Redis(['host' => REDIS_HOST]);
+        $storage->wipeStorage();
+
+        $registry = new CollectorRegistry($storage, false);
+        $registry->registerCounter($namespace, $counter, 'counter-help-text', ['label1', 'label2'])
+            ->inc(['bob', 'alice']);
+
+        // Reload the registry with an updated counter config
+        $registry = new CollectorRegistry($storage, false);
+        $registry->registerCounter($namespace, $counter, 'counter-help-text', ['label1', 'label2', 'label3'])
+            ->inc(['bob', 'alice', 'eve']);
+
+        $expectedOutput = '
+# HELP foo_bar counter-help-text
+# TYPE foo_bar counter
+foo_bar{label1="bob",label2="alice"} 1
+# Error: array_combine(): Argument #1 ($keys) and argument #2 ($values) must have the same number of elements
+#   Labels: ["label1","label2"]
+#   Values: ["bob","alice","eve"]
+';
+
+        $renderer = new RenderTextFormat();
+        $output = $renderer->render($registry->getMetricFamilySamples(), true);
+
+        self::assertSame(trim($expectedOutput), trim($output));
     }
 }

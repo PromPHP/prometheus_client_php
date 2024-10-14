@@ -33,6 +33,7 @@
         "ext-redis": "Required if using Redis.",
         "predis/predis": "Required if using Predis.",
         "ext-apc": "Required if using APCu.",
+        "ext-pdo": "Required if using PDO.",
         "promphp/prometheus_push_gateway_php": "An easy client for using Prometheus PushGateway.",
         "symfony/polyfill-apcu": "Required if you use APCu on PHP8.0+"
     },
