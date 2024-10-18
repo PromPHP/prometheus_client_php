@@ -23,13 +23,13 @@ class Summary extends Collector
     private $maxAgeSeconds;
 
     /**
-     * @param Adapter    $adapter
-     * @param string     $namespace
-     * @param string     $name
-     * @param string     $help
-     * @param string[]   $labels
-     * @param int        $maxAgeSeconds
-     * @param float[]    $quantiles
+     * @param Adapter       $adapter
+     * @param string        $namespace
+     * @param string        $name
+     * @param string        $help
+     * @param string[]      $labels
+     * @param int           $maxAgeSeconds
+     * @param float[]|null  $quantiles
      */
     public function __construct(
         Adapter $adapter,
@@ -38,7 +38,7 @@ class Summary extends Collector
         string $help,
         array $labels = [],
         int $maxAgeSeconds = 600,
-        array $quantiles = null
+        ?array $quantiles = null
     ) {
         parent::__construct($adapter, $namespace, $name, $help, $labels);
 
@@ -93,7 +93,7 @@ class Summary extends Collector
     }
 
     /**
-     * @param double $value e.g. 123
+     * @param float $value e.g. 123.0
      * @param string[]  $labels e.g. ['status', 'opcode']
      */
     public function observe(float $value, array $labels = []): void

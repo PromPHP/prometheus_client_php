@@ -95,7 +95,7 @@ class CollectorRegistry implements RegistryInterface
      * @return Gauge
      * @throws MetricsRegistrationException
      */
-    public function registerGauge(string $namespace, string $name, string $help, $labels = []): Gauge
+    public function registerGauge(string $namespace, string $name, string $help, array $labels = []): Gauge
     {
         $metricIdentifier = self::metricIdentifier($namespace, $name);
         if (isset($this->gauges[$metricIdentifier])) {
@@ -136,7 +136,7 @@ class CollectorRegistry implements RegistryInterface
      * @return Gauge
      * @throws MetricsRegistrationException
      */
-    public function getOrRegisterGauge(string $namespace, string $name, string $help, $labels = []): Gauge
+    public function getOrRegisterGauge(string $namespace, string $name, string $help, array $labels = []): Gauge
     {
         try {
             $gauge = $this->getGauge($namespace, $name);
@@ -155,7 +155,7 @@ class CollectorRegistry implements RegistryInterface
      * @return Counter
      * @throws MetricsRegistrationException
      */
-    public function registerCounter(string $namespace, string $name, string $help, $labels = []): Counter
+    public function registerCounter(string $namespace, string $name, string $help, array $labels = []): Counter
     {
         $metricIdentifier = self::metricIdentifier($namespace, $name);
         if (isset($this->counters[$metricIdentifier])) {
@@ -196,7 +196,7 @@ class CollectorRegistry implements RegistryInterface
      * @return Counter
      * @throws MetricsRegistrationException
      */
-    public function getOrRegisterCounter(string $namespace, string $name, string $help, $labels = []): Counter
+    public function getOrRegisterCounter(string $namespace, string $name, string $help, array $labels = []): Counter
     {
         try {
             $counter = $this->getCounter($namespace, $name);
@@ -211,7 +211,7 @@ class CollectorRegistry implements RegistryInterface
      * @param string $name e.g. duration_seconds
      * @param string $help e.g. A histogram of the duration in seconds.
      * @param string[] $labels e.g. ['controller', 'action']
-     * @param mixed[]|null $buckets e.g. [100, 200, 300]
+     * @param float[]|null $buckets e.g. [100.0, 200.0, 300.0]
      *
      * @return Histogram
      * @throws MetricsRegistrationException
@@ -221,7 +221,7 @@ class CollectorRegistry implements RegistryInterface
         string $name,
         string $help,
         array $labels = [],
-        array $buckets = null
+        ?array $buckets = null
     ): Histogram {
         $metricIdentifier = self::metricIdentifier($namespace, $name);
         if (isset($this->histograms[$metricIdentifier])) {
@@ -259,7 +259,7 @@ class CollectorRegistry implements RegistryInterface
      * @param string $name e.g. duration_seconds
      * @param string $help e.g. A histogram of the duration in seconds.
      * @param string[] $labels e.g. ['controller', 'action']
-     * @param float[]|null $buckets e.g. [100, 200, 300]
+     * @param float[]|null $buckets e.g. [100.0, 200.0, 300.0]
      *
      * @return Histogram
      * @throws MetricsRegistrationException
@@ -269,7 +269,7 @@ class CollectorRegistry implements RegistryInterface
         string $name,
         string $help,
         array $labels = [],
-        array $buckets = null
+        ?array $buckets = null
     ): Histogram {
         try {
             $histogram = $this->getHistogram($namespace, $name);
@@ -297,7 +297,7 @@ class CollectorRegistry implements RegistryInterface
         string $help,
         array $labels = [],
         int $maxAgeSeconds = 600,
-        array $quantiles = null
+        ?array $quantiles = null
     ): Summary {
         $metricIdentifier = self::metricIdentifier($namespace, $name);
         if (isset($this->summaries[$metricIdentifier])) {
@@ -348,7 +348,7 @@ class CollectorRegistry implements RegistryInterface
         string $help,
         array $labels = [],
         int $maxAgeSeconds = 600,
-        array $quantiles = null
+        ?array $quantiles = null
     ): Summary {
         try {
             $summary = $this->getSummary($namespace, $name);

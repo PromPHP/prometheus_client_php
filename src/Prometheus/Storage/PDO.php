@@ -36,7 +36,7 @@ class PDO implements Adapter
      */
     public function __construct(\PDO $database, string $prefix = 'prometheus_')
     {
-        if (!in_array($database->getAttribute(\PDO::ATTR_DRIVER_NAME), ['mysql', 'sqlite'], true)) {
+        if (!in_array($database->getAttribute(\PDO::ATTR_DRIVER_NAME), ['mysql', 'sqlite', 'pgsql'], true)) {
             throw new \RuntimeException('Only MySQL and SQLite are supported.');
         }
 
@@ -62,18 +62,36 @@ class PDO implements Adapter
      */
     public function wipeStorage(): void
     {
-        $this->database->query("DELETE FROM `{$this->prefix}_metadata`");
-        $this->database->query("DELETE FROM `{$this->prefix}_values`");
-        $this->database->query("DELETE FROM `{$this->prefix}_summaries`");
-        $this->database->query("DELETE FROM `{$this->prefix}_histograms`");
+        switch ($this->database->getAttribute(\PDO::ATTR_DRIVER_NAME)) {
+            case 'pgsql':
+                $this->database->query("DELETE FROM \"{$this->prefix}_metadata\"");
+                $this->database->query("DELETE FROM \"{$this->prefix}_values\"");
+                $this->database->query("DELETE FROM \"{$this->prefix}_summaries\"");
+                $this->database->query("DELETE FROM \"{$this->prefix}_histograms\"");
+                break;
+            default:
+                $this->database->query("DELETE FROM `{$this->prefix}_metadata`");
+                $this->database->query("DELETE FROM `{$this->prefix}_values`");
+                $this->database->query("DELETE FROM `{$this->prefix}_summaries`");
+                $this->database->query("DELETE FROM `{$this->prefix}_histograms`");
+        }
     }
 
     public function deleteTables(): void
     {
-        $this->database->query("DROP TABLE `{$this->prefix}_metadata`");
-        $this->database->query("DROP TABLE `{$this->prefix}_values`");
-        $this->database->query("DROP TABLE `{$this->prefix}_summaries`");
-        $this->database->query("DROP TABLE `{$this->prefix}_histograms`");
+        switch ($this->database->getAttribute(\PDO::ATTR_DRIVER_NAME)) {
+            case 'pgsql':
+                $this->database->query("DROP TABLE \"{$this->prefix}_metadata\"");
+                $this->database->query("DROP TABLE \"{$this->prefix}_values\"");
+                $this->database->query("DROP TABLE \"{$this->prefix}_summaries\"");
+                $this->database->query("DROP TABLE \"{$this->prefix}_histograms\"");
+                break;
+            default:
+                $this->database->query("DROP TABLE `{$this->prefix}_metadata`");
+                $this->database->query("DROP TABLE `{$this->prefix}_values`");
+                $this->database->query("DROP TABLE `{$this->prefix}_summaries`");
+                $this->database->query("DROP TABLE `{$this->prefix}_histograms`");
+        }
     }
 
     /**
@@ -83,7 +101,7 @@ class PDO implements Adapter
     {
         $result = [];
 
-        $meta_query = $this->database->prepare("SELECT name, metadata FROM `{$this->prefix}_metadata` WHERE type = :type");
+        $meta_query = $this->getMetaQuery();
         $meta_query->execute([':type' => Histogram::TYPE]);
 
         while ($row = $meta_query->fetch(\PDO::FETCH_ASSOC)) {
@@ -93,7 +111,14 @@ class PDO implements Adapter
             // Add the Inf bucket, so we can compute it later on.
             $data['buckets'][] = '+Inf';
 
-            $values_query = $this->database->prepare("SELECT name, labels_hash, labels, value, bucket FROM `{$this->prefix}_histograms` WHERE name = :name");
+            switch ($this->database->getAttribute(\PDO::ATTR_DRIVER_NAME)) {
+                case 'pgsql':
+                    $values_query = $this->database->prepare("SELECT name, labels_hash, labels, value, bucket FROM \"{$this->prefix}_histograms\" WHERE name = :name");
+                    break;
+                default:
+                    $values_query = $this->database->prepare("SELECT name, labels_hash, labels, value, bucket FROM `{$this->prefix}_histograms` WHERE name = :name");
+            }
+
             $values_query->execute([':name' => $data['name']]);
 
             $values = [];
@@ -164,14 +189,21 @@ class PDO implements Adapter
         $math = new Math();
         $result = [];
 
-        $meta_query = $this->database->prepare("SELECT name, metadata FROM `{$this->prefix}_metadata` WHERE type = :type");
+        $meta_query = $this->getMetaQuery();
         $meta_query->execute([':type' => Summary::TYPE]);
 
         while ($row = $meta_query->fetch(\PDO::FETCH_ASSOC)) {
             $data = json_decode($row['metadata'], true);
             $data['samples'] = [];
 
-            $values_query = $this->database->prepare("SELECT name, labels_hash, labels, value, time FROM `{$this->prefix}_summaries` WHERE name = :name");
+            switch ($this->database->getAttribute(\PDO::ATTR_DRIVER_NAME)) {
+                case 'pgsql':
+                    $values_query = $this->database->prepare("SELECT name, labels_hash, labels, value, time FROM \"{$this->prefix}_summaries\" WHERE name = :name");
+                    break;
+                default:
+                    $values_query = $this->database->prepare("SELECT name, labels_hash, labels, value, time FROM `{$this->prefix}_summaries` WHERE name = :name");
+            }
+
             $values_query->execute([':name' => $data['name']]);
 
             $values = [];
@@ -180,6 +212,11 @@ class PDO implements Adapter
             }
 
             foreach ($values as $_hash => $samples) {
+                $samples = array_map(function ($sample) {
+                    $sample['value'] = (float) $sample['value'];
+                    return $sample;
+                }, $samples);
+
                 $decoded_labels = json_decode(reset($samples)['labels'], true);
 
                 // Remove old data
@@ -247,14 +284,21 @@ class PDO implements Adapter
     {
         $result = [];
 
-        $meta_query = $this->database->prepare("SELECT name, metadata FROM `{$this->prefix}_metadata` WHERE type = :type");
+        $meta_query = $this->getMetaQuery();
         $meta_query->execute([':type' => $type]);
 
         while ($row = $meta_query->fetch(\PDO::FETCH_ASSOC)) {
             $data = json_decode($row['metadata'], true);
             $data['samples'] = [];
 
-            $values_query = $this->database->prepare("SELECT name, labels, value FROM `{$this->prefix}_values` WHERE name = :name AND type = :type");
+            switch ($this->database->getAttribute(\PDO::ATTR_DRIVER_NAME)) {
+                case 'pgsql':
+                    $values_query = $this->database->prepare("SELECT name, labels, value FROM \"{$this->prefix}_values\" WHERE name = :name AND type = :type");
+                    break;
+                default:
+                    $values_query = $this->database->prepare("SELECT name, labels, value FROM `{$this->prefix}_values` WHERE name = :name AND type = :type");
+            }
+
             $values_query->execute([
                 ':name' => $data['name'],
                 ':type' => $type,
@@ -313,6 +357,15 @@ INSERT INTO  `{$this->prefix}_histograms`(`name`, `labels_hash`, `labels`, `valu
 SQL;
                 break;
 
+            case 'pgsql':
+                $values_sql = <<<SQL
+INSERT INTO "{$this->prefix}_histograms"("name", "labels_hash", "labels", "value", "bucket")
+  VALUES(:name,:hash,:labels,:value,:bucket)
+  ON CONFLICT("name", "labels_hash", "bucket") DO UPDATE SET
+    "value" = "{$this->prefix}_histograms"."value" + "excluded"."value";
+SQL;
+                break;
+
             default:
                 throw new \RuntimeException('Unsupported database type');
         }
@@ -353,10 +406,19 @@ SQL;
     {
         $this->updateMetadata($data, Summary::TYPE);
 
-        $values_sql = <<<SQL
+        switch ($this->database->getAttribute(\PDO::ATTR_DRIVER_NAME)) {
+            case 'pgsql':
+                $values_sql = <<<SQL
+INSERT INTO "{$this->prefix}_summaries"("name", "labels_hash", "labels", "value", "time")
+  VALUES(:name,:hash,:labels,:value,:time)
+SQL;
+                break;
+            default:
+                $values_sql = <<<SQL
 INSERT INTO  `{$this->prefix}_summaries`(`name`, `labels_hash`, `labels`, `value`, `time`)
   VALUES(:name,:hash,:labels,:value,:time)
 SQL;
+        }
 
         $statement = $this->database->prepare($values_sql);
         $label_values = $this->encodeLabelValues($data);
@@ -407,6 +469,15 @@ INSERT INTO  `{$this->prefix}_metadata`
   VALUES(:name, :type, :metadata)
   ON DUPLICATE KEY UPDATE
     `metadata` = VALUES(`metadata`);
+SQL;
+                break;
+
+            case 'pgsql':
+                $metadata_sql = <<<SQL
+INSERT INTO "{$this->prefix}_metadata"
+  VALUES(:name, :type, :metadata)
+  ON CONFLICT("name", "type") DO UPDATE SET
+    "metadata" = "excluded"."metadata";
 SQL;
                 break;
 
@@ -465,6 +536,24 @@ SQL;
                 }
                 break;
 
+            case 'pgsql':
+                if ($data['command'] === Adapter::COMMAND_SET) {
+                    $values_sql = <<<SQL
+INSERT INTO "{$this->prefix}_values"("name", "type", "labels_hash", "labels", "value")
+  VALUES(:name,:type,:hash,:labels,:value)
+  ON CONFLICT("name", "type", "labels_hash") DO UPDATE SET
+    "value" = "excluded"."value";
+SQL;
+                } else {
+                    $values_sql = <<<SQL
+INSERT INTO "{$this->prefix}_values"("name", "type", "labels_hash", "labels", "value")
+  VALUES(:name,:type,:hash,:labels,:value)
+  ON CONFLICT("name", "type", "labels_hash") DO UPDATE SET
+    "value" = "{$this->prefix}_values"."value" + "excluded"."value";
+SQL;
+                }
+                break;
+
             default:
                 throw new \RuntimeException('Unsupported database type');
         }
@@ -483,7 +572,20 @@ SQL;
     protected function createTables(): void
     {
         $driver = $this->database->getAttribute(\PDO::ATTR_DRIVER_NAME);
-        $sql = <<<SQL
+
+        switch ($driver) {
+            case 'pgsql':
+                $sql = <<<SQL
+CREATE TABLE IF NOT EXISTS "{$this->prefix}_metadata" (
+    "name" varchar(255) NOT NULL,
+    "type" varchar(9) NOT NULL,
+    "metadata" text NOT NULL,
+    PRIMARY KEY ("name", "type")
+)
+SQL;
+                break;
+            default:
+                $sql = <<<SQL
 CREATE TABLE IF NOT EXISTS `{$this->prefix}_metadata` (
     `name` varchar(255) NOT NULL,
     `type` varchar(9) NOT NULL,
@@ -491,10 +593,27 @@ CREATE TABLE IF NOT EXISTS `{$this->prefix}_metadata` (
     PRIMARY KEY (`name`, `type`)
 )
 SQL;
+        }
+
         $this->database->query($sql);
 
         $hash_size = $driver == 'sqlite' ? 32 : 64;
-        $sql = <<<SQL
+
+        switch ($driver) {
+            case 'pgsql':
+                $sql = <<<SQL
+CREATE TABLE IF NOT EXISTS "{$this->prefix}_values" (
+    "name" varchar(255) NOT NULL,
+    "type" varchar(9) NOT NULL,
+    "labels_hash" varchar({$hash_size}) NOT NULL,
+    "labels" TEXT NOT NULL,
+    "value" DOUBLE PRECISION DEFAULT 0.0,
+    PRIMARY KEY ("name", "type", "labels_hash")
+)
+SQL;
+                break;
+            default:
+                $sql = <<<SQL
 CREATE TABLE IF NOT EXISTS `{$this->prefix}_values` (
     `name` varchar(255) NOT NULL,
     `type` varchar(9) NOT NULL,
@@ -504,30 +623,74 @@ CREATE TABLE IF NOT EXISTS `{$this->prefix}_values` (
     PRIMARY KEY (`name`, `type`, `labels_hash`)
 )
 SQL;
+        }
+
         $this->database->query($sql);
 
         $timestamp_type = $driver == 'sqlite' ? 'timestamp' : 'int';
-        $sql = <<<SQL
+        $sqlIndex = null;
+
+        switch ($driver) {
+            case 'sqlite':
+                $sql = <<<SQL
 CREATE TABLE IF NOT EXISTS `{$this->prefix}_summaries` (
     `name` varchar(255) NOT NULL,
     `labels_hash` varchar({$hash_size}) NOT NULL,
     `labels` TEXT NOT NULL,
     `value` double DEFAULT 0.0,
     `time` {$timestamp_type} NOT NULL
+);
 SQL;
-        switch ($driver) {
-            case 'sqlite':
-                $sql .= "); CREATE INDEX `name` ON `{$this->prefix}_summaries`(`name`);";
+                $sqlIndex = "CREATE INDEX `name` ON `{$this->prefix}_summaries`(`name`);";
                 break;
 
             case 'mysql':
-                $sql .= ", KEY `name` (`name`));";
+                $sql = <<<SQL
+CREATE TABLE IF NOT EXISTS `{$this->prefix}_summaries` (
+    `name` varchar(255) NOT NULL,
+    `labels_hash` varchar({$hash_size}) NOT NULL,
+    `labels` TEXT NOT NULL,
+    `value` double DEFAULT 0.0,
+    `time` {$timestamp_type} NOT NULL,
+    KEY `name` (`name`)
+);
+SQL;
+                break;
+
+            case 'pgsql':
+                $sql = <<<SQL
+CREATE TABLE IF NOT EXISTS "{$this->prefix}_summaries" (
+    "name" varchar(255) NOT NULL,
+    "labels_hash" varchar({$hash_size}) NOT NULL,
+    "labels" TEXT NOT NULL,
+    "value" DOUBLE PRECISION DEFAULT 0.0,
+    "time" {$timestamp_type} NOT NULL
+);
+SQL;
+                $sqlIndex = "CREATE INDEX \"name\" ON \"{$this->prefix}_summaries\" (\"name\");";
                 break;
         }
 
         $this->database->query($sql);
+        if ($sqlIndex !== null) {
+            $this->database->query($sqlIndex);
+        }
 
-        $sql = <<<SQL
+        switch ($driver) {
+            case 'pgsql':
+                $sql = <<<SQL
+CREATE TABLE IF NOT EXISTS "{$this->prefix}_histograms" (
+    "name" varchar(255) NOT NULL,
+    "labels_hash" varchar({$hash_size}) NOT NULL,
+    "labels" TEXT NOT NULL,
+    "value" DOUBLE PRECISION DEFAULT 0.0,
+    "bucket" varchar(255) NOT NULL,
+    PRIMARY KEY ("name", "labels_hash", "bucket")
+); 
+SQL;
+                break;
+            default:
+                $sql = <<<SQL
 CREATE TABLE IF NOT EXISTS `{$this->prefix}_histograms` (
     `name` varchar(255) NOT NULL,
     `labels_hash` varchar({$hash_size}) NOT NULL,
@@ -537,6 +700,8 @@ CREATE TABLE IF NOT EXISTS `{$this->prefix}_histograms` (
     PRIMARY KEY (`name`, `labels_hash`, `bucket`)
 ); 
 SQL;
+        }
+
         $this->database->query($sql);
     }
 
@@ -565,5 +730,18 @@ SQL;
             throw new \RuntimeException(json_last_error_msg());
         }
         return $json;
+    }
+
+    /**
+     * @return \PDOStatement
+     */
+    private function getMetaQuery()
+    {
+        switch ($this->database->getAttribute(\PDO::ATTR_DRIVER_NAME)) {
+            case 'pgsql':
+                return $this->database->prepare("SELECT name, metadata FROM \"{$this->prefix}_metadata\" WHERE type = :type");
+            default:
+                return $this->database->prepare("SELECT name, metadata FROM `{$this->prefix}_metadata` WHERE type = :type");
+        }
     }
 }
