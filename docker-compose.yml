@@ -5,6 +5,8 @@ services:
       - php-fpm
     ports:
       - 8080:80
+    environment:
+      - REDIS_HOST=redis
 
   php-fpm:
     build: php-fpm/

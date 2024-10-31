@@ -18,6 +18,8 @@ if ($adapter === 'redis') {
     $adapter = new Prometheus\Storage\APCng();
 } elseif ($adapter === 'in-memory') {
     $adapter = new Prometheus\Storage\InMemory();
+} elseif ($adapter === 'redistxn') {
+    $adapter = new Prometheus\Storage\RedisTxn(['host' => $_SERVER['REDIS_HOST'] ?? '127.0.0.1']);
 }
 $registry = new CollectorRegistry($adapter);
 
