@@ -24,7 +24,7 @@ class Gauge extends Collector
                 'help' => $this->getHelp(),
                 'type' => $this->getType(),
                 'labelNames' => $this->getLabelNames(),
-                'labelValues' => $labels,
+                'labelValues' => array_values($labels),
                 'value' => $value,
                 'command' => Adapter::COMMAND_SET,
             ]
