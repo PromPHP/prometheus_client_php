@@ -100,6 +100,26 @@ abstract class Collector
     }
 
     /**
+     * @param array[] $labelValuesSet
+     */
+    protected function assertValidInitLabelsValuesSet(array $labelValuesSet = []): void
+    {
+        $initLabelsKeys = array_keys($labelValuesSet);
+
+        $forgottenLabels = array_diff($this->getLabelNames(), $initLabelsKeys);
+        if (count($forgottenLabels) > 0) {
+            throw new InvalidArgumentException("Missing label values for: " . implode(',', $forgottenLabels));
+        }
+
+        $unnecessaryLabels = array_diff($initLabelsKeys, $this->getLabelNames());
+        if (count($unnecessaryLabels) > 0) {
+            throw new InvalidArgumentException(
+                "Some labels values are not mentioned on metric creation:" . implode(',', $unnecessaryLabels)
+            );
+        }
+    }
+
+    /**
      * @param string $metricName
      */
     public static function assertValidMetricName(string $metricName): void
