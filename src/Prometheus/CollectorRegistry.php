@@ -99,7 +99,7 @@ class CollectorRegistry implements RegistryInterface
     {
         $metricIdentifier = self::metricIdentifier($namespace, $name);
         if (isset($this->gauges[$metricIdentifier])) {
-            throw new MetricsRegistrationException("Metric already registered");
+            throw new MetricsRegistrationException("Metric ` . $metricIdentifier . ` already registered");
         }
         $this->gauges[$metricIdentifier] = new Gauge(
             $this->storageAdapter,
@@ -159,7 +159,7 @@ class CollectorRegistry implements RegistryInterface
     {
         $metricIdentifier = self::metricIdentifier($namespace, $name);
         if (isset($this->counters[$metricIdentifier])) {
-            throw new MetricsRegistrationException("Metric already registered");
+            throw new MetricsRegistrationException("Metric ` . $metricIdentifier . ` already registered");
         }
         $this->counters[$metricIdentifier] = new Counter(
             $this->storageAdapter,
@@ -225,7 +225,7 @@ class CollectorRegistry implements RegistryInterface
     ): Histogram {
         $metricIdentifier = self::metricIdentifier($namespace, $name);
         if (isset($this->histograms[$metricIdentifier])) {
-            throw new MetricsRegistrationException("Metric already registered");
+            throw new MetricsRegistrationException("Metric ` . $metricIdentifier . ` already registered");
         }
         $this->histograms[$metricIdentifier] = new Histogram(
             $this->storageAdapter,
@@ -301,7 +301,7 @@ class CollectorRegistry implements RegistryInterface
     ): Summary {
         $metricIdentifier = self::metricIdentifier($namespace, $name);
         if (isset($this->summaries[$metricIdentifier])) {
-            throw new MetricsRegistrationException("Metric already registered");
+            throw new MetricsRegistrationException("Metric ` . $metricIdentifier . ` already registered");
         }
         $this->summaries[$metricIdentifier] = new Summary(
             $this->storageAdapter,
