@@ -96,7 +96,7 @@ interface RegistryInterface
         string $name,
         string $help,
         array $labels = [],
-        array $buckets = null
+        ?array $buckets = null
     ): Histogram;
 
     /**
@@ -118,7 +118,7 @@ interface RegistryInterface
      * @return Histogram
      * @throws MetricsRegistrationException
      */
-    public function getOrRegisterHistogram(string $namespace, string $name, string $help, array $labels = [], array $buckets = null): Histogram;
+    public function getOrRegisterHistogram(string $namespace, string $name, string $help, array $labels = [], ?array $buckets = null): Histogram;
 
     /**
      * @param string   $namespace e.g. cms
@@ -137,7 +137,7 @@ interface RegistryInterface
         string $help,
         array $labels = [],
         int $maxAgeSeconds = 86400,
-        array $quantiles = null
+        ?array $quantiles = null
     ): Summary;
 
     /**
@@ -160,5 +160,5 @@ interface RegistryInterface
      * @return Summary
      * @throws MetricsRegistrationException
      */
-    public function getOrRegisterSummary(string $namespace, string $name, string $help, array $labels = [], int $maxAgeSeconds = 86400, array $quantiles = null): Summary;
+    public function getOrRegisterSummary(string $namespace, string $name, string $help, array $labels = [], int $maxAgeSeconds = 86400, ?array $quantiles = null): Summary;
 }
