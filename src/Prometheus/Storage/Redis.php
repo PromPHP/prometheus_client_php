@@ -206,7 +206,7 @@ LUA
             $authParams[] = $this->options['password'];
         }
 
-        if (!empty($authParams)) {
+        if ($authParams !== []) {
             $this->redis->auth($authParams);
         }
 
