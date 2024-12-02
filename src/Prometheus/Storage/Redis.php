@@ -536,7 +536,11 @@ LUA
                 }
 
                 if (count($samples) === 0) {
-                    $this->redis->del($valueKey);
+                    try {
+                        $this->redis->del($valueKey);
+                    } catch (\RedisException $e) {
+                        // ignore if we can't delete the key
+                    }
                     continue;
                 }
 
@@ -571,7 +575,11 @@ LUA
             if (count($data['samples']) > 0) {
                 $summaries[] = $data;
             } else {
-                $this->redis->del($metaKey);
+                try {
+                    $this->redis->del($metaKey);
+                } catch (\RedisException $e) {
+                    // ignore if we can't delete the key
+                }
             }
         }
         return $summaries;
