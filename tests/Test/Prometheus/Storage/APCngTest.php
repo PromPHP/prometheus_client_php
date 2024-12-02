@@ -56,7 +56,7 @@ class APCngTest extends TestCase
             'int_label_values',
             'test int label values',
             ['int_label'],
-        )->incBy(3, [3]);
+        )->incBy(3, [3]); // @phpstan-ignore argument.type
 
         $counter = apcu_fetch("prom:counter:ns_int_label_values:WyIzIl0=:value");
         self::assertSame(3000, $counter);
