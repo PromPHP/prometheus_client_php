@@ -196,7 +196,6 @@ LUA
         }
 
         $this->connectToServer();
-
         $authParams = [];
 
         if (isset($this->options['user'])) {
