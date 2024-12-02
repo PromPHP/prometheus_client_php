@@ -28,6 +28,7 @@ class RedisNg implements Adapter
         'read_timeout' => '10',
         'persistent_connections' => false,
         'password' => null,
+        'user' => null,
     ];
 
     /**
@@ -195,9 +196,18 @@ LUA
         }
 
         $this->connectToServer();
+        $authParams = [];
 
-        if ($this->options['password'] !== null) {
-            $this->redis->auth($this->options['password']);
+        if (isset($this->options['user'])) {
+            $authParams[] = $this->options['user'];
+        }
+
+        if (isset($this->options['password'])) {
+            $authParams[] = $this->options['password'];
+        }
+
+        if ($authParams !== []) {
+            $this->redis->auth($authParams);
         }
 
         if (isset($this->options['database'])) {
