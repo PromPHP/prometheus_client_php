@@ -86,7 +86,7 @@ interface RegistryInterface
      * @param string   $name e.g. duration_seconds
      * @param string   $help e.g. A histogram of the duration in seconds.
      * @param string[] $labels e.g. ['controller', 'action']
-     * @param float[]    $buckets e.g. [100, 200, 300]
+     * @param float[]|null $buckets e.g. [100, 200, 300]
      *
      * @return Histogram
      * @throws MetricsRegistrationException
@@ -96,7 +96,7 @@ interface RegistryInterface
         string $name,
         string $help,
         array $labels = [],
-        array $buckets = null
+        ?array $buckets = null
     ): Histogram;
 
     /**
@@ -113,12 +113,18 @@ interface RegistryInterface
      * @param string $name e.g. duration_seconds
      * @param string $help e.g. A histogram of the duration in seconds.
      * @param string[]  $labels e.g. ['controller', 'action']
-     * @param float[]  $buckets e.g. [100, 200, 300]
+     * @param float[]|null $buckets e.g. [100, 200, 300]
      *
      * @return Histogram
      * @throws MetricsRegistrationException
      */
-    public function getOrRegisterHistogram(string $namespace, string $name, string $help, array $labels = [], array $buckets = null): Histogram;
+    public function getOrRegisterHistogram(
+        string $namespace,
+        string $name,
+        string $help,
+        array $labels = [],
+        ?array $buckets = null
+    ): Histogram;
 
     /**
      * @param string   $namespace e.g. cms
@@ -137,7 +143,7 @@ interface RegistryInterface
         string $help,
         array $labels = [],
         int $maxAgeSeconds = 86400,
-        array $quantiles = null
+        ?array $quantiles = null
     ): Summary;
 
     /**
@@ -160,5 +166,12 @@ interface RegistryInterface
      * @return Summary
      * @throws MetricsRegistrationException
      */
-    public function getOrRegisterSummary(string $namespace, string $name, string $help, array $labels = [], int $maxAgeSeconds = 86400, array $quantiles = null): Summary;
+    public function getOrRegisterSummary(
+        string $namespace,
+        string $name,
+        string $help,
+        array $labels = [],
+        int $maxAgeSeconds = 86400,
+        ?array $quantiles = null
+    ): Summary;
 }
