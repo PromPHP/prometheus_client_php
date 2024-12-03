@@ -413,6 +413,9 @@ LUA
         $histograms = [];
         foreach ($keys as $key) {
             $raw = $this->redis->hGetAll(str_replace($this->redis->_prefix(''), '', $key));
+            if (!isset($raw['__meta'])) {
+                continue;
+            }
             $histogram = json_decode($raw['__meta'], true);
             unset($raw['__meta']);
             $histogram['samples'] = [];
@@ -589,6 +592,9 @@ LUA
         $gauges = [];
         foreach ($keys as $key) {
             $raw = $this->redis->hGetAll(str_replace($this->redis->_prefix(''), '', $key));
+            if (!isset($raw['__meta'])) {
+                continue;
+            }
             $gauge = json_decode($raw['__meta'], true);
             unset($raw['__meta']);
             $gauge['samples'] = [];
@@ -622,6 +628,9 @@ LUA
         $counters = [];
         foreach ($keys as $key) {
             $raw = $this->redis->hGetAll(str_replace($this->redis->_prefix(''), '', $key));
+            if (!isset($raw['__meta'])) {
+                continue;
+            }
             $counter = json_decode($raw['__meta'], true);
             unset($raw['__meta']);
             $counter['samples'] = [];
