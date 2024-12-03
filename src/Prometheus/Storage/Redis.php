@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Prometheus\Storage;
 
 use InvalidArgumentException;
+use Predis\Client;
 use Prometheus\Counter;
 use Prometheus\Exception\StorageException;
 use Prometheus\Gauge;
@@ -39,12 +40,12 @@ class Redis implements Adapter
     /**
      * @var mixed[]
      */
-    private $options = [];
+    protected $options = [];
 
     /**
-     * @var \Redis
+     * @var \Redis|Client
      */
-    private $redis;
+    protected $redis;
 
     /**
      * @var boolean
@@ -113,8 +114,7 @@ class Redis implements Adapter
 
         $searchPattern = "";
 
-        $globalPrefix = $this->redis->getOption(\Redis::OPT_PREFIX);
-        // @phpstan-ignore-next-line false positive, phpstan thinks getOptions returns int
+        $globalPrefix = $this->getGlobalPrefix();
         if (is_string($globalPrefix)) {
             $searchPattern .= $globalPrefix;
         }
@@ -135,8 +135,10 @@ repeat
 until cursor == "0"
 LUA
             ,
-            [$searchPattern],
-            0
+            ...$this->evalParams(
+                [$searchPattern],
+                0
+            )
         );
     }
 
@@ -189,7 +191,7 @@ LUA
     /**
      * @throws StorageException
      */
-    private function ensureOpenConnection(): void
+    protected function ensureOpenConnection(): void
     {
         if ($this->connectionInitialized === true) {
             return;
@@ -278,15 +280,17 @@ end
 return result
 LUA
             ,
-            [
-                $this->toMetricKey($data),
-                self::$prefix . Histogram::TYPE . self::PROMETHEUS_METRIC_KEYS_SUFFIX,
-                json_encode(['b' => 'sum', 'labelValues' => $data['labelValues']]),
-                json_encode(['b' => $bucketToIncrease, 'labelValues' => $data['labelValues']]),
-                $data['value'],
-                json_encode($metaData),
-            ],
-            2
+            ...$this->evalParams(
+                [
+                    $this->toMetricKey($data),
+                    self::$prefix . Histogram::TYPE . self::PROMETHEUS_METRIC_KEYS_SUFFIX,
+                    json_encode(['b' => 'sum', 'labelValues' => $data['labelValues']]),
+                    json_encode(['b' => $bucketToIncrease, 'labelValues' => $data['labelValues']]),
+                    $data['value'],
+                    json_encode($metaData),
+                ],
+                2
+            )
         );
     }
 
@@ -319,7 +323,7 @@ LUA
         $done = false;
         while (!$done) {
             $sampleKey = $valueKey . ':' . uniqid('', true);
-            $done = $this->redis->set($sampleKey, $data['value'], ['NX', 'EX' => $data['maxAgeSeconds']]);
+            $done = $this->redis->set($sampleKey, $data['value'], ...$this->setParams(['NX', 'EX' => $data['maxAgeSeconds']]));
         }
     }
 
@@ -349,15 +353,17 @@ else
 end
 LUA
             ,
-            [
-                $this->toMetricKey($data),
-                self::$prefix . Gauge::TYPE . self::PROMETHEUS_METRIC_KEYS_SUFFIX,
-                $this->getRedisCommand($data['command']),
-                json_encode($data['labelValues']),
-                $data['value'],
-                json_encode($metaData),
-            ],
-            2
+            ...$this->evalParams(
+                [
+                    $this->toMetricKey($data),
+                    self::$prefix . Gauge::TYPE . self::PROMETHEUS_METRIC_KEYS_SUFFIX,
+                    $this->getRedisCommand($data['command']),
+                    json_encode($data['labelValues']),
+                    $data['value'],
+                    json_encode($metaData),
+                ],
+                2
+            )
         );
     }
 
@@ -380,15 +386,17 @@ end
 return result
 LUA
             ,
-            [
-                $this->toMetricKey($data),
-                self::$prefix . Counter::TYPE . self::PROMETHEUS_METRIC_KEYS_SUFFIX,
-                $this->getRedisCommand($data['command']),
-                $data['value'],
-                json_encode($data['labelValues']),
-                json_encode($metaData),
-            ],
-            2
+            ...$this->evalParams(
+                [
+                    $this->toMetricKey($data),
+                    self::$prefix . Counter::TYPE . self::PROMETHEUS_METRIC_KEYS_SUFFIX,
+                    $this->getRedisCommand($data['command']),
+                    $data['value'],
+                    json_encode($data['labelValues']),
+                    json_encode($metaData),
+                ],
+                2
+            )
         );
     }
 
@@ -413,7 +421,7 @@ LUA
         sort($keys);
         $histograms = [];
         foreach ($keys as $key) {
-            $raw = $this->redis->hGetAll(str_replace($this->redis->_prefix(''), '', $key));
+            $raw = $this->redis->hGetAll(str_replace($this->prefix(''), '', $key));
             if (!isset($raw['__meta'])) {
                 continue;
             }
@@ -491,12 +499,11 @@ LUA
      */
     private function removePrefixFromKey(string $key): string
     {
-        // @phpstan-ignore-next-line false positive, phpstan thinks getOptions returns int
-        if ($this->redis->getOption(\Redis::OPT_PREFIX) === null) {
+        if ($this->getGlobalPrefix() === null) {
             return $key;
         }
-        // @phpstan-ignore-next-line false positive, phpstan thinks getOptions returns int
-        return substr($key, strlen($this->redis->getOption(\Redis::OPT_PREFIX)));
+
+        return substr($key, strlen($this->getGlobalPrefix()));
     }
 
     /**
@@ -604,7 +611,7 @@ LUA
         sort($keys);
         $gauges = [];
         foreach ($keys as $key) {
-            $raw = $this->redis->hGetAll(str_replace($this->redis->_prefix(''), '', $key));
+            $raw = $this->redis->hGetAll(str_replace($this->prefix(''), '', $key));
             if (!isset($raw['__meta'])) {
                 continue;
             }
@@ -640,7 +647,7 @@ LUA
         sort($keys);
         $counters = [];
         foreach ($keys as $key) {
-            $raw = $this->redis->hGetAll(str_replace($this->redis->_prefix(''), '', $key));
+            $raw = $this->redis->hGetAll(str_replace($this->prefix(''), '', $key));
             if (!isset($raw['__meta'])) {
                 continue;
             }
@@ -724,5 +731,31 @@ LUA
             throw new RuntimeException(json_last_error_msg());
         }
         return $decodedValues;
+    }
+
+    protected function getGlobalPrefix(): ?string
+    {
+        // @phpstan-ignore-next-line false positive, phpstan thinks getOptions returns int
+        return $this->redis->getOption(\Redis::OPT_PREFIX);
+    }
+
+    /**
+     * @param mixed[] $args
+     * @param int $keysCount
+     * @return mixed[]
+     */
+    protected function evalParams(array $args, int $keysCount): array
+    {
+        return  [$args, $keysCount];
+    }
+
+    protected function prefix(string $key): string
+    {
+        return $this->redis->_prefix($key);
+    }
+
+    protected function setParams(array $params): array
+    {
+        return [$params];
     }
 }
