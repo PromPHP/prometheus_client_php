@@ -198,7 +198,7 @@ LUA
         $this->connectToServer();
         $authParams = [];
 
-        if (isset($this->options['user'])) {
+        if (isset($this->options['user']) && $this->options['user'] !== '') {
             $authParams[] = $this->options['user'];
         }
 
