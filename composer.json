@@ -25,11 +25,13 @@
         "phpstan/phpstan-phpunit": "^1.1.0",
         "phpstan/phpstan-strict-rules": "^1.1.0",
         "phpunit/phpunit": "^9.4",
+        "predis/predis": "^2.0",
         "squizlabs/php_codesniffer": "^3.6",
         "symfony/polyfill-apcu": "^1.6"
     },
     "suggest": {
         "ext-redis": "Required if using Redis.",
+        "predis/predis": "Required if using Predis.",
         "ext-apc": "Required if using APCu.",
         "ext-pdo": "Required if using PDO.",
         "promphp/prometheus_push_gateway_php": "An easy client for using Prometheus PushGateway.",
