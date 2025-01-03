@@ -355,6 +355,21 @@ class InMemory implements Adapter
         }
     }
 
+    public function initHistogram(array $data): void
+    {
+        throw new \RuntimeException('InMemory driver currently doesn\'t support this feature');
+    }
+
+    public function initGauge(array $data): void
+    {
+        throw new \RuntimeException('InMemory driver currently doesn\'t support this feature');
+    }
+
+    public function initCounter(array $data): void
+    {
+        throw new \RuntimeException('InMemory driver currently doesn\'t support this feature');
+    }
+
     /**
      * @param mixed[]    $data
      * @param string|int $bucket

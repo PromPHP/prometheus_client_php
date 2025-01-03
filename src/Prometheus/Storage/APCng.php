@@ -228,6 +228,21 @@ class APCng implements Adapter
         $this->incrementKeyWithValue($valueKey, $data['value']);
     }
 
+    public function initHistogram(array $data): void
+    {
+        throw new \RuntimeException('APCng driver currently doesn\'t support this feature');
+    }
+
+    public function initGauge(array $data): void
+    {
+        throw new \RuntimeException('APCng driver currently doesn\'t support this feature');
+    }
+
+    public function initCounter(array $data): void
+    {
+        throw new \RuntimeException('APCng driver currently doesn\'t support this feature');
+    }
+
     /**
      * @param array<string> $metaData
      * @param string $labels
