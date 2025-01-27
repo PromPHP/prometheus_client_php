@@ -6,6 +6,7 @@ namespace Prometheus\Storage;
 
 use InvalidArgumentException;
 use Prometheus\Counter;
+use Prometheus\Exception\MetricJsonException;
 use Prometheus\Exception\StorageException;
 use Prometheus\Gauge;
 use Prometheus\Histogram;
@@ -433,7 +434,7 @@ LUA
                 $allLabelValues[] = $d['labelValues'];
             }
             if (json_last_error() !== JSON_ERROR_NONE) {
-                $this->throwStorageExceptionOnJsonError($key, $raw);
+                $this->throwMetricJsonException($key, $raw);
             }
 
             // We need set semantics.
@@ -624,7 +625,7 @@ LUA
             }
 
             if (json_last_error() !== JSON_ERROR_NONE) {
-                $this->throwStorageExceptionOnJsonError($key, $raw);
+                $this->throwMetricJsonException($key, $raw);
             }
             if ($sortMetrics) {
                 usort($gauge['samples'], function ($a, $b): int {
@@ -663,7 +664,7 @@ LUA
             }
 
             if (json_last_error() !== JSON_ERROR_NONE) {
-                $this->throwStorageExceptionOnJsonError($key, $raw);
+                $this->throwMetricJsonException($key, $raw);
             }
             if ($sortMetrics) {
                 usort($counter['samples'], function ($a, $b): int {
@@ -735,10 +736,10 @@ LUA
         return $decodedValues;
     }
 
-    private function throwStorageExceptionOnJsonError(string $redisKey, $raw): void
+    private function throwMetricJsonException(string $redisKey, $raw): void
     {
         $metaData = is_array($raw) && isset($raw['_meta']) ? $raw['_meta'] : 'undefined';
         $message = 'Json error: ' . json_last_error_msg() . ' redis key : ' . $redisKey . ' raw meta data: ' . $metaData;
-        throw new StorageException($message, 0);
+        throw new MetricJsonException($message, 0, null, $metaData);
     }
 }
