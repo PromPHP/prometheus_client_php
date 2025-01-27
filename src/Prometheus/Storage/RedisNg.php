@@ -429,6 +429,10 @@ LUA
                 $allLabelValues[] = $d['labelValues'];
             }
 
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                $this->throwStorageExceptionOnJsonError($key, $raw);
+            }
+
             // We need set semantics.
             // This is the equivalent of array_unique but for arrays of arrays.
             $allLabelValues = array_map("unserialize", array_unique(array_map("serialize", $allLabelValues)));
@@ -601,6 +605,10 @@ LUA
                 ];
             }
 
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                $this->throwStorageExceptionOnJsonError($key, $raw);
+            }
+
             if ($sortMetrics) {
                 usort($gauge['samples'], function ($a, $b): int {
                     return strcmp(implode("", $a['labelValues']), implode("", $b['labelValues']));
@@ -632,6 +640,10 @@ LUA
                     'labelValues' => json_decode($k, true),
                     'value' => $value,
                 ];
+            }
+
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                $this->throwStorageExceptionOnJsonError($key, $raw);
             }
 
             if ($sortMetrics) {
@@ -702,5 +714,12 @@ LUA
             throw new RuntimeException(json_last_error_msg());
         }
         return $decodedValues;
+    }
+
+    private function throwStorageExceptionOnJsonError(string $redisKey, $raw): void
+    {
+        $metaData = is_array($raw) && isset($raw['_meta']) ? $raw['_meta'] : 'undefined';
+        $message = 'Json error: ' . json_last_error_msg() . ' redis key : ' . $redisKey . ' raw meta data: ' . $metaData;
+        throw new StorageException($message, 0);
     }
 }
