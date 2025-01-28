@@ -14,7 +14,7 @@ class MetricJsonException extends Exception
     public function __construct($message = "", $code = 0, Exception $previous = null, ?string $metricName = null)
     {
         parent::__construct($message, $code, $previous);
-        $this->metricName = $metricMetaData;
+        $this->metricName = $metricName;
     }
 
     public function getMetricName(): ?string
