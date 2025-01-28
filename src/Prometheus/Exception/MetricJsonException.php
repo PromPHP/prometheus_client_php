@@ -10,15 +10,15 @@ use Exception;
 class MetricJsonException extends Exception
 {
 
-    private $metricMetaData;
-    public function __construct($message = "", $code = 0, Exception $previous = null, string $metricMetaData)
+    private $metricName;
+    public function __construct($message = "", $code = 0, Exception $previous = null, ?string $metricName = null)
     {
         parent::__construct($message, $code, $previous);
-        $this->metricMetaData = $metricMetaData;
+        $this->metricName = $metricMetaData;
     }
 
-    public function getMetricMetaData(): string
+    public function getMetricName(): ?string
     {
-        return $this->metricMetaData;
+        return $this->metricName;
     }
 }

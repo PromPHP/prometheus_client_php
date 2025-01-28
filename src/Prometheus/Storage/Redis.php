@@ -434,7 +434,7 @@ LUA
                 $allLabelValues[] = $d['labelValues'];
             }
             if (json_last_error() !== JSON_ERROR_NONE) {
-                $this->throwMetricJsonException($key, $raw);
+                $this->throwMetricJsonException($key);
             }
 
             // We need set semantics.
@@ -622,11 +622,11 @@ LUA
                     'labelValues' => json_decode($k, true),
                     'value' => $value,
                 ];
+                if (json_last_error() !== JSON_ERROR_NONE) {
+                    $this->throwMetricJsonException($key, $gauge['name']);
+                }
             }
 
-            if (json_last_error() !== JSON_ERROR_NONE) {
-                $this->throwMetricJsonException($key, $raw);
-            }
             if ($sortMetrics) {
                 usort($gauge['samples'], function ($a, $b): int {
                     return strcmp(implode("", $a['labelValues']), implode("", $b['labelValues']));
@@ -640,6 +640,7 @@ LUA
 
     /**
      * @return mixed[]
+     * @throws MetricJsonException
      */
     private function collectCounters(bool $sortMetrics = true): array
     {
@@ -652,6 +653,7 @@ LUA
                 continue;
             }
             $counter = json_decode($raw['__meta'], true);
+
             unset($raw['__meta']);
             $counter['samples'] = [];
             foreach ($raw as $k => $value) {
@@ -661,11 +663,12 @@ LUA
                     'labelValues' => json_decode($k, true),
                     'value' => $value,
                 ];
+
+                if (json_last_error() !== JSON_ERROR_NONE) {
+                    $this->throwMetricJsonException($key, $counter['name']);
+                }
             }
 
-            if (json_last_error() !== JSON_ERROR_NONE) {
-                $this->throwMetricJsonException($key, $raw);
-            }
             if ($sortMetrics) {
                 usort($counter['samples'], function ($a, $b): int {
                     return strcmp(implode("", $a['labelValues']), implode("", $b['labelValues']));
@@ -736,10 +739,16 @@ LUA
         return $decodedValues;
     }
 
-    private function throwMetricJsonException(string $redisKey, $raw): void
+    /**
+     * @param string $redisKey
+     * @param string|null $metricName
+     * @return void
+     * @throws MetricJsonException
+     */
+    private function throwMetricJsonException(string $redisKey, ?string $metricName = null): void
     {
-        $metaData = is_array($raw) && isset($raw['_meta']) ? $raw['_meta'] : 'undefined';
-        $message = 'Json error: ' . json_last_error_msg() . ' redis key : ' . $redisKey . ' raw meta data: ' . $metaData;
-        throw new MetricJsonException($message, 0, null, $metaData);
+        $metricName = $metricName ?? 'unknown';
+        $message = 'Json error: ' . json_last_error_msg() . ' redis key : ' . $redisKey . ' metric name: ' . $metricName;
+        throw new MetricJsonException($message, 0, null, $metricName);
     }
 }
