@@ -138,7 +138,7 @@ class PDO implements Adapter
             sort($labels);
             foreach ($labels as $label_values) {
                 $acc = 0;
-                $decoded_values = json_decode($label_values, true);  /** @phpstan-ignore-line */
+                $decoded_values = json_decode($label_values, true);
                 foreach ($data['buckets'] as $bucket) {
                     $bucket = (string)$bucket;
                     if (!isset($histogram_buckets[$label_values][$bucket])) {
