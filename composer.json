@@ -15,7 +15,7 @@
         "lkaemmerling/prometheus_client_php": "*"
     },
     "require": {
-        "php": "^7.2|^8.0",
+        "php": "^7.4|^8.0",
         "ext-json": "*"
     },
     "require-dev": {
@@ -31,6 +31,7 @@
     "suggest": {
         "ext-redis": "Required if using Redis.",
         "ext-apc": "Required if using APCu.",
+        "ext-pdo": "Required if using PDO.",
         "promphp/prometheus_push_gateway_php": "An easy client for using Prometheus PushGateway.",
         "symfony/polyfill-apcu": "Required if you use APCu on PHP8.0+"
     },

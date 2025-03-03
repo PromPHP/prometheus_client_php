@@ -11,7 +11,7 @@ class Gauge extends Collector
     const TYPE = 'gauge';
 
     /**
-     * @param double $value e.g. 123
+     * @param float $value e.g. 123.0
      * @param string[] $labels e.g. ['status', 'opcode']
      */
     public function set(float $value, array $labels = []): void
