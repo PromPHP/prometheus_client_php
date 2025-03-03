@@ -4,16 +4,14 @@ on: [ push, pull_request ]
 
 jobs:
   test:
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: true
       matrix:
-        os: [ ubuntu-latest ]
-        php: [ 8.1, 8.2, 8.3 ]
-        dependency-version: [ prefer-lowest, prefer-stable ]
+        php: [ 8.1, 8.2, 8.3, 8.4 ]
         redis-version: [ 5, 6, 7 ]
 
-    name: P${{ matrix.php }} - ${{ matrix.dependency-version }} - ${{ matrix.os }} - ${{ matrix.redis-version }}
+    name: P${{ matrix.php }} - Redis ${{ matrix.redis-version }}
 
     # Service container with PostgreSQL
     services:
@@ -43,10 +41,10 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Cache dependencies
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         with:
           path: ~/.composer/cache/files
           key: dependencies-php-${{ matrix.php }}-composer-${{ hashFiles('composer.json') }}
@@ -60,7 +58,7 @@ jobs:
           coverage: none
 
       - name: Install dependencies
-        run: composer update --${{ matrix.dependency-version }} --prefer-dist --no-interaction --no-suggest
+        run: composer update --prefer-dist --no-interaction --no-suggest
 
       - name: Start Redis
         uses: supercharge/redis-github-action@1.1.0
