@@ -9,10 +9,14 @@ use Exception;
  */
 class MetricJsonException extends Exception
 {
+    private ?string $metricName;
 
-    private $metricName;
-    public function __construct($message = "", $code = 0, Exception $previous = null, ?string $metricName = null)
-    {
+    public function __construct(
+        string $message = "",
+        int $code = 0,
+        ?Exception $previous = null,
+        ?string $metricName = null
+    ) {
         parent::__construct($message, $code, $previous);
         $this->metricName = $metricName;
     }
