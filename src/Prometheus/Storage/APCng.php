@@ -431,21 +431,22 @@ class APCng implements Adapter
      *  [12] => ['/metrics', 'put', 'success'], [13] => ['/metrics', 'put', 'fail'],     [14] => ['/metrics', 'get', 'success'],
      *  [15] => ['/metrics', 'get', 'fail'],    [16] => ['/metrics', 'post', 'success'], [17] => ['/metrics', 'post', 'fail']
      * @param array<array> $labelValues
-     * @return Generator<array>
+     * @return \Generator<array>
      */
     private function buildPermutationTree(array $labelValues): \Generator /** @phpstan-ignore-line */
     {
-        if($labelValues){
-          $lastIndex = array_key_last($labelValues);
-          if($currentValue = array_pop($labelValues)){
-            foreach($this->buildPermutationTree($labelValues) as $prefix){
-              foreach($currentValue as $value){
-                yield $prefix + [$lastIndex => $value];
-              }
+        if (count($labelValues) > 0) {
+            $lastIndex = array_key_last($labelValues);
+            $currentValue = array_pop($labelValues);
+            if ($currentValue != null) {
+                foreach ($this->buildPermutationTree($labelValues) as $prefix) {
+                    foreach ($currentValue as $value) {
+                        yield $prefix + [$lastIndex => $value];
+                    }
+                }
             }
-          }
         } else {
-          yield [];
+            yield [];
         }
     }
 
