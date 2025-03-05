@@ -6,6 +6,7 @@ namespace Prometheus\Storage;
 
 use InvalidArgumentException;
 use Prometheus\Counter;
+use Prometheus\Exception\MetricJsonException;
 use Prometheus\Exception\StorageException;
 use Prometheus\Gauge;
 use Prometheus\Histogram;
@@ -28,6 +29,7 @@ class Redis implements Adapter
         'read_timeout' => '10',
         'persistent_connections' => false,
         'password' => null,
+        'user' => null,
     ];
 
     /**
@@ -195,9 +197,18 @@ LUA
         }
 
         $this->connectToServer();
+        $authParams = [];
 
-        if ($this->options['password'] !== null) {
-            $this->redis->auth($this->options['password']);
+        if (isset($this->options['user']) && $this->options['user'] !== '') {
+            $authParams[] = $this->options['user'];
+        }
+
+        if (isset($this->options['password'])) {
+            $authParams[] = $this->options['password'];
+        }
+
+        if ($authParams !== []) {
+            $this->redis->auth($authParams);
         }
 
         if (isset($this->options['database'])) {
@@ -422,6 +433,9 @@ LUA
                 }
                 $allLabelValues[] = $d['labelValues'];
             }
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                $this->throwMetricJsonException($key);
+            }
 
             // We need set semantics.
             // This is the equivalent of array_unique but for arrays of arrays.
@@ -536,7 +550,11 @@ LUA
                 }
 
                 if (count($samples) === 0) {
-                    $this->redis->del($valueKey);
+                    try {
+                        $this->redis->del($valueKey);
+                    } catch (\RedisException $e) {
+                        // ignore if we can't delete the key
+                    }
                     continue;
                 }
 
@@ -571,7 +589,11 @@ LUA
             if (count($data['samples']) > 0) {
                 $summaries[] = $data;
             } else {
-                $this->redis->del($metaKey);
+                try {
+                    $this->redis->del($metaKey);
+                } catch (\RedisException $e) {
+                    // ignore if we can't delete the key
+                }
             }
         }
         return $summaries;
@@ -600,6 +622,9 @@ LUA
                     'labelValues' => json_decode($k, true),
                     'value' => $value,
                 ];
+                if (json_last_error() !== JSON_ERROR_NONE) {
+                    $this->throwMetricJsonException($key, $gauge['name']);
+                }
             }
 
             if ($sortMetrics) {
@@ -615,6 +640,7 @@ LUA
 
     /**
      * @return mixed[]
+     * @throws MetricJsonException
      */
     private function collectCounters(bool $sortMetrics = true): array
     {
@@ -627,6 +653,7 @@ LUA
                 continue;
             }
             $counter = json_decode($raw['__meta'], true);
+
             unset($raw['__meta']);
             $counter['samples'] = [];
             foreach ($raw as $k => $value) {
@@ -636,6 +663,10 @@ LUA
                     'labelValues' => json_decode($k, true),
                     'value' => $value,
                 ];
+
+                if (json_last_error() !== JSON_ERROR_NONE) {
+                    $this->throwMetricJsonException($key, $counter['name']);
+                }
             }
 
             if ($sortMetrics) {
@@ -706,5 +737,18 @@ LUA
             throw new RuntimeException(json_last_error_msg());
         }
         return $decodedValues;
+    }
+
+    /**
+     * @param string $redisKey
+     * @param string|null $metricName
+     * @return void
+     * @throws MetricJsonException
+     */
+    private function throwMetricJsonException(string $redisKey, ?string $metricName = null): void
+    {
+        $metricName = $metricName ?? 'unknown';
+        $message = 'Json error: ' . json_last_error_msg() . ' redis key : ' . $redisKey . ' metric name: ' . $metricName;
+        throw new MetricJsonException($message, 0, null, $metricName);
     }
 }

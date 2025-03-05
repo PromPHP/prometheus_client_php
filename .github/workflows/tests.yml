@@ -4,16 +4,30 @@ on: [ push, pull_request ]
 
 jobs:
   test:
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: true
       matrix:
-        os: [ ubuntu-latest ]
-        php: [ 8.1, 8.2, 8.3 ]
-        dependency-version: [ prefer-lowest, prefer-stable ]
+        php: [ 8.1, 8.2, 8.3, 8.4 ]
         redis-version: [ 5, 6, 7 ]
 
-    name: P${{ matrix.php }} - ${{ matrix.dependency-version }} - ${{ matrix.os }} - ${{ matrix.redis-version }}
+    name: P${{ matrix.php }} - Redis ${{ matrix.redis-version }}
+
+    # Service container with PostgreSQL
+    services:
+      postgres:
+        image: postgres
+        env:
+          POSTGRES_PASSWORD: root
+          POSTGRES_USER: root
+          POSTGRES_DB: test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
 
     env:
       # The hostname used to communicate with the Redis service container
@@ -27,10 +41,10 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Cache dependencies
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         with:
           path: ~/.composer/cache/files
           key: dependencies-php-${{ matrix.php }}-composer-${{ hashFiles('composer.json') }}
@@ -44,7 +58,7 @@ jobs:
           coverage: none
 
       - name: Install dependencies
-        run: composer update --${{ matrix.dependency-version }} --prefer-dist --no-interaction --no-suggest
+        run: composer update --prefer-dist --no-interaction --no-suggest
 
       - name: Start Redis
         uses: supercharge/redis-github-action@1.1.0
@@ -62,6 +76,13 @@ jobs:
       - name: Execute PDO tests with MySQL
         env:
           TEST_PDO_DSN: 'mysql:host=localhost;dbname=test'
+          TEST_PDO_USERNAME: 'root'
+          TEST_PDO_PASSWORD: 'root'
+        run: vendor/bin/phpunit tests/Test/Prometheus/PDO
+
+      - name: Execute PDO tests with PostgreSQL
+        env:
+          TEST_PDO_DSN: 'pgsql:host=localhost;dbname=test'
           TEST_PDO_USERNAME: 'root'
           TEST_PDO_PASSWORD: 'root'
         run: vendor/bin/phpunit tests/Test/Prometheus/PDO

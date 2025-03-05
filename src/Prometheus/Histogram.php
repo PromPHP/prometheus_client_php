@@ -30,7 +30,7 @@ class Histogram extends Collector
         string $name,
         string $help,
         array $labels = [],
-        array $buckets = null
+        ?array $buckets = null
     ) {
         parent::__construct($adapter, $namespace, $name, $help, $labels);
 
@@ -113,7 +113,7 @@ class Histogram extends Collector
     }
 
     /**
-     * @param double $value e.g. 123
+     * @param float $value e.g. 123.0
      * @param string[]  $labels e.g. ['status', 'opcode']
      */
     public function observe(float $value, array $labels = []): void

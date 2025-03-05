@@ -254,7 +254,7 @@ class APCng implements Adapter
                 $data['name'],
                 $label,
                 'label'
-            ]), isset($data['labelValues']) ? $data['labelValues'][$seq] : ''); // may not need the isset check
+            ]), isset($data['labelValues']) ? (string)$data['labelValues'][$seq] : ''); // may not need the isset check
         }
     }
 
@@ -849,7 +849,7 @@ class APCng implements Adapter
      */
     private function encodeLabelValues(array $values): string
     {
-        $json = json_encode($values);
+        $json = json_encode(array_map("strval", $values));
         if (false === $json) {
             throw new RuntimeException(json_last_error_msg());
         }
