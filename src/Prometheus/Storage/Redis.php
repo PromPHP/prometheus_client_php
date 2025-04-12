@@ -30,6 +30,8 @@ class Redis implements Adapter
         'persistent_connections' => false,
         'password' => null,
         'user' => null,
+        'sentinels' => null,      // sentinels flag
+        'master_name' => null,
     ];
 
     /**
@@ -59,7 +61,46 @@ class Redis implements Adapter
     public function __construct(array $options = [])
     {
         $this->options = array_merge(self::$defaultOptions, $options);
+         // is Sentinels ?
+        $this->isSentinels($this->options);
         $this->redis = new \Redis();
+    }
+
+    /**
+     * Sentinels  descoverMaster
+     * @param array $options
+     */
+    public function isSentinels(array $options = [])
+    {
+        if($options['sentinels']) {
+
+            list($hostname, $port) = $this->discoveryMaster($options);
+            $options['host'] =  $hostname;
+            $options['port'] = $port;
+            $options['sentinels'] = "false";
+        }
+        return $options;
+    }
+
+    /**
+     * Sentinels  descoveryMaster
+     * @param mixed[] $options
+     * @throws StorageException
+     */
+    public function discoveryMaster(array $options = [])
+    {
+        $connection = new Sentinel();
+        $connection->hostname = $options['host'] ?? null;
+        $connection->masterName = $options['master_name'];
+        if (isset($options['port'])) {
+            $connection->port = $options['port'];
+        }
+        $connection->connectionTimeout = $options['connectionTimeout'] ?? null;
+        $r = $connection->getMaster();
+        if (!$r) {
+            throw new StorageException('Connection to Redis Sentinel server not established');
+        }
+        return $r;
     }
 
     /**

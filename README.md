@@ -79,6 +79,8 @@ Change the Redis options (the example shows the defaults):
         'timeout' => 0.1, // in seconds
         'read_timeout' => '10', // in seconds
         'persistent_connections' => false
+        'sentinels' => false,   // support sentinel . Before requesting to redis, a request is made to the sentinel to get 
+                                // the address and port of the master redis server.
     ]
 );
 ```
