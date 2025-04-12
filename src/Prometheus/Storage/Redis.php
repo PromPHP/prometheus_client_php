@@ -62,7 +62,7 @@ class Redis implements Adapter
     {
         $this->options = array_merge(self::$defaultOptions, $options);
          // is Sentinels ?
-        $this->isSentinels($this->options);
+        $this->options = $this->isSentinel($this->options);
         $this->redis = new \Redis();
     }
 
@@ -70,37 +70,15 @@ class Redis implements Adapter
      * Sentinels  descoverMaster
      * @param array $options
      */
-    public function isSentinels(array $options = [])
+    public function isSentinel(array $options = [])
     {
-        if($options['sentinels']) {
-
-            list($hostname, $port) = $this->discoveryMaster($options);
+        if($options['sentinel']) {
+            $sentinel = new RedisSentinel($options['sentinel'],$options['host']);
+            list($hostname, $port) = $sentinel->getMaster($options);
             $options['host'] =  $hostname;
             $options['port'] = $port;
-            $options['sentinels'] = "false";
         }
         return $options;
-    }
-
-    /**
-     * Sentinels  descoveryMaster
-     * @param mixed[] $options
-     * @throws StorageException
-     */
-    public function discoveryMaster(array $options = [])
-    {
-        $connection = new Sentinel();
-        $connection->hostname = $options['host'] ?? null;
-        $connection->masterName = $options['master_name'];
-        if (isset($options['port'])) {
-            $connection->port = $options['port'];
-        }
-        $connection->connectionTimeout = $options['connectionTimeout'] ?? null;
-        $r = $connection->getMaster();
-        if (!$r) {
-            throw new StorageException('Connection to Redis Sentinel server not established');
-        }
-        return $r;
     }
 
     /**
@@ -168,7 +146,7 @@ class Redis implements Adapter
             <<<LUA
 redis.replicate_commands()
 local cursor = "0"
-repeat 
+repeat
     local results = redis.call('SCAN', cursor, 'MATCH', ARGV[1])
     cursor = results[1]
     for _, key in ipairs(results[2]) do
@@ -280,7 +258,7 @@ LUA
             if (!$connection_successful) {
                 throw new StorageException(
                     sprintf("Can't connect to Redis server. %s", $this->redis->getLastError()),
-                    0
+                    null
                 );
             }
         } catch (\RedisException $e) {

@@ -1,25 +1,36 @@
 <?php
 
 namespace Prometheus\Storage;
+use Prometheus\Exception\StorageException;
 
-class Sentinel
+class RedisSentinel
 {
 
-    public $hostname;
+    protected $host;
 
-    public $masterName;
+    protected $master;
 
-    public $port = 26379;
+    protected $port = 26379;
 
-    public $connectionTimeout;
-
-    /**
-     * Depricated. Redis sentinel does not work on unix socket
-     **/
-    public $unixSocket;
+    protected $connectionTimeout;
 
     protected $_socket;
 
+    private static $defaultOptions = [
+        'master' => 'mymaster',
+        'host' => null,
+        'port' => 26379,
+        'timeout' => 0.1,
+        'read_timeout' => null,
+    ];
+
+    public function __construct(array $options = [], $host = null)
+    {
+        $this->options = array_merge(self::$defaultOptions, $options);
+        if(!isset($this->options['host'])) {
+            $this->options['host'] = $host;
+        }
+    }
     /**
      * Connects to redis sentinel
      **/
@@ -27,16 +38,20 @@ class Sentinel
         if ($this->_socket !== null) {
             return;
         }
-        $connection = $this->hostname . ':' . $this->port;
-        $this->_socket = @stream_socket_client('tcp://' . $this->hostname . ':' . $this->port, $errorNumber, $errorDescription, $this->connectionTimeout ? $this->connectionTimeout : ini_get("default_socket_timeout"), STREAM_CLIENT_CONNECT);
-        if ($this->_socket) {
-            if ($this->connectionTimeout !== null) {
-                stream_set_timeout($this->_socket, $timeout = (int) $this->connectionTimeout, (int) (($this->connectionTimeout - $timeout) * 1000000));
-            }
-            return true;
-        } else {
-            $this->_socket = false;
-            return false;
+        $connection = $this->options['host'] . ':' . $this->options['port'];
+        $connectionTimeout = $this->options['timeout'] ? $this->options['timeout'] : ini_get("default_socket_timeout");
+        $address = 'tcp://' . $this->options['host'] . ':' . $this->options['port'];
+        $this->_socket = @stream_socket_client($address, $errorNumber, $errorDescription, $connectionTimeout, STREAM_CLIENT_CONNECT);
+        if(!$this->_socket){
+            throw new StorageException(sprintf("Can't connect to Redis server '$address'. %s", $errorDescription),
+                $errorNumber,
+                null);
+        }
+
+        if ($this->options['timeout'] !== null) {
+            $timeoutSeconds = (int) $this->options['timeout'];
+            $timeoutMicroseconds = (int) (($this->options['timeout'] - $timeoutSeconds) * 1000000);
+            stream_set_timeout($this->_socket, $timeoutSeconds, $timeoutMicroseconds);
         }
     }
 
@@ -46,14 +61,12 @@ class Sentinel
      * @return array|false [host,port] array or false if case of error
      **/
     function getMaster () {
-        if ($this->open()) {
-            return $this->executeCommand('sentinel', [
-                'get-master-addr-by-name',
-                $this->masterName
-            ], $this->_socket);
-        } else {
-            return false;
-        }
+        $this->open();
+
+        return $this->executeCommand('sentinel', [
+            'get-master-addr-by-name',
+            $this->options['master']
+        ], $this->_socket);
     }
 
     /**
