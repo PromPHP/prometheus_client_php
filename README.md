@@ -80,7 +80,7 @@ Change the Redis options (the example shows the defaults):
         'read_timeout' => '10', // in seconds
         'persistent_connections' => false
         'sentinel' => [
-            'enabled' => false,   // support sentinel . Before requesting to redis, a request is made to the sentinel to get 
+            'enable' => false,   // support sentinel . Before requesting to redis, a request is made to the sentinel to get 
             'host' => '127.0.0.1',  // the address of the redis, defualt is the same as redis host if empty
             'port' => 26379, // the port of the master redis server, default 26379 if empty.
             'master' => 'mymaster' //, sentine master name, default mymaster

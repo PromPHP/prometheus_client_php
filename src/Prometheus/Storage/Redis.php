@@ -30,7 +30,14 @@ class Redis implements Adapter
         'persistent_connections' => false,
         'password' => null,
         'user' => null,
-        'sentinel' => null,      // sentinel options
+        'sentinel' => [ // sentinel options
+            'enable' => false,   
+            'host' => null
+            'port' => 26379,
+            'master' => 'mymaster',
+            'timeout' => 0.1,
+            'read_timeout' => null,
+        ],      
     ];
 
     /**
@@ -71,7 +78,7 @@ class Redis implements Adapter
      */
     public function isSentinel(array $options = [])
     {
-        if($options['sentinel']) {
+        if($options['sentinel'] && $options['sentinel']['enable']){
             $sentinel = new RedisSentinel($options['sentinel'],$options['host']);
             list($hostname, $port) = $sentinel->getMaster($options);
             $options['host'] =  $hostname;

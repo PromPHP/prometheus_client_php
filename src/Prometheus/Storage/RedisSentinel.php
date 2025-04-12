@@ -17,9 +17,10 @@ class RedisSentinel
     protected $_socket;
 
     private static $defaultOptions = [
-        'master' => 'mymaster',
+        'enable' => false,
         'host' => null,
         'port' => 26379,
+        'master' => 'mymaster',
         'timeout' => 0.1,
         'read_timeout' => null,
     ];
