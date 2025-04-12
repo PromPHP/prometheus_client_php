@@ -32,7 +32,7 @@ class Redis implements Adapter
         'user' => null,
         'sentinel' => [ // sentinel options
             'enable' => false,   
-            'host' => null
+            'host' => null,
             'port' => 26379,
             'master' => 'mymaster',
             'timeout' => 0.1,
