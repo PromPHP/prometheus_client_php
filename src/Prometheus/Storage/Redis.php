@@ -30,8 +30,7 @@ class Redis implements Adapter
         'persistent_connections' => false,
         'password' => null,
         'user' => null,
-        'sentinels' => null,      // sentinels flag
-        'master_name' => null,
+        'sentinel' => null,      // sentinel options
     ];
 
     /**
