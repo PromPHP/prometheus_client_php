@@ -97,8 +97,8 @@ class Redis implements Adapter
     }
 
     /**
-     * @deprecated use replacement method wipeStorage from Adapter interface
      * @throws StorageException
+     * @deprecated use replacement method wipeStorage from Adapter interface
      */
     public function flushRedis(): void
     {
@@ -230,11 +230,11 @@ LUA
             if ($this->options['persistent_connections'] !== false) {
                 $connection_successful = $this->redis->pconnect(
                     $this->options['host'],
-                    (int) $this->options['port'],
-                    (float) $this->options['timeout']
+                    (int)$this->options['port'],
+                    (float)$this->options['timeout']
                 );
             } else {
-                $connection_successful = $this->redis->connect($this->options['host'], (int) $this->options['port'], (float) $this->options['timeout']);
+                $connection_successful = $this->redis->connect($this->options['host'], (int)$this->options['port'], (float)$this->options['timeout']);
             }
             if (!$connection_successful) {
                 throw new StorageException(
@@ -306,7 +306,8 @@ LUA
         if (false === $json) {
             throw new RuntimeException(json_last_error_msg());
         }
-        $this->redis->setNx($metaKey, $json);  /** @phpstan-ignore-line */
+        $this->redis->setNx($metaKey, $json);/** @phpstan-ignore-line */
+
 
         // store value key
         $valueKey = $summaryKey . ':' . $this->valueKey($data);
@@ -314,7 +315,7 @@ LUA
         if (false === $json) {
             throw new RuntimeException(json_last_error_msg());
         }
-        $this->redis->setNx($valueKey, $json); /** @phpstan-ignore-line */
+        $this->redis->setNx($valueKey, $json);/** @phpstan-ignore-line */
 
         // trick to handle uniqid collision
         $done = false;
@@ -414,7 +415,7 @@ LUA
         sort($keys);
         $histograms = [];
         foreach ($keys as $key) {
-            $raw = $this->redis->hGetAll(str_replace($this->redis->_prefix(''), '', $key));
+            $raw = $this->redis->hGetAll(ltrim($key, $this->redis->_prefix('')));
             if (!isset($raw['__meta'])) {
                 continue;
             }
@@ -546,7 +547,7 @@ LUA
                 $sampleValues = $this->redis->keys($summaryKey . ':' . $metaData['name'] . ':' . $encodedLabelValues . ':value:*');
                 foreach ($sampleValues as $sampleValueWithPrefix) {
                     $sampleValue = $this->removePrefixFromKey($sampleValueWithPrefix);
-                    $samples[] = (float) $this->redis->get($sampleValue);
+                    $samples[] = (float)$this->redis->get($sampleValue);
                 }
 
                 if (count($samples) === 0) {
@@ -608,7 +609,7 @@ LUA
         sort($keys);
         $gauges = [];
         foreach ($keys as $key) {
-            $raw = $this->redis->hGetAll(str_replace($this->redis->_prefix(''), '', $key));
+            $raw = $this->redis->hGetAll(ltrim($key, $this->redis->_prefix('')));
             if (!isset($raw['__meta'])) {
                 continue;
             }
@@ -648,7 +649,7 @@ LUA
         sort($keys);
         $counters = [];
         foreach ($keys as $key) {
-            $raw = $this->redis->hGetAll(str_replace($this->redis->_prefix(''), '', $key));
+            $raw = $this->redis->hGetAll(ltrim($key, $this->redis->_prefix('')));
             if (!isset($raw['__meta'])) {
                 continue;
             }

@@ -414,7 +414,7 @@ LUA
         sort($keys);
         $histograms = [];
         foreach ($keys as $key) {
-            $raw = $this->redis->hGetAll(str_replace($this->redis->_prefix(''), '', $key));
+            $raw = $this->redis->hGetAll(ltrim($key, $this->redis->_prefix('')));
             if (!isset($raw['__meta'])) {
                 continue;
             }
@@ -597,7 +597,7 @@ LUA
         sort($keys);
         $gauges = [];
         foreach ($keys as $key) {
-            $raw = $this->redis->hGetAll(str_replace($this->redis->_prefix(''), '', $key));
+            $raw = $this->redis->hGetAll(ltrim($key, $this->redis->_prefix('')));
             if (!isset($raw['__meta'])) {
                 continue;
             }
@@ -637,7 +637,7 @@ LUA
         sort($keys);
         $counters = [];
         foreach ($keys as $key) {
-            $raw = $this->redis->hGetAll(str_replace($this->redis->_prefix(''), '', $key));
+            $raw = $this->redis->hGetAll(ltrim($key, $this->redis->_prefix('')));
             if (!isset($raw['__meta'])) {
                 continue;
             }
