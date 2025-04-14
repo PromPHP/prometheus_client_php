@@ -430,33 +430,24 @@ class APCng implements Adapter
      *  [9] => ['/private', 'get', 'fail'],     [10] => ['/private', 'post', 'success'], [11] => ['/private', 'post', 'fail'],
      *  [12] => ['/metrics', 'put', 'success'], [13] => ['/metrics', 'put', 'fail'],     [14] => ['/metrics', 'get', 'success'],
      *  [15] => ['/metrics', 'get', 'fail'],    [16] => ['/metrics', 'post', 'success'], [17] => ['/metrics', 'post', 'fail']
-     * @param array<string> $labelNames
      * @param array<array> $labelValues
-     * @return array<array>
+     * @return \Generator<array>
      */
-    private function buildPermutationTree(array $labelNames, array $labelValues): array /** @phpstan-ignore-line */
+    private function buildPermutationTree(array $labelValues): \Generator /** @phpstan-ignore-line */
     {
-        $treeRowCount = count(array_keys($labelNames));
-        $numElements = 1;
-        $treeInfo = [];
-        for ($i = $treeRowCount - 1; $i >= 0; $i--) {
-            $treeInfo[$i]['numInRow'] = count($labelValues[$i]);
-            $numElements *= $treeInfo[$i]['numInRow'];
-            $treeInfo[$i]['numInTree'] = $numElements;
-        }
-
-        $map = array_fill(0, $numElements, []);
-        for ($row = 0; $row < $treeRowCount; $row++) {
-            $col = $i = 0;
-            while ($i < $numElements) {
-                $val = $labelValues[$row][$col];
-                $map[$i] = array_merge($map[$i], array($val));
-                if (++$i % ($treeInfo[$row]['numInTree'] / $treeInfo[$row]['numInRow']) == 0) {
-                    $col = ++$col % $treeInfo[$row]['numInRow'];
+        if (count($labelValues) > 0) {
+            $lastIndex = array_key_last($labelValues);
+            $currentValue = array_pop($labelValues);
+            if ($currentValue != null) {
+                foreach ($this->buildPermutationTree($labelValues) as $prefix) {
+                    foreach ($currentValue as $value) {
+                        yield $prefix + [$lastIndex => $value];
+                    }
                 }
             }
+        } else {
+            yield [];
         }
-        return $map;
     }
 
     /**
@@ -557,10 +548,9 @@ class APCng implements Adapter
         if (isset($metaData['buckets'])) {
             $metaData['buckets'][] = 'sum';
             $labels[] = $metaData['buckets'];
-            $metaData['labelNames'][] = '__histogram_buckets';
         }
 
-        $labelValuesList = $this->buildPermutationTree($metaData['labelNames'], $labels);
+        $labelValuesList = $this->buildPermutationTree($labels);
         unset($labels);
         $histogramBucket = '';
         foreach ($labelValuesList as $labelValues) {

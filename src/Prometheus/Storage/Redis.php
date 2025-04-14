@@ -6,6 +6,7 @@ namespace Prometheus\Storage;
 
 use InvalidArgumentException;
 use Prometheus\Counter;
+use Prometheus\Exception\MetricJsonException;
 use Prometheus\Exception\StorageException;
 use Prometheus\Gauge;
 use Prometheus\Histogram;
@@ -432,6 +433,9 @@ LUA
                 }
                 $allLabelValues[] = $d['labelValues'];
             }
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                $this->throwMetricJsonException($key);
+            }
 
             // We need set semantics.
             // This is the equivalent of array_unique but for arrays of arrays.
@@ -618,6 +622,9 @@ LUA
                     'labelValues' => json_decode($k, true),
                     'value' => $value,
                 ];
+                if (json_last_error() !== JSON_ERROR_NONE) {
+                    $this->throwMetricJsonException($key, $gauge['name']);
+                }
             }
 
             if ($sortMetrics) {
@@ -633,6 +640,7 @@ LUA
 
     /**
      * @return mixed[]
+     * @throws MetricJsonException
      */
     private function collectCounters(bool $sortMetrics = true): array
     {
@@ -645,6 +653,7 @@ LUA
                 continue;
             }
             $counter = json_decode($raw['__meta'], true);
+
             unset($raw['__meta']);
             $counter['samples'] = [];
             foreach ($raw as $k => $value) {
@@ -654,6 +663,10 @@ LUA
                     'labelValues' => json_decode($k, true),
                     'value' => $value,
                 ];
+
+                if (json_last_error() !== JSON_ERROR_NONE) {
+                    $this->throwMetricJsonException($key, $counter['name']);
+                }
             }
 
             if ($sortMetrics) {
@@ -724,5 +737,18 @@ LUA
             throw new RuntimeException(json_last_error_msg());
         }
         return $decodedValues;
+    }
+
+    /**
+     * @param string $redisKey
+     * @param string|null $metricName
+     * @return void
+     * @throws MetricJsonException
+     */
+    private function throwMetricJsonException(string $redisKey, ?string $metricName = null): void
+    {
+        $metricName = $metricName ?? 'unknown';
+        $message = 'Json error: ' . json_last_error_msg() . ' redis key : ' . $redisKey . ' metric name: ' . $metricName;
+        throw new MetricJsonException($message, 0, null, $metricName);
     }
 }
