@@ -30,6 +30,14 @@ class Redis implements Adapter
         'persistent_connections' => false,
         'password' => null,
         'user' => null,
+        'sentinel' => [ // sentinel options
+            'enable' => false,   
+            'host' => null,
+            'port' => 26379,
+            'master' => 'mymaster',
+            'timeout' => 0.1,
+            'read_timeout' => null,
+        ],      
     ];
 
     /**
@@ -59,7 +67,24 @@ class Redis implements Adapter
     public function __construct(array $options = [])
     {
         $this->options = array_merge(self::$defaultOptions, $options);
+         // is Sentinels ?
+        $this->options = $this->isSentinel($this->options);
         $this->redis = new \Redis();
+    }
+
+    /**
+     * Sentinels  descoverMaster
+     * @param array $options
+     */
+    public function isSentinel(array $options = [])
+    {
+        if($options['sentinel'] && $options['sentinel']['enable']){
+            $sentinel = new RedisSentinel($options['sentinel'],$options['host']);
+            list($hostname, $port) = $sentinel->getMaster($options);
+            $options['host'] =  $hostname;
+            $options['port'] = $port;
+        }
+        return $options;
     }
 
     /**
@@ -127,7 +152,7 @@ class Redis implements Adapter
             <<<LUA
 redis.replicate_commands()
 local cursor = "0"
-repeat 
+repeat
     local results = redis.call('SCAN', cursor, 'MATCH', ARGV[1])
     cursor = results[1]
     for _, key in ipairs(results[2]) do
@@ -239,7 +264,7 @@ LUA
             if (!$connection_successful) {
                 throw new StorageException(
                     sprintf("Can't connect to Redis server. %s", $this->redis->getLastError()),
-                    0
+                    null
                 );
             }
         } catch (\RedisException $e) {
