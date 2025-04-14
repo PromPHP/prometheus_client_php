@@ -49,4 +49,14 @@ interface Adapter
      * @return void
      */
     public function wipeStorage(): void;
+
+    /**
+     * Removes a specific previously stored metric from underlying storage
+     *
+     * @param string $type
+     * @param string $key
+     * @throws StorageException
+     * @return void
+     */
+    public function wipeKey(string $type, string $key): void;
 }

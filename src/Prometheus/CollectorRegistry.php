@@ -79,6 +79,19 @@ class CollectorRegistry implements RegistryInterface
     }
 
     /**
+     * Removes a specific previously stored metric from underlying storage adapter
+     *
+     * @param string $type
+     * @param string $name
+     *
+     * @return void
+     */
+    public function wipeKey(string $type, string $name): void
+    {
+        $this->storageAdapter->wipeKey($type, $name);
+    }
+
+    /**
      * @return MetricFamilySamples[]
      */
     public function getMetricFamilySamples(bool $sortMetrics = true): array

@@ -142,6 +142,42 @@ LUA
     }
 
     /**
+     * @inheritDoc
+     */
+    public function wipeKey(string $type, string $key): void
+    {
+        $this->ensureOpenConnection();
+
+        $searchPattern = "";
+
+        $globalPrefix = $this->redis->getOption(\Redis::OPT_PREFIX);
+        // @phpstan-ignore-next-line false positive, phpstan thinks getOptions returns int
+        if (is_string($globalPrefix)) {
+            $searchPattern .= $globalPrefix;
+        }
+
+        $searchPattern .= self::$prefix;
+        $searchPattern .= ":" . $type . ":" . $key;
+
+        $this->redis->eval(
+            <<<LUA
+redis.replicate_commands()
+local cursor = "0"
+repeat
+    local results = redis.call('SCAN', cursor, 'MATCH', ARGV[1])
+    cursor = results[1]
+    for _, key in ipairs(results[2]) do
+        redis.call('DEL', key)
+    end
+until cursor == "0"
+LUA
+            ,
+            [$searchPattern],
+            0
+        );
+    }
+
+    /**
      * @param mixed[] $data
      *
      * @return string
