@@ -641,7 +641,7 @@ CREATE TABLE IF NOT EXISTS `{$this->prefix}_summaries` (
     `time` {$timestamp_type} NOT NULL
 );
 SQL;
-                $sqlIndex = "CREATE INDEX `name` ON `{$this->prefix}_summaries`(`name`);";
+                $sqlIndex = "CREATE INDEX IF NOT EXISTS `name` ON `{$this->prefix}_summaries`(`name`);";
                 break;
 
             case 'mysql':
@@ -667,7 +667,7 @@ CREATE TABLE IF NOT EXISTS "{$this->prefix}_summaries" (
     "time" {$timestamp_type} NOT NULL
 );
 SQL;
-                $sqlIndex = "CREATE INDEX \"name\" ON \"{$this->prefix}_summaries\" (\"name\");";
+                $sqlIndex = "CREATE INDEX IF NOT EXISTS \"name\" ON \"{$this->prefix}_summaries\" (\"name\");";
                 break;
         }
 
