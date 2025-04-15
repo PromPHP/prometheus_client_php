@@ -31,15 +31,36 @@ class Redis implements Adapter
         'password' => null,
         'user' => null,
         'sentinel' => [ // sentinel options
-            'enable' => false,   
-            'host' => null,
-            'port' => 26379,
-            'master' => 'mymaster',
-            'timeout' => 0.1,
-            'read_timeout' => null,
-        ],      
+            'enable' => false,   // if enabled uses sentinel to get the master before connecting to redis
+            'host' => '127.0.0.1',  //  phpredis sentinel address of the redis, default is the same as redis host if empty
+            'port' => 26379, //  phpredis sentinel port of the primary redis server, default 26379 if empty.
+            'service' => 'myprimary', //, phpredis sentinel primary name, default myprimary
+            'timeout' => 0, // phpredis sentinel connection timeout
+            'persistent' => null, // phpredis sentinel persistence parameter
+            'retry_interval' => 0, // phpredis sentinel retry interval
+            'read_timeout' => 0,  // phpredis sentinel read timeout
+            'username' => '', // phpredis sentinel auth username
+            'password' => '', // phpredis sentinel auth password
+            'ssl' => null,
+        ]
     ];
 
+    // The following array contains all exception message parts which are interpreted as a connection loss or
+    // another unavailability of Redis.
+    private const ERROR_MESSAGES_INDICATING_UNAVAILABILITY = [
+        'connection closed',
+        'connection refused',
+        'connection lost',
+        'failed while reconnecting',
+        'is loading the dataset in memory',
+        'php_network_getaddresses',
+        'read error on connection',
+        'socket',
+        'went away',
+        'loading',
+        'readonly',
+        "can't write against a read only replica",
+    ];
     /**
      * @var string
      */
@@ -67,8 +88,6 @@ class Redis implements Adapter
     public function __construct(array $options = [])
     {
         $this->options = array_merge(self::$defaultOptions, $options);
-         // is Sentinels ?
-        $this->options = $this->isSentinel($this->options);
         $this->redis = new \Redis();
     }
 
@@ -78,11 +97,12 @@ class Redis implements Adapter
      */
     public function isSentinel(array $options = [])
     {
-        if($options['sentinel'] && $options['sentinel']['enable']){
-            $sentinel = new RedisSentinel($options['sentinel'],$options['host']);
-            list($hostname, $port) = $sentinel->getMaster($options);
-            $options['host'] =  $hostname;
-            $options['port'] = $port;
+        if ($options['sentinel'] && $options['sentinel']['enable']) {
+            $sentinel = new RedisSentinelConnector();
+            $options['sentinel']['host'] = $options['sentinel']['host'] ?? $options['host'];
+            $master = $sentinel->getMaster($options['sentinel']);
+            $options['host'] = $master['ip'];
+            $options['port'] = $master['port'];
         }
         return $options;
     }
@@ -122,8 +142,8 @@ class Redis implements Adapter
     }
 
     /**
-     * @deprecated use replacement method wipeStorage from Adapter interface
      * @throws StorageException
+     * @deprecated use replacement method wipeStorage from Adapter interface
      */
     public function flushRedis(): void
     {
@@ -213,6 +233,27 @@ LUA
     }
 
     /**
+     * Inspects the given exception and reconnects the client if the reported error indicates that the server
+     * went away or is in readonly mode, which may happen in case of a Redis Sentinel failover.
+     */
+    private function reconnectIfRedisIsUnavailableOrReadonly(RedisException $exception): bool
+    {
+        // We convert the exception message to lower-case in order to perform case-insensitive comparison.
+        $exceptionMessage = strtolower($exception->getMessage());
+
+        // Because we also match only partial exception messages, we cannot use in_array() at this point.
+        foreach (self::ERROR_MESSAGES_INDICATING_UNAVAILABILITY as $errorMessage) {
+            if (str_contains($exceptionMessage, $errorMessage)) {
+                // Here we reconnect through Redis Sentinel if we lost connection to the server or if another unavailability occurred.
+                // We may actually reconnect to the same, broken server. But after a failover occured, we should be ok.
+                // It may take a moment until the Sentinel returns the new master, so this may be triggered multiple times.
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
      * @throws StorageException
      */
     private function ensureOpenConnection(): void
@@ -221,7 +262,24 @@ LUA
             return;
         }
 
-        $this->connectToServer();
+        while (true) {
+            try {
+                $this->options = $this->isSentinel($this->options);
+                $this->connectToServer();
+                break;
+            } catch (\RedisException $e) {
+                $retry = $this->reconnectIfRedisIsUnavailableOrReadonly($e);
+                if (!$retry) {
+                    throw new StorageException(
+                        sprintf("Can't connect to Redis server. %s", $e->getMessage()),
+                        $e->getCode(),
+                        $e
+                    );
+                }
+            }
+        }
+
+
         $authParams = [];
 
         if (isset($this->options['user']) && $this->options['user'] !== '') {
@@ -250,28 +308,20 @@ LUA
      */
     private function connectToServer(): void
     {
-        try {
-            $connection_successful = false;
-            if ($this->options['persistent_connections'] !== false) {
-                $connection_successful = $this->redis->pconnect(
-                    $this->options['host'],
-                    (int) $this->options['port'],
-                    (float) $this->options['timeout']
-                );
-            } else {
-                $connection_successful = $this->redis->connect($this->options['host'], (int) $this->options['port'], (float) $this->options['timeout']);
-            }
-            if (!$connection_successful) {
-                throw new StorageException(
-                    sprintf("Can't connect to Redis server. %s", $this->redis->getLastError()),
-                    null
-                );
-            }
-        } catch (\RedisException $e) {
+        $connection_successful = false;
+        if ($this->options['persistent_connections'] !== false) {
+            $connection_successful = $this->redis->pconnect(
+                $this->options['host'],
+                (int) $this->options['port'],
+                (float) $this->options['timeout']
+            );
+        } else {
+            $connection_successful = $this->redis->connect($this->options['host'], (int) $this->options['port'], (float) $this->options['timeout']);
+        }
+        if (!$connection_successful) {
             throw new StorageException(
-                sprintf("Can't connect to Redis server. %s", $e->getMessage()),
-                $e->getCode(),
-                $e
+                sprintf("Can't connect to Redis server. %s", $this->redis->getLastError()),
+                null
             );
         }
     }

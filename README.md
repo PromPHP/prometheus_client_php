@@ -79,14 +79,19 @@ Change the Redis options (the example shows the defaults):
         'timeout' => 0.1, // in seconds
         'read_timeout' => '10', // in seconds
         'persistent_connections' => false
-        'sentinel' => [
-            'enable' => false,   // support sentinel . Before requesting to redis, a request is made to the sentinel to get 
-            'host' => '127.0.0.1',  // the address of the redis, defualt is the same as redis host if empty
-            'port' => 26379, // the port of the master redis server, default 26379 if empty.
-            'master' => 'mymaster' //, sentine master name, default mymaster
-            'timeout' => 0.1 //, sentinel connection timeout
-            'read_timeout' => null // sentinel read timeout
-        ] 
+        'sentinel' => [ // sentinel options
+            'enable' => false,   // if enabled uses sentinel to get the master before connecting to redis
+            'host' => '127.0.0.1',  //  phpredis sentinel address of the redis, default is the same as redis host if empty
+            'port' => 26379, //  phpredis sentinel port of the primary redis server, default 26379 if empty.
+            'service' => 'myprimary', //, phpredis sentinel primary name, default myprimary
+            'timeout' => 0, // phpredis sentinel connection timeout
+            'persistent' => null, // phpredis sentinel persistence parameter
+            'retry_interval' => 0, // phpredis sentinel retry interval
+            'read_timeout' => 0,  // phpredis sentinel read timeout
+            'username' => '', // phpredis sentinel auth username
+            'password' => '', // phpredis sentinel auth password
+            'ssl' => null,
+        ]
     ]
 );
 ```
