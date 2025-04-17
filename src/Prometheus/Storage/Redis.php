@@ -39,6 +39,7 @@ class Redis implements Adapter
             'persistent' => null, // phpredis sentinel persistence parameter
             'retry_interval' => 0, // phpredis sentinel retry interval
             'read_timeout' => 0,  // phpredis sentinel read timeout
+            'reconnect' => 0, // retries after losing connection to redis asking for a new primary, if -1 will retry indefinetely
             'username' => '', // phpredis sentinel auth username
             'password' => '', // phpredis sentinel auth password
             'ssl' => null,
@@ -95,15 +96,13 @@ class Redis implements Adapter
      * Sentinels  descoverMaster
      * @param array $options
      */
-    public function isSentinel(array $options = [])
+    public function getSentinelPrimary(array $options = [])
     {
-        if ($options['sentinel'] && $options['sentinel']['enable']) {
-            $sentinel = new RedisSentinelConnector();
-            $options['sentinel']['host'] = $options['sentinel']['host'] ?? $options['host'];
-            $master = $sentinel->getMaster($options['sentinel']);
-            $options['host'] = $master['ip'];
-            $options['port'] = $master['port'];
-        }
+        $sentinel = new RedisSentinelConnector();
+        $options['sentinel']['host'] = $options['sentinel']['host'] ?? $options['host'];
+        $master = $sentinel->getMaster($options['sentinel']);
+        $options['host'] = $master['ip'];
+        $options['port'] = $master['port'];
         return $options;
     }
 
@@ -262,22 +261,30 @@ LUA
             return;
         }
 
-        while (true) {
-            try {
-                $this->options = $this->isSentinel($this->options);
-                $this->connectToServer();
-                break;
-            } catch (\RedisException $e) {
-                $retry = $this->reconnectIfRedisIsUnavailableOrReadonly($e);
-                if (!$retry) {
-                    throw new StorageException(
-                        sprintf("Can't connect to Redis server. %s", $e->getMessage()),
-                        $e->getCode(),
-                        $e
-                    );
+        if($this->options['sentinel'] && $this->options['sentinel']['enable']){
+            $reconnect = $this->options['sentinel']['reconnect'];
+            $retries = 0;
+            while ($retries<=$reconnect) {
+                try {
+                    $this->options = $this->getSentinelPrimary($this->options);
+                    $this->connectToServer();
+                    break;
+                } catch (\RedisException $e) {
+                    $retry = $this->reconnectIfRedisIsUnavailableOrReadonly($e);
+                    if (!$retry) {
+                        throw new StorageException(
+                            sprintf("Can't connect to Redis server. %s", $e->getMessage()),
+                            $e->getCode(),
+                            $e
+                        );
+                    }
                 }
+                $retries++;                
             }
+        } else {
+            $this->connectToServer();
         }
+        
 
 
         $authParams = [];

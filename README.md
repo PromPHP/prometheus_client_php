@@ -88,6 +88,7 @@ Change the Redis options (the example shows the defaults):
             'persistent' => null, // phpredis sentinel persistence parameter
             'retry_interval' => 0, // phpredis sentinel retry interval
             'read_timeout' => 0,  // phpredis sentinel read timeout
+            'reconnect' => 0, // retries after losing connection to redis asking for a new primary, if -1 will retry indefinetely
             'username' => '', // phpredis sentinel auth username
             'password' => '', // phpredis sentinel auth password
             'ssl' => null,
