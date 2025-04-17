@@ -86,9 +86,12 @@ class RedisSentinelTest extends TestCase
      */
     public function itShouldGetMaster(): void
     {
-        $redis = new Redis(['host' => '/dev/null', 'sentinel' => ['host'=>REDIS_SENTINEL_HOST, 'enable' => true, 'service' => 'myprimary']]);
+        $redis = new Redis(['host' => '/dev/null', 
+            'sentinel' => ['host'=>REDIS_SENTINEL_HOST, 'enable' => true, 'service' => 'myprimary']
+        ]);
   
         $redis->collect();
         $redis->wipeStorage();
+        $this->expectNotToPerformAssertions();
     }
 }

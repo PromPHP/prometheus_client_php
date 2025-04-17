@@ -104,17 +104,15 @@ class Redis implements Adapter
 
     /**
      * Sentinels  discoverMaster
-     * @return mixed[]
      */
-    public function getSentinelPrimary(): array
+    public function updateSentinelPrimary()
     {       
         $master = $this->sentinel->getMaster();
-        
+
         if (is_array($master)) {
-            $options['host'] = $master['ip'];
-            $options['port'] = $master['port'];
+            $this->options['host'] = $master['ip'];
+            $this->options['port'] = $master['port'];
         }
-        return $options;
     }
 
     /**
@@ -289,7 +287,7 @@ LUA
             $retries = 0;
             while ($retries <= $reconnect) {
                 try {
-                    $this->options = $this->getSentinelPrimary();
+                    $this->updateSentinelPrimary();
                     $this->connectToServer();
                     break;
                 } catch (\RedisException $e) {
@@ -335,7 +333,7 @@ LUA
      * @throws StorageException
      */
     private function connectToServer(): void
-    {
+    {       
         $connection_successful = false;
         if ($this->options['persistent_connections'] !== false) {
             $connection_successful = $this->redis->pconnect(
