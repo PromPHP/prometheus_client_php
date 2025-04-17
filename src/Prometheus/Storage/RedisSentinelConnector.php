@@ -1,19 +1,19 @@
 <?php
 
 namespace Prometheus\Storage;
+
 use Prometheus\Exception\StorageException;
 use RedisSentinel;
 
 class RedisSentinelConnector
 {
-
     /**
      * {@inheritdoc}
-     *
-     * @throws RedisException
-     * @throws StorageException
+     * @param mixed[] $config
+     * @return mixed[]|bool
+     * @throws StorageException|\RedisException
      */
-    public function getMaster(array $config): array
+    public function getMaster(array $config): array|bool
     {
         $service = $config['service'];
 
@@ -30,15 +30,18 @@ class RedisSentinelConnector
 
     /**
      * Check whether master is valid or not.
+     * @param mixed[]|bool $master
+     * @return bool
      */
-    protected function isValidMaster(mixed $master): bool
+    protected function isValidMaster(array|bool $master): bool
     {
         return is_array($master) && isset($master['ip']) && isset($master['port']);
     }
 
     /**
      * Connect to the configured Redis Sentinel instance.
-     *
+     * @param mixed[] $config
+     * @return RedisSentinel
      * @throws StorageException
      */
     private function connectToSentinel(array $config): RedisSentinel
@@ -64,7 +67,7 @@ class RedisSentinelConnector
             $auth = $password;
         }
 
-        if (version_compare(phpversion('redis'), '6.0', '>=')) {
+        if (version_compare((string)phpversion('redis'), '6.0', '>=')) {
             $options = [
                 'host' => $host,
                 'port' => $port,
@@ -78,7 +81,7 @@ class RedisSentinelConnector
                 $options['auth'] = $auth;
             }
 
-            if (version_compare(phpversion('redis'), '6.1', '>=') && $ssl !== null) {
+            if (version_compare((string)phpversion('redis'), '6.1', '>=') && $ssl !== null) {
                 $options['ssl'] = $ssl;
             }
 
@@ -90,6 +93,6 @@ class RedisSentinelConnector
             return new RedisSentinel($host, $port, $timeout, $persistent, $retryInterval, $readTimeout, $auth);
         }
 
-        return new RedisSentinel($host, $port, $timeout, $persistent, $retryInterval, $readTimeout);
+        return new RedisSentinel($host, $port, $timeout, $persistent, $retryInterval, $readTimeout, null);
     }
 }

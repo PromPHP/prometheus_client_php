@@ -94,15 +94,18 @@ class Redis implements Adapter
 
     /**
      * Sentinels  descoverMaster
-     * @param array $options
+     * @param mixed[] $options
+     * @return mixed[]
      */
-    public function getSentinelPrimary(array $options = [])
+    public function getSentinelPrimary(array $options = []) : array
     {
         $sentinel = new RedisSentinelConnector();
         $options['sentinel']['host'] = $options['sentinel']['host'] ?? $options['host'];
         $master = $sentinel->getMaster($options['sentinel']);
-        $options['host'] = $master['ip'];
-        $options['port'] = $master['port'];
+        if (is_array($master)) {
+            $options['host'] = $master['ip'];
+            $options['port'] = $master['port'];
+        }
         return $options;
     }
 
@@ -235,7 +238,7 @@ LUA
      * Inspects the given exception and reconnects the client if the reported error indicates that the server
      * went away or is in readonly mode, which may happen in case of a Redis Sentinel failover.
      */
-    private function reconnectIfRedisIsUnavailableOrReadonly(RedisException $exception): bool
+    private function reconnectIfRedisIsUnavailableOrReadonly(\RedisException $exception): bool
     {
         // We convert the exception message to lower-case in order to perform case-insensitive comparison.
         $exceptionMessage = strtolower($exception->getMessage());
@@ -261,10 +264,10 @@ LUA
             return;
         }
 
-        if($this->options['sentinel'] && $this->options['sentinel']['enable']){
+        if (isset($this->options['sentinel']) && boolval($this->options['sentinel']['enable'])) {
             $reconnect = $this->options['sentinel']['reconnect'];
             $retries = 0;
-            while ($retries<=$reconnect) {
+            while ($retries <= $reconnect) {
                 try {
                     $this->options = $this->getSentinelPrimary($this->options);
                     $this->connectToServer();
@@ -279,13 +282,11 @@ LUA
                         );
                     }
                 }
-                $retries++;                
+                $retries++;
             }
         } else {
             $this->connectToServer();
         }
-        
-
 
         $authParams = [];
 
@@ -328,7 +329,7 @@ LUA
         if (!$connection_successful) {
             throw new StorageException(
                 sprintf("Can't connect to Redis server. %s", $this->redis->getLastError()),
-                null
+                0
             );
         }
     }
