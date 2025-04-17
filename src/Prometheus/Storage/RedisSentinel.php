@@ -4,6 +4,7 @@ namespace Prometheus\Storage;
 
 use Prometheus\Exception\StorageException;
 
+// Redis Sentinel connector based on https://github.com/Namoshek/laravel-redis-sentinel
 class RedisSentinel
 {
     /**

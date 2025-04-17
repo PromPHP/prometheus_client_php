@@ -1,3 +1,6 @@
 {
-    "github-actions.workflows.pinned.workflows": []
+    "github-actions.workflows.pinned.workflows": [],
+    "githubPullRequests.ignoredPullRequestBranches": [
+        "main"
+    ]
 }

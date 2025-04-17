@@ -60,7 +60,10 @@ class RedisSentinelTest extends TestCase
     {
         $connection = new \Redis();
         // @phpstan-ignore arguments.count
-        $sentinel = new \RedisSentinel();
+        
+        $sentinel = version_compare((string)phpversion('redis'), '6.0', '>=') ? 
+                        new \RedisSentinel(['host' => '/dev/null']) :
+                        new \RedisSentinel('/dev/null');
 
         self::expectException(StorageException::class);
         self::expectExceptionMessageMatches("/Can't connect to RedisSentinel server\\..*/");
@@ -86,8 +89,8 @@ class RedisSentinelTest extends TestCase
      * @test
      */
     public function itShouldGetMaster(): void
-    {
-        $redis = new Redis(['host' => '/dev/null',
+    { 
+        $redis = new Redis(['host' => REDIS_HOST,
             'sentinel' => ['host' => REDIS_SENTINEL_HOST, 'enable' => true, 'service' => 'myprimary']
         ]);
 

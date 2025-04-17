@@ -130,7 +130,7 @@ class Redis implements Adapter
      * @return self
      * @throws StorageException
      */
-    public static function fromExistingConnection(\Redis $redis, \RedisSentinel $redisSentinel = null): self
+    public static function fromExistingConnection(\Redis $redis, ?\RedisSentinel $redisSentinel = null): self
     {
         if (isset($redisSentinel)) {
             RedisSentinel::fromExistingConnection($redisSentinel);

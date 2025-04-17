@@ -30,10 +30,16 @@ jobs:
           - 5432:5432
 
     env:
-      # The hostname used to communicate with the Redis service container
+      # The hostname used to communicate with the Redis/Sentinel service containers
       REDIS_HOST: redis
+      # The hostname for redis sentinel
+      REDIS_SENTINEL_HOST: redis-sentinel
       # The default Redis port
       REDIS_PORT: 6379
+      # The default Redis Sentinel port
+      REDIS_SENTINEL_PORT: 26379
+      # The default Redis Sentinel primary
+      REDIS_SENTINEL_SERVICE: myprimary
       # MySQL
       DB_DATABASE: test
       DB_USER: root
@@ -68,6 +74,20 @@ jobs:
         uses: supercharge/redis-github-action@1.1.0
         with:
           redis-version: ${{ matrix.redis-version }}
+
+      - name: Generate Redis Sentinel conf compatible with redis 5 assuming 127.0.0.1 (no resolve hostname)
+        run: |
+          REDIS_SENTINEL_IP=127.0.0.1
+          cat <<EOF > sentinel5.conf
+          port ${{ env.REDIS_SENTINEL_PORT }}
+          sentinel monitor ${{ env.REDIS_SENTINEL_SERVICE }} $REDIS_SENTINEL_IP ${{ env.REDIS_PORT }} 2
+          sentinel down-after-milliseconds ${{ env.REDIS_SENTINEL_SERVICE }} 10000
+          sentinel failover-timeout ${{ env.REDIS_SENTINEL_SERVICE }} 180000
+          sentinel parallel-syncs ${{ env.REDIS_SENTINEL_SERVICE }} 2
+          EOF
+
+      - name: Start Redis Sentinel
+        run: docker run -d --name ${{env.REDIS_SENTINEL_HOST}} -p 26379:26379 --link redis:redis -v $PWD/sentinel5.conf:/data/sentinel.conf redis:${{ matrix.redis-version }} redis-server sentinel.conf --sentinel
 
       - name: Execute tests (PDO with Sqlite)
         run: vendor/bin/phpunit
