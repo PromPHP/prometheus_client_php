@@ -33,18 +33,19 @@ class RedisSentinel
             'password' => '', // phpredis sentinel auth password
             'ssl' => null,
     ];
-    
+
     /**
      * @param \RedisSentinel $redisSentinel
      * @return self
      * @throws StorageException
      */
-    public static function fromExistingConnection(\RedisSentinel $redisSentinel) : self {
+    public static function fromExistingConnection(\RedisSentinel $redisSentinel): self
+    {
         $sentinel = new self();
         $sentinel->sentinel = $redisSentinel;
         $sentinel->getMaster();
         return $sentinel;
-    }    
+    }
 
     /**
      * Redis constructor.
@@ -53,26 +54,21 @@ class RedisSentinel
     public function __construct(array $options = [])
     {
         $this->options = [...self::$defaultOptions, ...$options];
-        $this->sentinel = $this->connectToSentinel($this->options);
+        $this->sentinel = $this->initSentinel();
     }
 
     /**
      * {@inheritdoc}
-     * @param mixed[] $config
      * @return mixed[]|bool
      * @throws StorageException|\RedisException
      */
     public function getMaster(): array|bool
     {
         $service = $this->options['service'];
-        
-        try {
-            if(!$this->sentinel) {
-                $this->sentinel = $this->connectToSentinel($this->options);
-            }
 
+        try {
             $master = $this->sentinel->master($service);
-        } catch (\RedisException $e){
+        } catch (\RedisException $e) {
             throw new StorageException(
                 sprintf("Can't connect to RedisSentinel server. %s", $e->getMessage()),
                 $e->getCode(),
@@ -102,7 +98,7 @@ class RedisSentinel
      * @return \RedisSentinel
      * @throws StorageException
      */
-    private function connectToSentinel(): \RedisSentinel
+    private function initSentinel(): \RedisSentinel
     {
         $host = $this->options['host'] ?? '';
         $port = $this->options['port'] ?? 26379;
@@ -155,7 +151,8 @@ class RedisSentinel
         return new \RedisSentinel($host, $port, $timeout, $persistent, $retryInterval, $readTimeout);
     }
 
-    public function getSentinel() : \RedisSentinel {
+    public function getSentinel(): \RedisSentinel
+    {
         return $this->sentinel;
     }
 }

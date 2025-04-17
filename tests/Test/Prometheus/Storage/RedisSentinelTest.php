@@ -30,7 +30,7 @@ class RedisSentinelTest extends TestCase
      */
     public function itShouldThrowAnExceptionOnConnectionFailureWithRedisSentinelNotEnabled(): void
     {
-        $redis = new Redis(['host' => '/dev/null', 'sentinel' => ['host'=>'/dev/null']]);
+        $redis = new Redis(['host' => '/dev/null', 'sentinel' => ['host' => '/dev/null']]);
 
         $this->expectException(StorageException::class);
         $this->expectExceptionMessage("Can't connect to Redis server");
@@ -44,7 +44,7 @@ class RedisSentinelTest extends TestCase
      */
     public function itShouldThrowAnExceptionOnConnectionFailure(): void
     {
-        $redis = new Redis(['host' => '/dev/null', 'sentinel' => ['host'=>'/dev/null', 'enable' => true]]);
+        $redis = new Redis(['host' => '/dev/null', 'sentinel' => ['host' => '/dev/null', 'enable' => true]]);
 
         $this->expectException(StorageException::class);
         $this->expectExceptionMessage("Can't connect to RedisSentinel server");
@@ -59,6 +59,7 @@ class RedisSentinelTest extends TestCase
     public function itShouldThrowExceptionWhenInjectedRedisIsNotConnected(): void
     {
         $connection = new \Redis();
+        // @phpstan-ignore arguments.count
         $sentinel = new \RedisSentinel();
 
         self::expectException(StorageException::class);
@@ -72,7 +73,7 @@ class RedisSentinelTest extends TestCase
      */
     public function itShouldThrowAnExceptionOnPrimaryFailure(): void
     {
-        $redis = new Redis(['host' => '/dev/null', 'sentinel' => ['host'=>'/dev/null', 'enable' => true, 'service' => 'dummy']]);
+        $redis = new Redis(['host' => '/dev/null', 'sentinel' => ['host' => '/dev/null', 'enable' => true, 'service' => 'dummy']]);
 
         $this->expectException(StorageException::class);
         $this->expectExceptionMessage("Can't connect to RedisSentinel server");
@@ -86,10 +87,10 @@ class RedisSentinelTest extends TestCase
      */
     public function itShouldGetMaster(): void
     {
-        $redis = new Redis(['host' => '/dev/null', 
-            'sentinel' => ['host'=>REDIS_SENTINEL_HOST, 'enable' => true, 'service' => 'myprimary']
+        $redis = new Redis(['host' => '/dev/null',
+            'sentinel' => ['host' => REDIS_SENTINEL_HOST, 'enable' => true, 'service' => 'myprimary']
         ]);
-  
+
         $redis->collect();
         $redis->wipeStorage();
         $this->expectNotToPerformAssertions();

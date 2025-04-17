@@ -80,7 +80,7 @@ class Redis implements Adapter
     /**
      * @var RedisSentinel
      */
-    private $sentinel;
+    private $sentinel = null;
 
     /**
      * @var boolean
@@ -96,7 +96,7 @@ class Redis implements Adapter
         $this->options = [...self::$defaultOptions, ...$options];
         $this->options['sentinel'] = [...self::$defaultOptions['sentinel'] ?? [], ...$options['sentinel'] ?? []];
         $this->redis = new \Redis();
-        if(isset($this->options['sentinel']) && boolval($this->options['sentinel']['enable'])){
+        if (boolval($this->options['sentinel']['enable'])) {
             $options['sentinel']['host'] = $options['sentinel']['host'] ?? $options['host'];
             $this->sentinel = new RedisSentinel($options['sentinel']);
         }
@@ -104,9 +104,10 @@ class Redis implements Adapter
 
     /**
      * Sentinels  discoverMaster
+     * @return void
      */
-    public function updateSentinelPrimary()
-    {       
+    public function updateSentinelPrimary(): void
+    {
         $master = $this->sentinel->getMaster();
 
         if (is_array($master)) {
@@ -118,8 +119,9 @@ class Redis implements Adapter
     /**
      * @return \RedisSentinel
      */
-    public function getRedisSentinel() : \RedisSentinel {
-        return $this->sentinel->getRedisSentinel();
+    public function getRedisSentinel(): \RedisSentinel
+    {
+        return $this->sentinel->getSentinel();
     }
 
     /**
@@ -130,7 +132,7 @@ class Redis implements Adapter
      */
     public static function fromExistingConnection(\Redis $redis, \RedisSentinel $redisSentinel = null): self
     {
-        if($redisSentinel) {
+        if (isset($redisSentinel)) {
             RedisSentinel::fromExistingConnection($redisSentinel);
         }
 
@@ -281,8 +283,8 @@ LUA
         if ($this->connectionInitialized === true) {
             return;
         }
-        
-        if ($this->sentinel) {            
+
+        if ($this->sentinel !== null && boolval($this->options['sentinel']['enable'])) {
             $reconnect = $this->options['sentinel']['reconnect'];
             $retries = 0;
             while ($retries <= $reconnect) {
@@ -333,7 +335,7 @@ LUA
      * @throws StorageException
      */
     private function connectToServer(): void
-    {       
+    {
         $connection_successful = false;
         if ($this->options['persistent_connections'] !== false) {
             $connection_successful = $this->redis->pconnect(
@@ -344,7 +346,7 @@ LUA
         } else {
             try {
                 $connection_successful = $this->redis->connect($this->options['host'], (int) $this->options['port'], (float) $this->options['timeout']);
-            } catch(\RedisException $ex){
+            } catch (\RedisException $ex) {
                 throw new StorageException(
                     sprintf("Can't connect to Redis server. %s", $ex->getMessage()),
                     $ex->getCode()
