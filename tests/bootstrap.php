@@ -17,3 +17,4 @@ $loader->add('Test\\Prometheus', __DIR__);
 $loader->add('Test\\Performance', __DIR__);
 
 define('REDIS_HOST', isset($_ENV['REDIS_HOST']) ? $_ENV['REDIS_HOST'] : '127.0.0.1');
+define('REDIS_SENTINEL_HOST', isset($_ENV['REDIS_SENTINEL_HOST']) ? $_ENV['REDIS_SENTINEL_HOST'] : '127.0.0.1');

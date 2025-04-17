@@ -14,11 +14,20 @@ services:
       - redis
     environment:
       - REDIS_HOST=redis
+      - REDIS_SENTINEL_HOST=redis-sentinel
 
   redis:
     image: redis
     ports:
       - 6379:6379
+
+  redis-sentinel:
+    image: redis
+    volumes:
+      - ./sentinel.conf://etc/sentinel.conf
+    ports:
+      - 26379:26379
+    command: redis-sentinel /etc/sentinel.conf
 
   phpunit:
     build: php-fpm/
@@ -29,3 +38,4 @@ services:
       - nginx
     environment:
       - REDIS_HOST=redis
+      - REDIS_SENTINEL_HOST=redis-sentinel

@@ -78,6 +78,11 @@ class Redis implements Adapter
     private $redis;
 
     /**
+     * @var RedisSentinel
+     */
+    private $sentinel;
+
+    /**
      * @var boolean
      */
     private $connectionInitialized = false;
@@ -88,20 +93,23 @@ class Redis implements Adapter
      */
     public function __construct(array $options = [])
     {
-        $this->options = array_merge(self::$defaultOptions, $options);
+        $this->options = [...self::$defaultOptions, ...$options];
+        $this->options['sentinel'] = [...self::$defaultOptions['sentinel'] ?? [], ...$options['sentinel'] ?? []];
         $this->redis = new \Redis();
+        if(isset($this->options['sentinel']) && boolval($this->options['sentinel']['enable'])){
+            $options['sentinel']['host'] = $options['sentinel']['host'] ?? $options['host'];
+            $this->sentinel = new RedisSentinel($options['sentinel']);
+        }
     }
 
     /**
-     * Sentinels  descoverMaster
-     * @param mixed[] $options
+     * Sentinels  discoverMaster
      * @return mixed[]
      */
-    public function getSentinelPrimary(array $options = []) : array
-    {
-        $sentinel = new RedisSentinelConnector();
-        $options['sentinel']['host'] = $options['sentinel']['host'] ?? $options['host'];
-        $master = $sentinel->getMaster($options['sentinel']);
+    public function getSentinelPrimary(): array
+    {       
+        $master = $this->sentinel->getMaster();
+        
         if (is_array($master)) {
             $options['host'] = $master['ip'];
             $options['port'] = $master['port'];
@@ -110,12 +118,24 @@ class Redis implements Adapter
     }
 
     /**
+     * @return \RedisSentinel
+     */
+    public function getRedisSentinel() : \RedisSentinel {
+        return $this->sentinel->getRedisSentinel();
+    }
+
+    /**
      * @param \Redis $redis
+     * @param \RedisSentinel $redisSentinel
      * @return self
      * @throws StorageException
      */
-    public static function fromExistingConnection(\Redis $redis): self
+    public static function fromExistingConnection(\Redis $redis, \RedisSentinel $redisSentinel = null): self
     {
+        if($redisSentinel) {
+            RedisSentinel::fromExistingConnection($redisSentinel);
+        }
+
         if ($redis->isConnected() === false) {
             throw new StorageException('Connection to Redis server not established');
         }
@@ -263,13 +283,13 @@ LUA
         if ($this->connectionInitialized === true) {
             return;
         }
-
-        if (isset($this->options['sentinel']) && boolval($this->options['sentinel']['enable'])) {
+        
+        if ($this->sentinel) {            
             $reconnect = $this->options['sentinel']['reconnect'];
             $retries = 0;
             while ($retries <= $reconnect) {
                 try {
-                    $this->options = $this->getSentinelPrimary($this->options);
+                    $this->options = $this->getSentinelPrimary();
                     $this->connectToServer();
                     break;
                 } catch (\RedisException $e) {
@@ -324,7 +344,14 @@ LUA
                 (float) $this->options['timeout']
             );
         } else {
-            $connection_successful = $this->redis->connect($this->options['host'], (int) $this->options['port'], (float) $this->options['timeout']);
+            try {
+                $connection_successful = $this->redis->connect($this->options['host'], (int) $this->options['port'], (float) $this->options['timeout']);
+            } catch(\RedisException $ex){
+                throw new StorageException(
+                    sprintf("Can't connect to Redis server. %s", $ex->getMessage()),
+                    $ex->getCode()
+                );
+            }
         }
         if (!$connection_successful) {
             throw new StorageException(
