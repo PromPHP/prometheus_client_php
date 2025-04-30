@@ -42,6 +42,17 @@ class PHPRedis implements RedisClient
         return new self($redis, $options);
     }
 
+    /**
+     * @param  mixed[]  $options
+     */
+    public static function fromExistingConnection(\Redis $redis, array $options): self
+    {
+        $self = new self($redis, $options);
+        $self->connectionInitialized = true;
+
+        return $self;
+    }
+
     public function getOption(int $option): mixed
     {
         return $this->redis->getOption($option);
@@ -94,11 +105,6 @@ class PHPRedis implements RedisClient
         } catch (\RedisException $e) {
             throw new RedisClientException($e->getMessage());
         }
-    }
-
-    public function prefix(string $key): string
-    {
-        return $this->redis->_prefix($key);
     }
 
     /**
