@@ -120,6 +120,11 @@ class Predis implements RedisClient
         $this->client->del($key, ...$other_keys);
     }
 
+    public function prefix(string $key): string
+    {
+        return $this->getOption(RedisClient::OPT_PREFIX).$key;
+    }
+
     public function ensureOpenConnection(): void
     {
         // Predis doesn't require to trigger connection

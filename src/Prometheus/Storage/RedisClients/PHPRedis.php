@@ -96,6 +96,11 @@ class PHPRedis implements RedisClient
         }
     }
 
+    public function prefix(string $key): string
+    {
+        return $this->redis->_prefix($key);
+    }
+
     /**
      * @throws StorageException
      */
