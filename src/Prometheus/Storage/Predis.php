@@ -71,7 +71,7 @@ class Predis extends AbstractRedis
             'replication' => $options->replication,
         ];
 
-        $self = new self;
+        $self = new self();
         $self->redis = new PredisClient($client, $allOptions);
 
         return $self;

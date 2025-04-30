@@ -156,7 +156,7 @@ LUA
             ,
             [
                 $this->toMetricKey($data),
-                self::$prefix.Histogram::TYPE.self::PROMETHEUS_METRIC_KEYS_SUFFIX,
+                self::$prefix . Histogram::TYPE . self::PROMETHEUS_METRIC_KEYS_SUFFIX,
                 json_encode(['b' => 'sum', 'labelValues' => $data['labelValues']]),
                 json_encode(['b' => $bucketToIncrease, 'labelValues' => $data['labelValues']]),
                 $data['value'],
@@ -176,8 +176,8 @@ LUA
         $this->redis->ensureOpenConnection();
 
         // store meta
-        $summaryKey = self::$prefix.Summary::TYPE.self::PROMETHEUS_METRIC_KEYS_SUFFIX;
-        $metaKey = $summaryKey.':'.$this->metaKey($data);
+        $summaryKey = self::$prefix . Summary::TYPE . self::PROMETHEUS_METRIC_KEYS_SUFFIX;
+        $metaKey = $summaryKey . ':' . $this->metaKey($data);
         $json = json_encode($this->metaData($data));
         if ($json === false) {
             throw new RuntimeException(json_last_error_msg());
@@ -185,7 +185,7 @@ LUA
         $this->redis->setNx($metaKey, $json);
 
         // store value key
-        $valueKey = $summaryKey.':'.$this->valueKey($data);
+        $valueKey = $summaryKey . ':' . $this->valueKey($data);
         $json = json_encode($this->encodeLabelValues($data['labelValues']));
         if ($json === false) {
             throw new RuntimeException(json_last_error_msg());
@@ -195,7 +195,7 @@ LUA
         // trick to handle uniqid collision
         $done = false;
         while (! $done) {
-            $sampleKey = $valueKey.':'.uniqid('', true);
+            $sampleKey = $valueKey . ':' . uniqid('', true);
             $done = $this->redis->set($sampleKey, $data['value'], ['NX', 'EX' => $data['maxAgeSeconds']]);
         }
     }
@@ -229,7 +229,7 @@ LUA
             ,
             [
                 $this->toMetricKey($data),
-                self::$prefix.Gauge::TYPE.self::PROMETHEUS_METRIC_KEYS_SUFFIX,
+                self::$prefix . Gauge::TYPE . self::PROMETHEUS_METRIC_KEYS_SUFFIX,
                 $this->getRedisCommand($data['command']),
                 json_encode($data['labelValues']),
                 $data['value'],
@@ -261,7 +261,7 @@ LUA
             ,
             [
                 $this->toMetricKey($data),
-                self::$prefix.Counter::TYPE.self::PROMETHEUS_METRIC_KEYS_SUFFIX,
+                self::$prefix . Counter::TYPE . self::PROMETHEUS_METRIC_KEYS_SUFFIX,
                 $this->getRedisCommand($data['command']),
                 $data['value'],
                 json_encode($data['labelValues']),
@@ -288,7 +288,7 @@ LUA
      */
     protected function collectHistograms(): array
     {
-        $keys = $this->redis->sMembers(self::$prefix.Histogram::TYPE.self::PROMETHEUS_METRIC_KEYS_SUFFIX);
+        $keys = $this->redis->sMembers(self::$prefix . Histogram::TYPE . self::PROMETHEUS_METRIC_KEYS_SUFFIX);
         sort($keys);
         $histograms = [];
         foreach ($keys as $key) {
@@ -329,7 +329,7 @@ LUA
                     $bucketKey = json_encode(['b' => $bucket, 'labelValues' => $labelValues]);
                     if (! isset($raw[$bucketKey])) {
                         $histogram['samples'][] = [
-                            'name' => $histogram['name'].'_bucket',
+                            'name' => $histogram['name'] . '_bucket',
                             'labelNames' => ['le'],
                             'labelValues' => array_merge($labelValues, [$bucket]),
                             'value' => $acc,
@@ -337,7 +337,7 @@ LUA
                     } else {
                         $acc += $raw[$bucketKey];
                         $histogram['samples'][] = [
-                            'name' => $histogram['name'].'_bucket',
+                            'name' => $histogram['name'] . '_bucket',
                             'labelNames' => ['le'],
                             'labelValues' => array_merge($labelValues, [$bucket]),
                             'value' => $acc,
@@ -347,7 +347,7 @@ LUA
 
                 // Add the count
                 $histogram['samples'][] = [
-                    'name' => $histogram['name'].'_count',
+                    'name' => $histogram['name'] . '_count',
                     'labelNames' => [],
                     'labelValues' => $labelValues,
                     'value' => $acc,
@@ -355,7 +355,7 @@ LUA
 
                 // Add the sum
                 $histogram['samples'][] = [
-                    'name' => $histogram['name'].'_sum',
+                    'name' => $histogram['name'] . '_sum',
                     'labelNames' => [],
                     'labelValues' => $labelValues,
                     'value' => $raw[json_encode(['b' => 'sum', 'labelValues' => $labelValues])],
@@ -381,9 +381,9 @@ LUA
      */
     protected function collectSummaries(): array
     {
-        $math = new Math;
-        $summaryKey = self::$prefix.Summary::TYPE.self::PROMETHEUS_METRIC_KEYS_SUFFIX;
-        $keys = $this->redis->keys($summaryKey.':*:meta');
+        $math = new Math();
+        $summaryKey = self::$prefix . Summary::TYPE . self::PROMETHEUS_METRIC_KEYS_SUFFIX;
+        $keys = $this->redis->keys($summaryKey . ':*:meta');
 
         $summaries = [];
         foreach ($keys as $metaKeyWithPrefix) {
@@ -404,7 +404,7 @@ LUA
                 'samples' => [],
             ];
 
-            $values = $this->redis->keys($summaryKey.':'.$metaData['name'].':*:value');
+            $values = $this->redis->keys($summaryKey . ':' . $metaData['name'] . ':*:value');
             foreach ($values as $valueKeyWithPrefix) {
                 $valueKey = $this->removePrefixFromKey($valueKeyWithPrefix);
                 $rawValue = $this->redis->get($valueKey);
@@ -416,7 +416,7 @@ LUA
                 $decodedLabelValues = $this->decodeLabelValues($encodedLabelValues);
 
                 $samples = [];
-                $sampleValues = $this->redis->keys($summaryKey.':'.$metaData['name'].':'.$encodedLabelValues.':value:*');
+                $sampleValues = $this->redis->keys($summaryKey . ':' . $metaData['name'] . ':' . $encodedLabelValues . ':value:*');
                 foreach ($sampleValues as $sampleValueWithPrefix) {
                     $sampleValue = $this->removePrefixFromKey($sampleValueWithPrefix);
                     $samples[] = (float) $this->redis->get($sampleValue);
@@ -445,7 +445,7 @@ LUA
 
                 // Add the count
                 $data['samples'][] = [
-                    'name' => $metaData['name'].'_count',
+                    'name' => $metaData['name'] . '_count',
                     'labelNames' => [],
                     'labelValues' => $decodedLabelValues,
                     'value' => count($samples),
@@ -453,7 +453,7 @@ LUA
 
                 // Add the sum
                 $data['samples'][] = [
-                    'name' => $metaData['name'].'_sum',
+                    'name' => $metaData['name'] . '_sum',
                     'labelNames' => [],
                     'labelValues' => $decodedLabelValues,
                     'value' => array_sum($samples),
@@ -479,7 +479,7 @@ LUA
      */
     protected function collectGauges(bool $sortMetrics = true): array
     {
-        $keys = $this->redis->sMembers(self::$prefix.Gauge::TYPE.self::PROMETHEUS_METRIC_KEYS_SUFFIX);
+        $keys = $this->redis->sMembers(self::$prefix . Gauge::TYPE . self::PROMETHEUS_METRIC_KEYS_SUFFIX);
         sort($keys);
         $gauges = [];
         foreach ($keys as $key) {
@@ -521,7 +521,7 @@ LUA
      */
     protected function collectCounters(bool $sortMetrics = true): array
     {
-        $keys = $this->redis->sMembers(self::$prefix.Counter::TYPE.self::PROMETHEUS_METRIC_KEYS_SUFFIX);
+        $keys = $this->redis->sMembers(self::$prefix . Counter::TYPE . self::PROMETHEUS_METRIC_KEYS_SUFFIX);
         sort($keys);
         $counters = [];
         foreach ($keys as $key) {
@@ -620,7 +620,7 @@ LUA
     protected function throwMetricJsonException(string $redisKey, ?string $metricName = null): void
     {
         $metricName = $metricName ?? 'unknown';
-        $message = 'Json error: '.json_last_error_msg().' redis key : '.$redisKey.' metric name: '.$metricName;
+        $message = 'Json error: ' . json_last_error_msg() . ' redis key : ' . $redisKey . ' metric name: ' . $metricName;
         throw new MetricJsonException($message, 0, null, $metricName);
     }
 }
