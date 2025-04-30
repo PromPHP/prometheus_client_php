@@ -5,29 +5,29 @@ declare(strict_types=1);
 namespace Prometheus\Storage\RedisClients;
 
 use Predis\Client;
-use Predis\Configuration\Option\Prefix;
 
 class Predis implements RedisClient
 {
     private const OPTIONS_MAP = [
-        RedisClient::OPT_PREFIX => Prefix::class,
+        RedisClient::OPT_PREFIX => 'prefix',
     ];
 
     private $client;
 
-    private $prefix = '';
+    private $options = [];
 
-    public function __construct(Client $redis)
+    public function __construct(Client $redis, array $options)
     {
         $this->client = $redis;
+
+        $this->options = $options;
     }
 
-    public static function create(array $options): self
+    public static function create(array $parameters, array $options): self
     {
-        $this->prefix = $options['prefix'] ?? '';
-        $redisClient = new Client($options, ['prefix' => $options['prefix'] ?? '']);
+        $redisClient = new Client($parameters, $options);
 
-        return new self($redisClient);
+        return new self($redisClient, $options);
     }
 
     public function getOption(int $option): mixed
@@ -38,19 +38,17 @@ class Predis implements RedisClient
 
         $mappedOption = self::OPTIONS_MAP[$option];
 
-        return $this->client->getOptions()->$mappedOption;
+        return $this->options[$mappedOption] ?? null;
     }
 
-    public function eval(string $script, array $args = [], int $num_keys = 0): mixed
+    public function eval(string $script, array $args = [], int $num_keys = 0): void
     {
-        return $this->client->eval($script, $num_keys, ...$args);
+        $this->client->eval($script, $num_keys, ...$args);
     }
 
-    public function set(string $key, mixed $value, mixed $options = null): string|bool
+    public function set(string $key, mixed $value, mixed $options = null): void
     {
-        $result = $this->client->set($key, $value, ...$this->flattenFlags($options));
-
-        return (string) $result;
+        $this->client->set($key, $value, ...$this->flattenFlags($options));
     }
 
     private function flattenFlags(array $flags): array
@@ -68,9 +66,9 @@ class Predis implements RedisClient
         return $result;
     }
 
-    public function setNx(string $key, mixed $value): bool
+    public function setNx(string $key, mixed $value): void
     {
-        return $this->client->setnx($key, $value) === 1;
+        $this->client->setnx($key, $value) === 1;
     }
 
     public function hSetNx(string $key, string $field, mixed $value): bool
@@ -98,16 +96,9 @@ class Predis implements RedisClient
         return $this->client->get($key);
     }
 
-    public function del(array|string $key, string ...$other_keys): int|false
+    public function del(array|string $key, string ...$other_keys): void
     {
-        return $this->client->del($key, ...$other_keys);
-    }
-
-    public function getPrefix(): string
-    {
-        $key = RedisClient::OPT_PREFIX;
-
-        return $this->prefix;
+        $this->client->del($key, ...$other_keys);
     }
 
     public function ensureOpenConnection(): void

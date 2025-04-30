@@ -12,11 +12,11 @@ interface RedisClient
 
     public function getOption(int $option): mixed;
 
-    public function eval(string $script, array $args = [], int $num_keys = 0): mixed;
+    public function eval(string $script, array $args = [], int $num_keys = 0): void;
 
-    public function set(string $key, mixed $value, mixed $options = null): string|bool;
+    public function set(string $key, mixed $value, mixed $options = null): void;
 
-    public function setNx(string $key, mixed $value): bool;
+    public function setNx(string $key, mixed $value): void;
 
     public function hSetNx(string $key, string $field, mixed $value): bool;
 
@@ -28,9 +28,7 @@ interface RedisClient
 
     public function get(string $key): mixed;
 
-    public function del(array|string $key, string ...$other_keys): int|false;
-
-    public function getPrefix(): string;
+    public function del(array|string $key, string ...$other_keys): void;
 
     public function ensureOpenConnection(): void;
 }
