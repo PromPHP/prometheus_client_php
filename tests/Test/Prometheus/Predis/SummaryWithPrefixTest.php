@@ -4,8 +4,7 @@ declare(strict_types=1);
 
 namespace Test\Prometheus\Predis;
 
-use Predis\Client;
-use Prometheus\Storage\Redis;
+use Prometheus\Storage\Predis;
 use Test\Prometheus\AbstractSummaryTest;
 
 /**
@@ -17,9 +16,7 @@ class SummaryWithPrefixTest extends AbstractSummaryTest
 {
     public function configureAdapter(): void
     {
-        $connection = new Client(['host' => REDIS_HOST, 'prefix' => 'prefix:']);
-
-        $this->adapter = Redis::fromExistingConnection($connection);
+        $this->adapter = new Predis(['host' => REDIS_HOST], ['prefix' => 'prefix:']);
         $this->adapter->wipeStorage();
     }
 }
