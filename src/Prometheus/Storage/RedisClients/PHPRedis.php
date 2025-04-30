@@ -38,19 +38,19 @@ class PHPRedis implements RedisClient
         return $this->redis->getOption($option);
     }
 
-    public function eval(string $script, array $args = [], int $num_keys = 0): mixed
+    public function eval(string $script, array $args = [], int $num_keys = 0): void
     {
-        return $this->redis->eval($script, $args, $num_keys);
+        $this->redis->eval($script, $args, $num_keys);
     }
 
-    public function set(string $key, mixed $value, mixed $options = null): string|bool
+    public function set(string $key, mixed $value, mixed $options = null): void
     {
-        return $this->redis->set($key, $value, $options);
+        $this->redis->set($key, $value, $options);
     }
 
-    public function setNx(string $key, mixed $value): bool
+    public function setNx(string $key, mixed $value): void
     {
-        return $this->redis->setNx($key, $value);
+        $this->redis->setNx($key, $value);
     }
 
     public function hSetNx(string $key, string $field, mixed $value): bool
@@ -78,18 +78,13 @@ class PHPRedis implements RedisClient
         return $this->redis->get($key);
     }
 
-    public function del(array|string $key, string ...$other_keys): int|false
+    public function del(array|string $key, string ...$other_keys): void
     {
         try {
-            return $this->redis->del($key, ...$other_keys);
+            $this->redis->del($key, ...$other_keys);
         } catch (\RedisException $e) {
             throw new RedisClientException($e->getMessage());
         }
-    }
-
-    public function getPrefix(): string
-    {
-        return $this->redis->_prefix('');
     }
 
     /**
