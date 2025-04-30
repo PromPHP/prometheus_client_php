@@ -45,6 +45,7 @@ class Predis extends AbstractRedis
     /**
      * Redis constructor.
      *
+     * @param  mixed[]  $parameters
      * @param  mixed[]  $options
      */
     public function __construct(array $parameters = [], array $options = [])
@@ -71,7 +72,7 @@ class Predis extends AbstractRedis
         ];
 
         $self = new self;
-        $self->redis = new PredisClient($client, self::$defaultParameters, $allOptions);
+        $self->redis = new PredisClient($client, $allOptions);
 
         return $self;
     }

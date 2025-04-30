@@ -56,7 +56,6 @@ abstract class AbstractRedis implements Adapter
         $searchPattern = '';
 
         $globalPrefix = $this->redis->getOption(RedisClient::OPT_PREFIX);
-        // @phpstan-ignore-next-line false positive, phpstan thinks getOptions returns int
         if (is_string($globalPrefix)) {
             $searchPattern .= $globalPrefix;
         }
@@ -183,7 +182,7 @@ LUA
         if ($json === false) {
             throw new RuntimeException(json_last_error_msg());
         }
-        $this->redis->setNx($metaKey, $json); /** @phpstan-ignore-line */
+        $this->redis->setNx($metaKey, $json);
 
         // store value key
         $valueKey = $summaryKey.':'.$this->valueKey($data);
@@ -191,7 +190,7 @@ LUA
         if ($json === false) {
             throw new RuntimeException(json_last_error_msg());
         }
-        $this->redis->setNx($valueKey, $json); /** @phpstan-ignore-line */
+        $this->redis->setNx($valueKey, $json);
 
         // trick to handle uniqid collision
         $done = false;
@@ -370,12 +369,10 @@ LUA
 
     protected function removePrefixFromKey(string $key): string
     {
-        // @phpstan-ignore-next-line false positive, phpstan thinks getOptions returns int
         if ($this->redis->getOption(RedisClient::OPT_PREFIX) === null) {
             return $key;
         }
 
-        // @phpstan-ignore-next-line false positive, phpstan thinks getOptions returns int
         return substr($key, strlen($this->redis->getOption(RedisClient::OPT_PREFIX)));
     }
 
