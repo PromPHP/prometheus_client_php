@@ -292,7 +292,7 @@ LUA
         sort($keys);
         $histograms = [];
         foreach ($keys as $key) {
-            $raw = $this->redis->hGetAll(ltrim($key, $this->redis->getOption(RedisClient::OPT_PREFIX)));
+            $raw = $this->redis->hGetAll(ltrim($key, $this->redis->prefix('')));
             if (! isset($raw['__meta'])) {
                 continue;
             }
@@ -373,7 +373,7 @@ LUA
             return $key;
         }
 
-        return substr($key, strlen($this->redis->getOption(RedisClient::OPT_PREFIX)));
+        return substr($key, strlen($this->redis->prefix('')));
     }
 
     /**
@@ -483,7 +483,7 @@ LUA
         sort($keys);
         $gauges = [];
         foreach ($keys as $key) {
-            $raw = $this->redis->hGetAll(ltrim($key, $this->redis->getOption(RedisClient::OPT_PREFIX)));
+            $raw = $this->redis->hGetAll(ltrim($key, $this->redis->prefix('')));
             if (! isset($raw['__meta'])) {
                 continue;
             }
@@ -525,7 +525,7 @@ LUA
         sort($keys);
         $counters = [];
         foreach ($keys as $key) {
-            $raw = $this->redis->hGetAll(ltrim($key, $this->redis->getOption(RedisClient::OPT_PREFIX)));
+            $raw = $this->redis->hGetAll(ltrim($key, $this->redis->prefix('')));
             if (! isset($raw['__meta'])) {
                 continue;
             }

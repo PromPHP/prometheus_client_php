@@ -45,5 +45,7 @@ interface RedisClient
      */
     public function del(array|string $key, string ...$other_keys): void;
 
+    public function prefix(string $key): string;
+
     public function ensureOpenConnection(): void;
 }
