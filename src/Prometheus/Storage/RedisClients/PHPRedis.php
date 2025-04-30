@@ -13,6 +13,9 @@ class PHPRedis implements RedisClient
      */
     private $redis;
 
+    /**
+     * @var mixed[]
+     */
     private $options = [];
 
     /**
@@ -20,12 +23,18 @@ class PHPRedis implements RedisClient
      */
     private $connectionInitialized = false;
 
+    /**
+     * @param  mixed[]  $options
+     */
     public function __construct(\Redis $redis, array $options)
     {
         $this->redis = $redis;
         $this->options = $options;
     }
 
+    /**
+     * @param  mixed[]  $options
+     */
     public static function create(array $options): self
     {
         $redis = new \Redis;
@@ -43,14 +52,14 @@ class PHPRedis implements RedisClient
         $this->redis->eval($script, $args, $num_keys);
     }
 
-    public function set(string $key, mixed $value, mixed $options = null): void
+    public function set(string $key, mixed $value, mixed $options = null): bool
     {
-        $this->redis->set($key, $value, $options);
+        return $this->redis->set($key, $value, $options);
     }
 
     public function setNx(string $key, mixed $value): void
     {
-        $this->redis->setNx($key, $value);
+        $this->redis->setNx($key, $value); /** @phpstan-ignore-line */
     }
 
     public function hSetNx(string $key, string $field, mixed $value): bool
@@ -58,7 +67,7 @@ class PHPRedis implements RedisClient
         return $this->redis->hSetNx($key, $field, $value);
     }
 
-    public function sMembers(string $key): array|false
+    public function sMembers(string $key): array
     {
         return $this->redis->sMembers($key);
     }

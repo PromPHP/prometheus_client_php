@@ -12,10 +12,19 @@ class Predis implements RedisClient
         RedisClient::OPT_PREFIX => 'prefix',
     ];
 
+    /**
+     * @var Client
+     */
     private $client;
 
+    /**
+     * @var mixed[]
+     */
     private $options = [];
 
+    /**
+     * @param  mixed[]  $options
+     */
     public function __construct(Client $redis, array $options)
     {
         $this->client = $redis;
@@ -23,6 +32,10 @@ class Predis implements RedisClient
         $this->options = $options;
     }
 
+    /**
+     * @param  mixed[]  $parameters
+     * @param  mixed[]  $options
+     */
     public static function create(array $parameters, array $options): self
     {
         $redisClient = new Client($parameters, $options);
@@ -46,11 +59,17 @@ class Predis implements RedisClient
         $this->client->eval($script, $num_keys, ...$args);
     }
 
-    public function set(string $key, mixed $value, mixed $options = null): void
+    public function set(string $key, mixed $value, mixed $options = null): bool
     {
-        $this->client->set($key, $value, ...$this->flattenFlags($options));
+        $result = $this->client->set($key, $value, ...$this->flattenFlags($options));
+
+        return (string) $result === 'OK';
     }
 
+    /**
+     * @param  array<int|string, mixed>  $flags
+     * @return mixed[]
+     */
     private function flattenFlags(array $flags): array
     {
         $result = [];
@@ -73,10 +92,10 @@ class Predis implements RedisClient
 
     public function hSetNx(string $key, string $field, mixed $value): bool
     {
-        return $this->hsetnx($key, $field, $value);
+        return $this->hSetNx($key, $field, $value);
     }
 
-    public function sMembers(string $key): array|false
+    public function sMembers(string $key): array
     {
         return $this->client->smembers($key);
     }
