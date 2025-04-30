@@ -47,7 +47,7 @@ class Redis extends AbstractRedis
             throw new StorageException('Connection to Redis server not established');
         }
 
-        $self = new self;
+        $self = new self();
         $self->redis = PHPRedis::fromExistingConnection($redis, self::$defaultOptions);
 
         return $self;

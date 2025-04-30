@@ -37,7 +37,7 @@ class PHPRedis implements RedisClient
      */
     public static function create(array $options): self
     {
-        $redis = new \Redis;
+        $redis = new \Redis();
 
         return new self($redis, $options);
     }
