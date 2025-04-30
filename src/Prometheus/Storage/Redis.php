@@ -48,7 +48,7 @@ class Redis extends AbstractRedis
         }
 
         $self = new self;
-        $self->redis = new PHPRedis($redis, self::$defaultOptions);
+        $self->redis = PHPRedis::fromExistingConnection($redis, self::$defaultOptions);
 
         return $self;
     }
