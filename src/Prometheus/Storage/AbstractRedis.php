@@ -67,7 +67,7 @@ abstract class AbstractRedis implements Adapter
             <<<'LUA'
 redis.replicate_commands()
 local cursor = "0"
-repeat 
+repeat
     local results = redis.call('SCAN', cursor, 'MATCH', ARGV[1])
     cursor = results[1]
     for _, key in ipairs(results[2]) do

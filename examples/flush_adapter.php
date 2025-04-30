@@ -10,6 +10,8 @@ if ($adapterName === 'redis') {
     define('REDIS_HOST', $_SERVER['REDIS_HOST'] ?? '127.0.0.1');
 
     $adapter = new Prometheus\Storage\Redis(['host' => REDIS_HOST]);
+} elseif ($adapterName === 'predis') {
+    $adapter = new Prometheus\Storage\Predis(['host' => $_SERVER['REDIS_HOST'] ?? '127.0.0.1']);
 } elseif ($adapterName === 'apc') {
     $adapter = new Prometheus\Storage\APC();
 } elseif ($adapterName === 'apcng') {
@@ -17,5 +19,7 @@ if ($adapterName === 'redis') {
 } elseif ($adapterName === 'in-memory') {
     $adapter = new Prometheus\Storage\InMemory();
 }
+
+
 
 $adapter->wipeStorage();
