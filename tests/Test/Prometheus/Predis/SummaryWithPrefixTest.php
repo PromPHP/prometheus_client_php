@@ -9,8 +9,6 @@ use Test\Prometheus\AbstractSummaryTest;
 
 /**
  * See https://prometheus.io/docs/instrumenting/exposition_formats/
- *
- * @requires extension redis
  */
 class SummaryWithPrefixTest extends AbstractSummaryTest
 {
