@@ -1,6 +1,6 @@
 <?php
 
-require __DIR__.'/../vendor/autoload.php';
+require __DIR__ . '/../vendor/autoload.php';
 
 $adapterName = $_GET['adapter'];
 
@@ -13,11 +13,11 @@ if ($adapterName === 'redis') {
 } elseif ($adapterName === 'predis') {
     $adapter = new Prometheus\Storage\Predis(['host' => $_SERVER['REDIS_HOST'] ?? '127.0.0.1']);
 } elseif ($adapterName === 'apc') {
-    $adapter = new Prometheus\Storage\APC;
+    $adapter = new Prometheus\Storage\APC();
 } elseif ($adapterName === 'apcng') {
-    $adapter = new Prometheus\Storage\APCng;
+    $adapter = new Prometheus\Storage\APCng();
 } elseif ($adapterName === 'in-memory') {
-    $adapter = new Prometheus\Storage\InMemory;
+    $adapter = new Prometheus\Storage\InMemory();
 }
 
 $adapter->wipeStorage();
