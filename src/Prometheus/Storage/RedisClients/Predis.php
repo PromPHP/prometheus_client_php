@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Prometheus\Storage\RedisClients;
 
+use InvalidArgumentException;
 use Predis\Client;
+use Prometheus\Exception\StorageException;
 
 class Predis implements RedisClient
 {
@@ -125,10 +127,17 @@ class Predis implements RedisClient
         $this->client->del($key, ...$other_keys);
     }
 
+    /**
+     * @throws StorageException
+     */
     public function ensureOpenConnection(): void
     {
         if ($this->client === null) {
-            $this->client = new Client($this->parameters, $this->options);
+            try {
+                $this->client = new Client($this->parameters, $this->options);
+            } catch (InvalidArgumentException $e) {
+                throw new StorageException('Cannot establish Redis Connection:' . $e->getMessage());
+            }
         }
     }
 }
