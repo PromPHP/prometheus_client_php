@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Prometheus\Storage;
 
+use InvalidArgumentException;
 use Predis\Client;
-use Prometheus\Exception\StorageException;
 use Prometheus\Storage\RedisClients\Predis as PredisClient;
 
 class Predis extends AbstractRedis
@@ -43,7 +43,7 @@ class Predis extends AbstractRedis
     private $options = [];
 
     /**
-     * Redis constructor.
+     * Predis constructor.
      *
      * @param  mixed[]  $parameters
      * @param  mixed[]  $options
@@ -56,23 +56,23 @@ class Predis extends AbstractRedis
     }
 
     /**
-     * @throws StorageException
+     * @throws InvalidArgumentException
      */
     public static function fromExistingConnection(Client $client): self
     {
-        $options = $client->getOptions();
-        $allOptions = [
-            'aggregate' => $options->aggregate,
-            'cluster' => $options->cluster,
-            'connections' => $options->connections,
-            'exceptions' => $options->exceptions,
-            'prefix' => $options->prefix,
-            'commands' => $options->commands,
-            'replication' => $options->replication,
+        $clientOptions = $client->getOptions();
+        $options = [
+            'aggregate' => $clientOptions->aggregate,
+            'cluster' => $clientOptions->cluster,
+            'connections' => $clientOptions->connections,
+            'exceptions' => $clientOptions->exceptions,
+            'prefix' => $clientOptions->prefix,
+            'commands' => $clientOptions->commands,
+            'replication' => $clientOptions->replication,
         ];
 
         $self = new self();
-        $self->redis = new PredisClient($client, $allOptions);
+        $self->redis = new PredisClient(self::$defaultParameters, $options, $client);
 
         return $self;
     }

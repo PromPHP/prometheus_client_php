@@ -13,9 +13,14 @@ class Predis implements RedisClient
     ];
 
     /**
-     * @var Client
+     * @var ?Client
      */
     private $client;
+
+    /**
+     * @var mixed[]
+     */
+    private $parameters = [];
 
     /**
      * @var mixed[]
@@ -23,12 +28,14 @@ class Predis implements RedisClient
     private $options = [];
 
     /**
+     * @param  mixed[]  $parameters
      * @param  mixed[]  $options
      */
-    public function __construct(Client $redis, array $options)
+    public function __construct(array $parameters, array $options, ?Client $redis = null)
     {
         $this->client = $redis;
 
+        $this->parameters = $parameters;
         $this->options = $options;
     }
 
@@ -38,9 +45,7 @@ class Predis implements RedisClient
      */
     public static function create(array $parameters, array $options): self
     {
-        $redisClient = new Client($parameters, $options);
-
-        return new self($redisClient, $options);
+        return new self($parameters, $options);
     }
 
     public function getOption(int $option): mixed
@@ -122,6 +127,8 @@ class Predis implements RedisClient
 
     public function ensureOpenConnection(): void
     {
-        // Predis doesn't require to trigger connection
+        if ($this->client === null) {
+            $this->client = new Client($this->parameters, $this->options);
+        }
     }
 }
