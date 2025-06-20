@@ -438,7 +438,7 @@ class APCng implements Adapter
         if (count($labelValues) > 0) {
             $lastIndex = array_key_last($labelValues);
             $currentValue = array_pop($labelValues);
-            if ($currentValue != null) {
+            if ($currentValue !== null) {
                 foreach ($this->buildPermutationTree($labelValues) as $prefix) {
                     foreach ($currentValue as $value) {
                         yield $prefix + [$lastIndex => $value];
