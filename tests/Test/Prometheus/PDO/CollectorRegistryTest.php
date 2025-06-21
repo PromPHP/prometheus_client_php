@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace Test\Prometheus\PDO;
 
 use Prometheus\Storage\PDO;
-use Test\Prometheus\AbstractCollectorRegistryTest;
+use Test\Prometheus\AbstractCollectorRegistryTestCase;
 
-class CollectorRegistryTest extends AbstractCollectorRegistryTest
+class CollectorRegistryTest extends AbstractCollectorRegistryTestCase
 {
     use PdoCredentialsTrait;
 

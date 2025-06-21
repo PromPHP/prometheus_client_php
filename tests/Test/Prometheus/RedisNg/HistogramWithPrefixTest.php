@@ -6,13 +6,13 @@ namespace Test\Prometheus\RedisNg;
 
 use Prometheus\Storage\Redis;
 use Prometheus\Storage\RedisNg;
-use Test\Prometheus\AbstractHistogramTest;
+use Test\Prometheus\AbstractHistogramTestCase;
 
 /**
  * See https://prometheus.io/docs/instrumenting/exposition_formats/
  * @requires extension redis
  */
-class HistogramWithPrefixTest extends AbstractHistogramTest
+class HistogramWithPrefixTest extends AbstractHistogramTestCase
 {
     public function configureAdapter(): void
     {

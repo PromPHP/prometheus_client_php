@@ -6,13 +6,13 @@ namespace Test\Prometheus\RedisNg;
 
 use Prometheus\Storage\Redis;
 use Prometheus\Storage\RedisNg;
-use Test\Prometheus\AbstractGaugeTest;
+use Test\Prometheus\AbstractGaugeTestCase;
 
 /**
  * See https://prometheus.io/docs/instrumenting/exposition_formats/
  * @requires extension redis
  */
-class GaugeTest extends AbstractGaugeTest
+class GaugeTest extends AbstractGaugeTestCase
 {
     public function configureAdapter(): void
     {

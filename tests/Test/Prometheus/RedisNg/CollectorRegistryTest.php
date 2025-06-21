@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace Test\Prometheus\RedisNg;
 
 use Prometheus\Storage\Redis;
-use Test\Prometheus\AbstractCollectorRegistryTest;
+use Test\Prometheus\AbstractCollectorRegistryTestCase;
 
 /**
  * @requires extension redis
  */
-class CollectorRegistryTest extends AbstractCollectorRegistryTest
+class CollectorRegistryTest extends AbstractCollectorRegistryTestCase
 {
     public function configureAdapter(): void
     {
