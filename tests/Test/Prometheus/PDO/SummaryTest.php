@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace Test\Prometheus\PDO;
 
 use Prometheus\Storage\PDO;
-use Test\Prometheus\AbstractSummaryTest;
+use Test\Prometheus\AbstractSummaryTestCase;
 
 /**
  * See https://prometheus.io/docs/instrumenting/exposition_formats/
  */
-class SummaryTest extends AbstractSummaryTest
+class SummaryTest extends AbstractSummaryTestCase
 {
     use PdoCredentialsTrait;
 

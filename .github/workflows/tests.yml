@@ -62,7 +62,7 @@ jobs:
           coverage: none
 
       - name: Install dependencies
-        run: composer update --prefer-dist --no-interaction --no-suggest
+        run: composer update --prefer-dist --no-interaction
 
       - name: Start Redis
         uses: supercharge/redis-github-action@1.1.0

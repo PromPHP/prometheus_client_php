@@ -28,7 +28,7 @@ jobs:
           coverage: none
 
       - name: Install dependencies
-        run: composer install --prefer-dist --no-interaction --no-suggest
+        run: composer install --prefer-dist --no-interaction
       - name: Run PHP Code Sniffer
         run: ./vendor/bin/phpcs
 
@@ -58,6 +58,6 @@ jobs:
           tools: "cs2pr"
 
       - name: Install dependencies
-        run: composer install --prefer-dist --no-interaction --no-suggest
+        run: composer install --prefer-dist --no-interaction
       - name: Run PHPStan
         run: "vendor/bin/phpstan analyse --autoload-file tests/bootstrap.php --error-format=checkstyle | cs2pr"

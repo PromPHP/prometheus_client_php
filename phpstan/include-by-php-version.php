@@ -4,10 +4,6 @@ declare(strict_types=1);
 
 $includes = [];
 
-if (PHP_VERSION_ID >= 70400) {
-    $includes[] = __DIR__ . '/php-74.neon';
-}
-
 if (PHP_VERSION_ID >= 80000) {
     $includes[] = __DIR__ . '/php-80.neon';
 }

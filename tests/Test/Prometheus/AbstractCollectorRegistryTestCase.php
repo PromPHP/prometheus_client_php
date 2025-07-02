@@ -11,7 +11,7 @@ use Prometheus\Storage\Adapter;
 use Prometheus\Exception\MetricsRegistrationException;
 use Prometheus\Exception\MetricNotFoundException;
 
-abstract class AbstractCollectorRegistryTest extends TestCase
+abstract class AbstractCollectorRegistryTestCase extends TestCase
 {
     /**
      * @var Adapter

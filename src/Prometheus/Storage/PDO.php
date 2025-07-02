@@ -597,7 +597,7 @@ SQL;
 
         $this->database->query($sql);
 
-        $hash_size = $driver == 'sqlite' ? 32 : 64;
+        $hash_size = $driver === 'sqlite' ? 32 : 64;
 
         switch ($driver) {
             case 'pgsql':
@@ -627,7 +627,7 @@ SQL;
 
         $this->database->query($sql);
 
-        $timestamp_type = $driver == 'sqlite' ? 'timestamp' : 'int';
+        $timestamp_type = $driver === 'sqlite' ? 'timestamp' : 'int';
         $sqlIndex = null;
 
         switch ($driver) {

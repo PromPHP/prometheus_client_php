@@ -428,7 +428,7 @@ LUA
             $allLabelValues = [];
             foreach (array_keys($raw) as $k) {
                 $d = json_decode($k, true);
-                if ($d['b'] == 'sum') {
+                if ($d['b'] === 'sum') {
                     continue;
                 }
                 $allLabelValues[] = $d['labelValues'];
@@ -534,9 +534,6 @@ LUA
             $samples = [];
             foreach ($values as $valueKey) {
                 $rawValue = explode(":", $valueKey);
-                if ($rawValue === false) {
-                    continue;
-                }
                 $encodedLabelValues = $rawValue[2];
                 $decodedLabelValues = $this->decodeLabelValues($encodedLabelValues);
 

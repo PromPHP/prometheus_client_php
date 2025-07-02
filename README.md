@@ -143,7 +143,7 @@ composer require promphp/prometheus_push_gateway_php
 
 Start a Redis instance:
 ```
-docker-compose up redis
+docker compose up redis
 ```
 
 Run the tests:
@@ -157,16 +157,16 @@ composer install
 
 ## Black box testing
 
-Just start the nginx, fpm & Redis setup with docker-compose:
+Just start the nginx, fpm & Redis setup with Docker Compose:
 ```
-docker-compose up
+docker compose up
 ```
 Pick the adapter you want to test.
 
 ```
-docker-compose run phpunit env ADAPTER=apc vendor/bin/phpunit tests/Test/
-docker-compose run phpunit env ADAPTER=apcng vendor/bin/phpunit tests/Test/
-docker-compose run phpunit env ADAPTER=redis vendor/bin/phpunit tests/Test/
+docker compose run phpunit env ADAPTER=apc vendor/bin/phpunit tests/Test/
+docker compose run phpunit env ADAPTER=apcng vendor/bin/phpunit tests/Test/
+docker compose run phpunit env ADAPTER=redis vendor/bin/phpunit tests/Test/
 ```
 
 ## Performance testing
@@ -178,6 +178,6 @@ phpunit vendor/bin/phpunit tests/Test/ --group Performance
 
 The test can also be run inside a container.
 ```
-docker-compose up
-docker-compose run phpunit vendor/bin/phpunit tests/Test/ --group Performance
+docker compose up
+docker compose run phpunit vendor/bin/phpunit tests/Test/ --group Performance
 ```

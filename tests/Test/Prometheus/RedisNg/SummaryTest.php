@@ -6,13 +6,13 @@ namespace Test\Prometheus\RedisNg;
 
 use Prometheus\Storage\Redis;
 use Prometheus\Storage\RedisNg;
-use Test\Prometheus\AbstractSummaryTest;
+use Test\Prometheus\AbstractSummaryTestCase;
 
 /**
  * See https://prometheus.io/docs/instrumenting/exposition_formats/
  * @requires extension redis
  */
-class SummaryTest extends AbstractSummaryTest
+class SummaryTest extends AbstractSummaryTestCase
 {
     public function configureAdapter(): void
     {
