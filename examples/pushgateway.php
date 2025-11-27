@@ -3,6 +3,7 @@ require __DIR__ . '/../vendor/autoload.php';
 
 use Prometheus\Storage\Redis;
 use Prometheus\CollectorRegistry;
+use Prometheus\Storage\RedisCluster;
 
 $adapter = $_GET['adapter'];
 
@@ -13,6 +14,19 @@ if ($adapter === 'redis') {
     $adapter = new Prometheus\Storage\APC();
 } elseif ($adapter === 'in-memory') {
     $adapter = new Prometheus\Storage\InMemory();
+} elseif ($adapter === 'redis-cluster') {
+    $instanceID = !empty($_SERVER['SERVER_ADDR']) ? $_SERVER['SERVER_ADDR'] : '127.0.0.1';
+    RedisCluster::setDefaultOptions(array(
+        'redis_list' => ['tcp://127.0.0.1:7001', 'tcp://127.0.0.1:7002', 'tcp://127.0.0.1:7003'],
+        'cluster' => 'redis',
+        'password' => null,
+        'timeout' => 0.1,
+        'read_timeout' => 10,
+        'persistent' => false
+    ));
+    RedisCluster::setPrefix('TEST_PROMETHEUS:' . $instanceID);
+    RedisCluster::setHashTag('TEST_PROMETHEUS');
+    $adapter = new Prometheus\Storage\RedisCluster();
 }
 
 $registry = new CollectorRegistry($adapter);
@@ -21,4 +35,4 @@ $counter = $registry->registerCounter('test', 'some_counter', 'it increases', ['
 $counter->incBy(6, ['blue']);
 
 $pushGateway = new \Prometheus\PushGateway('192.168.59.100:9091');
-$pushGateway->push($registry, 'my_job', array('instance'=>'foo'));
+$pushGateway->push($registry, 'my_job', array('instance' => 'foo'));
