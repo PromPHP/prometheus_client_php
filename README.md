@@ -1,6 +1,7 @@
 # A prometheus client library written in PHP
 
 ![Tests](https://github.com/promphp/prometheus_client_php/workflows/Tests/badge.svg)
+[![Slack](https://img.shields.io/badge/Slack-join%20chat-brightgreen)](https://join.slack.com/t/promphp/shared_invite/zt-iqbocinr-R809BvkEhjuC9W6RRoOofA)
 
 This library uses Redis or APCu to do the client side aggregation.
 If using Redis, we recommend running a local Redis instance next to your PHP workers.
