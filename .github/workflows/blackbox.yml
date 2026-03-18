@@ -40,6 +40,8 @@ jobs:
         run: docker compose run phpunit env ADAPTER=apcng vendor/bin/phpunit tests/Test/
       - name: Run Blackbox with Redis
         run: docker compose run phpunit env ADAPTER=redis vendor/bin/phpunit tests/Test/
+      - name: Run Blackbox with Predis
+        run: docker compose run phpunit env ADAPTER=predis vendor/bin/phpunit tests/Test/
 
 
 
