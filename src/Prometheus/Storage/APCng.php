@@ -825,7 +825,7 @@ class APCng implements Adapter
      */
     private function convertToIncrementalInteger($val): int
     {
-        return intval($val * $this->precisionMultiplier);
+        return @intval($val * $this->precisionMultiplier);
     }
 
     private function convertIncrementalIntegerToFloat(int $val): float
