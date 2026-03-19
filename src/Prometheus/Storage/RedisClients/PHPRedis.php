@@ -73,11 +73,6 @@ class PHPRedis implements RedisClient
         $this->redis->setNx($key, $value); /** @phpstan-ignore-line */
     }
 
-    public function hSetNx(string $key, string $field, mixed $value): bool
-    {
-        return $this->redis->hSetNx($key, $field, $value);
-    }
-
     public function sMembers(string $key): array
     {
         return $this->redis->sMembers($key);

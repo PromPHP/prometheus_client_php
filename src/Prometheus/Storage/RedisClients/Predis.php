@@ -97,11 +97,6 @@ class Predis implements RedisClient
         $this->client->setnx($key, $value);
     }
 
-    public function hSetNx(string $key, string $field, mixed $value): bool
-    {
-        return $this->hSetNx($key, $field, $value);
-    }
-
     public function sMembers(string $key): array
     {
         return $this->client->smembers($key);

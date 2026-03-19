@@ -6,9 +6,9 @@ namespace Prometheus\Storage\RedisClients;
 
 interface RedisClient
 {
-    const OPT_PREFIX = 2;
+    public const OPT_PREFIX = 2;
 
-    const OPT_READ_TIMEOUT = 3;
+    public const OPT_READ_TIMEOUT = 3;
 
     public function getOption(int $option): mixed;
 
@@ -20,8 +20,6 @@ interface RedisClient
     public function set(string $key, mixed $value, mixed $options = null): bool;
 
     public function setNx(string $key, mixed $value): void;
-
-    public function hSetNx(string $key, string $field, mixed $value): bool;
 
     /**
      * @return string[]
