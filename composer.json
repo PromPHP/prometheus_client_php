@@ -15,7 +15,7 @@
         "lkaemmerling/prometheus_client_php": "*"
     },
     "require": {
-        "php": "^7.4|^8.0",
+        "php": "^8.2",
         "ext-json": "*"
     },
     "require-dev": {
@@ -33,7 +33,7 @@
         "ext-apc": "Required if using APCu.",
         "ext-pdo": "Required if using PDO.",
         "promphp/prometheus_push_gateway_php": "An easy client for using Prometheus PushGateway.",
-        "symfony/polyfill-apcu": "Required if you use APCu on PHP8.0+"
+        "symfony/polyfill-apcu": "Required if you use APCu."
     },
     "autoload": {
         "psr-4": {
