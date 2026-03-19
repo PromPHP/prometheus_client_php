@@ -117,9 +117,9 @@ class Predis implements RedisClient
         return $this->client->keys($pattern);
     }
 
-    public function get(string $key): mixed
+    public function get(string $key): string|false
     {
-        return $this->client->get($key);
+        return $this->client->get($key) ?? false;
     }
 
     public function del(array|string $key, string ...$other_keys): void

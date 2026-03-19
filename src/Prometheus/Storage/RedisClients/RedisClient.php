@@ -36,7 +36,7 @@ interface RedisClient
      */
     public function keys(string $pattern);
 
-    public function get(string $key): mixed;
+    public function get(string $key): string|false;
 
     /**
      * @param  string|string[]  $key

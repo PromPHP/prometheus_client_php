@@ -106,7 +106,7 @@ class PHPRedis implements RedisClient
         return $this->redis->keys($pattern);
     }
 
-    public function get(string $key): mixed
+    public function get(string $key): string|false
     {
         return $this->redis->get($key);
     }
