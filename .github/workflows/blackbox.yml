@@ -22,7 +22,7 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: 8.4
+          php-version: 8.2
           coverage: none
       - name: Login to Docker Hub
         continue-on-error: true
@@ -41,6 +41,3 @@ jobs:
         run: docker compose run phpunit env ADAPTER=apcng vendor/bin/phpunit tests/Test/
       - name: Run Blackbox with Redis
         run: docker compose run phpunit env ADAPTER=redis vendor/bin/phpunit tests/Test/
-
-
-
