@@ -68,6 +68,7 @@ class PHPRedis implements RedisClient
 
     public function stripKeyPrefix(string $key): string
     {
+        /** @var mixed $prefix */
         $prefix = $this->redis->getOption(\Redis::OPT_PREFIX);
         if (!is_string($prefix) || $prefix === '') {
             return $key;
