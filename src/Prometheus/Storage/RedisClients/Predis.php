@@ -94,7 +94,7 @@ class Predis implements RedisClient
 
     public function setNx(string $key, mixed $value): void
     {
-        $this->client->setnx($key, $value) === 1;
+        $this->client->setnx($key, $value);
     }
 
     public function hSetNx(string $key, string $field, mixed $value): bool
