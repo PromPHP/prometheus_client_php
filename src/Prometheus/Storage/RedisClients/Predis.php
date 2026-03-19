@@ -66,14 +66,23 @@ class Predis implements RedisClient
         return $key;
     }
 
+    private function getClient(): Client
+    {
+        if ($this->client === null) {
+            throw new StorageException('Redis connection not initialized. Call ensureOpenConnection() first.');
+        }
+
+        return $this->client;
+    }
+
     public function eval(string $script, array $args = [], int $num_keys = 0): void
     {
-        $this->client->eval($script, $num_keys, ...$args);
+        $this->getClient()->eval($script, $num_keys, ...$args);
     }
 
     public function set(string $key, mixed $value, mixed $options = null): bool
     {
-        $result = $this->client->set($key, $value, ...$this->flattenFlags($options));
+        $result = $this->getClient()->set($key, $value, ...$this->flattenFlags($options));
 
         return (string) $result === 'OK';
     }
@@ -99,32 +108,32 @@ class Predis implements RedisClient
 
     public function setNx(string $key, mixed $value): void
     {
-        $this->client->setnx($key, $value);
+        $this->getClient()->setnx($key, $value);
     }
 
     public function sMembers(string $key): array
     {
-        return $this->client->smembers($key);
+        return $this->getClient()->smembers($key);
     }
 
     public function hGetAll(string $key): array|false
     {
-        return $this->client->hgetall($key);
+        return $this->getClient()->hgetall($key);
     }
 
     public function keys(string $pattern)
     {
-        return $this->client->keys($pattern);
+        return $this->getClient()->keys($pattern);
     }
 
     public function get(string $key): string|false
     {
-        return $this->client->get($key) ?? false;
+        return $this->getClient()->get($key) ?? false;
     }
 
     public function del(array|string $key, string ...$other_keys): void
     {
-        $this->client->del($key, ...$other_keys);
+        $this->getClient()->del($key, ...$other_keys);
     }
 
     /**
