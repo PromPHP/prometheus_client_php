@@ -18,8 +18,7 @@ class SummaryTest extends AbstractSummaryTest
         $this->adapter->wipeStorage();
     }
 
-    /** @test  */
-    public function it_should_observe_with_labels(): void
+    public function itShouldObserveWithLabels(): void
     {
         parent::itShouldObserveWithLabels();
     }
