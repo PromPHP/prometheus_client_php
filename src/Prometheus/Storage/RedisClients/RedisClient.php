@@ -8,8 +8,6 @@ interface RedisClient
 {
     public const OPT_PREFIX = 2;
 
-    public const OPT_READ_TIMEOUT = 3;
-
     public function getOption(int $option): mixed;
 
     /**

@@ -130,7 +130,7 @@ class PHPRedis implements RedisClient
             $this->redis->select($this->options['database']);
         }
 
-        $this->redis->setOption(RedisClient::OPT_READ_TIMEOUT, $this->options['read_timeout']);
+        $this->redis->setOption(\Redis::OPT_READ_TIMEOUT, $this->options['read_timeout']);
 
         $this->connectionInitialized = true;
     }
