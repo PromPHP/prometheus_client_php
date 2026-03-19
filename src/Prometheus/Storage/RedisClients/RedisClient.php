@@ -10,8 +10,6 @@ interface RedisClient
 
     public function getOption(string $option): mixed;
 
-    public function stripKeyPrefix(string $key): string;
-
     /**
      * @param  mixed[]  $args
      */
