@@ -6,9 +6,9 @@ namespace Prometheus\Storage\RedisClients;
 
 interface RedisClient
 {
-    public const OPT_PREFIX = 2;
+    public const OPT_PREFIX = 'prefix';
 
-    public function getOption(int $option): mixed;
+    public function getOption(string $option): mixed;
 
     /**
      * @param  mixed[]  $args

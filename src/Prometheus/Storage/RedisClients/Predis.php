@@ -50,7 +50,7 @@ class Predis implements RedisClient
         return new self($parameters, $options);
     }
 
-    public function getOption(int $option): mixed
+    public function getOption(string $option): mixed
     {
         if (! isset(self::OPTIONS_MAP[$option])) {
             return null;
