@@ -61,6 +61,11 @@ class Predis implements RedisClient
         return $this->options[$mappedOption] ?? null;
     }
 
+    public function stripKeyPrefix(string $key): string
+    {
+        return $key;
+    }
+
     public function eval(string $script, array $args = [], int $num_keys = 0): void
     {
         $this->client->eval($script, $num_keys, ...$args);
