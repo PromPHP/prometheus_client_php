@@ -136,7 +136,7 @@ composer require promphp/prometheus_push_gateway_php
 
 ### Dependencies
 
-* PHP ^7.2 | ^8.0
+* PHP ^8.2 (only [supported PHP versions](https://www.php.net/supported-versions.php) are supported)
 * PHP Redis extension
 * PHP APCu extension
 * [Composer](https://getcomposer.org/doc/00-intro.md#installation-linux-unix-osx)
