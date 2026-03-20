@@ -14,7 +14,7 @@ use Prometheus\Storage\Adapter;
 /**
  * See https://prometheus.io/docs/instrumenting/exposition_formats/
  */
-abstract class AbstractGaugeTest extends TestCase
+abstract class AbstractGaugeTestCase extends TestCase
 {
     /**
      * @var Adapter

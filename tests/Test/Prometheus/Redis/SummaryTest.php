@@ -5,13 +5,13 @@ declare(strict_types=1);
 namespace Test\Prometheus\Redis;
 
 use Prometheus\Storage\Redis;
-use Test\Prometheus\AbstractSummaryTest;
+use Test\Prometheus\AbstractSummaryTestCase;
 
 /**
  * See https://prometheus.io/docs/instrumenting/exposition_formats/
  * @requires extension redis
  */
-class SummaryTest extends AbstractSummaryTest
+class SummaryTest extends AbstractSummaryTestCase
 {
     public function configureAdapter(): void
     {

@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace Test\Prometheus\InMemory;
 
 use Prometheus\Storage\InMemory;
-use Test\Prometheus\AbstractCollectorRegistryTest;
+use Test\Prometheus\AbstractCollectorRegistryTestCase;
 
-class CollectorRegistryTest extends AbstractCollectorRegistryTest
+class CollectorRegistryTest extends AbstractCollectorRegistryTestCase
 {
     public function configureAdapter(): void
     {

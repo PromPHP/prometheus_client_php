@@ -15,7 +15,7 @@ use Test\Prometheus\Helper\AlmostIdenticalFloatArraysAssertionTrait;
 /**
  * See https://prometheus.io/docs/instrumenting/exposition_formats/
  */
-abstract class AbstractHistogramTest extends TestCase
+abstract class AbstractHistogramTestCase extends TestCase
 {
     use AlmostIdenticalFloatArraysAssertionTrait;
 

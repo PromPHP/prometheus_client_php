@@ -429,7 +429,7 @@ LUA
             $allLabelValues = [];
             foreach (array_keys($raw) as $k) {
                 $d = json_decode($k, true);
-                if ($d['b'] == 'sum') {
+                if ($d['b'] === 'sum') {
                     continue;
                 }
                 $allLabelValues[] = $d['labelValues'];

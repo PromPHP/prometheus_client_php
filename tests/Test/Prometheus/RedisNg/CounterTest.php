@@ -5,13 +5,13 @@ declare(strict_types=1);
 namespace Test\Prometheus\RedisNg;
 
 use Prometheus\Storage\RedisNg;
-use Test\Prometheus\AbstractCounterTest;
+use Test\Prometheus\AbstractCounterTestCase;
 
 /**
  * See https://prometheus.io/docs/instrumenting/exposition_formats/
  * @requires extension redis
  */
-class CounterTest extends AbstractCounterTest
+class CounterTest extends AbstractCounterTestCase
 {
     public function configureAdapter(): void
     {

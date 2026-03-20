@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace Test\Prometheus\APCng;
 
 use Prometheus\Storage\APCng;
-use Test\Prometheus\AbstractCollectorRegistryTest;
+use Test\Prometheus\AbstractCollectorRegistryTestCase;
 
 /**
  * @requires extension apcu
  */
-class CollectorRegistryTest extends AbstractCollectorRegistryTest
+class CollectorRegistryTest extends AbstractCollectorRegistryTestCase
 {
     public function configureAdapter(): void
     {

@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace Test\Prometheus\PDO;
 
 use Prometheus\Storage\PDO;
-use Test\Prometheus\AbstractCounterTest;
+use Test\Prometheus\AbstractCounterTestCase;
 
 /**
  * See https://prometheus.io/docs/instrumenting/exposition_formats/
  */
-class CounterTest extends AbstractCounterTest
+class CounterTest extends AbstractCounterTestCase
 {
     use PdoCredentialsTrait;
 

@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace Test\Prometheus\PDO;
 
 use Prometheus\Storage\PDO;
-use Test\Prometheus\AbstractHistogramTest;
+use Test\Prometheus\AbstractHistogramTestCase;
 
 /**
  * See https://prometheus.io/docs/instrumenting/exposition_formats/
  */
-class HistogramTest extends AbstractHistogramTest
+class HistogramTest extends AbstractHistogramTestCase
 {
     use PdoCredentialsTrait;
 
