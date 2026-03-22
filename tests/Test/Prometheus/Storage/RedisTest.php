@@ -74,7 +74,7 @@ class RedisTest extends TestCase
         self::assertThat(
             $redisKeys,
             self::equalTo([
-                'not a prometheus metric key'
+                'not a prometheus metric key',
             ])
         );
     }
