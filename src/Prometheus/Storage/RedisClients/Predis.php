@@ -140,7 +140,7 @@ class Predis implements RedisClient
             try {
                 $this->client = new Client($this->parameters, $this->options);
             } catch (InvalidArgumentException $e) {
-                throw new StorageException('Cannot establish Redis Connection:' . $e->getMessage());
+                throw new StorageException('Cannot establish Redis Connection:' . $e->getMessage(), 0, $e);
             }
         }
     }
