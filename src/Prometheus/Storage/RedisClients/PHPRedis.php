@@ -55,7 +55,10 @@ class PHPRedis implements RedisClient
 
     public function getPrefix(): ?string
     {
-        return $this->redis->getOption(\Redis::OPT_PREFIX) ?: null;
+        /** @var mixed $prefix */
+        $prefix = $this->redis->getOption(\Redis::OPT_PREFIX);
+
+        return is_string($prefix) && $prefix !== '' ? $prefix : null;
     }
 
     public function eval(string $script, array $args = [], int $num_keys = 0): void

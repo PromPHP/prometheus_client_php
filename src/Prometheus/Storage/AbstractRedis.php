@@ -22,7 +22,9 @@ abstract class AbstractRedis implements Adapter
     const PROMETHEUS_METRIC_KEYS_SUFFIX = '_METRIC_KEYS';
 
     /**
-     * Global prefix shared across all adapters.
+     * Intentionally shared across all subclasses via self::$prefix.
+     * Prefix is a global concern and mixing adapters,
+     * with different prefixes in one application is not supported.
      *
      * @var string
      */
