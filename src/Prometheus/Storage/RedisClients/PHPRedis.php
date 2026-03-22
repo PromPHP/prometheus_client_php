@@ -91,7 +91,7 @@ class PHPRedis implements RedisClient
         return $this->redis->hGetAll($key);
     }
 
-    public function keys(string $pattern)
+    public function keys(string $pattern): array
     {
         return $this->redis->keys($pattern);
     }

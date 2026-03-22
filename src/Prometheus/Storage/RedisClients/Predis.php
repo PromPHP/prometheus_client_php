@@ -116,7 +116,7 @@ class Predis implements RedisClient
         return $this->getClient()->hgetall($key);
     }
 
-    public function keys(string $pattern)
+    public function keys(string $pattern): array
     {
         return $this->getClient()->keys($pattern);
     }

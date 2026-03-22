@@ -32,7 +32,7 @@ interface RedisClient
     /**
      * @return string[]
      */
-    public function keys(string $pattern);
+    public function keys(string $pattern): array;
 
     public function get(string $key): string|false;
 
