@@ -101,6 +101,9 @@ class PHPRedis implements RedisClient
         return $this->redis->get($key);
     }
 
+    /**
+     * @throws RedisClientException
+     */
     public function del(array|string $key, string ...$other_keys): void
     {
         try {

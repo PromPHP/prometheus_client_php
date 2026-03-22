@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Prometheus\Storage;
 
-use InvalidArgumentException;
 use Predis\Client;
 use Prometheus\Storage\RedisClients\Predis as PredisClient;
 
@@ -55,24 +54,10 @@ class Predis extends AbstractRedis
         $this->redis = PredisClient::create($this->parameters, $this->options);
     }
 
-    /**
-     * @throws InvalidArgumentException
-     */
     public static function fromExistingConnection(Client $client): self
     {
-        $clientOptions = $client->getOptions();
-        $options = [
-            'aggregate' => $clientOptions->aggregate,
-            'cluster' => $clientOptions->cluster,
-            'connections' => $clientOptions->connections,
-            'exceptions' => $clientOptions->exceptions,
-            'prefix' => $clientOptions->prefix,
-            'commands' => $clientOptions->commands,
-            'replication' => $clientOptions->replication,
-        ];
-
         $self = new self();
-        $self->redis = new PredisClient(self::$defaultParameters, $options, $client);
+        $self->redis = PredisClient::fromExistingConnection($client);
 
         return $self;
     }

@@ -14,40 +14,30 @@ class Predis implements RedisClient
         RedisClient::OPT_PREFIX => 'prefix',
     ];
 
-    /**
-     * @var ?Client
-     */
-    private $client;
+    private Client $client;
 
-    /**
-     * @var mixed[]
-     */
-    private $parameters = [];
-
-    /**
-     * @var mixed[]
-     */
-    private $options = [];
-
-    /**
-     * @param  mixed[]  $parameters
-     * @param  mixed[]  $options
-     */
-    public function __construct(array $parameters, array $options, ?Client $redis = null)
+    public function __construct(Client $client)
     {
-        $this->client = $redis;
-
-        $this->parameters = $parameters;
-        $this->options = $options;
+        $this->client = $client;
     }
 
     /**
      * @param  mixed[]  $parameters
      * @param  mixed[]  $options
+     * @throws StorageException
      */
     public static function create(array $parameters, array $options): self
     {
-        return new self($parameters, $options);
+        try {
+            return new self(new Client($parameters, $options));
+        } catch (InvalidArgumentException $e) {
+            throw new StorageException('Invalid Redis client configuration: ' . $e->getMessage(), 0, $e);
+        }
+    }
+
+    public static function fromExistingConnection(Client $client): self
+    {
+        return new self($client);
     }
 
     public function getOption(string $option): mixed
@@ -57,27 +47,21 @@ class Predis implements RedisClient
         }
 
         $mappedOption = self::OPTIONS_MAP[$option];
+        $value = $this->client->getOptions()->$mappedOption;
 
-        return $this->options[$mappedOption] ?? null;
-    }
-
-    private function getClient(): Client
-    {
-        if ($this->client === null) {
-            throw new StorageException('Redis connection not initialized. Call ensureOpenConnection() first.');
-        }
-
-        return $this->client;
+        return $value instanceof \Predis\Command\Processor\KeyPrefixProcessor
+            ? $value->getPrefix()
+            : $value;
     }
 
     public function eval(string $script, array $args = [], int $num_keys = 0): void
     {
-        $this->getClient()->eval($script, $num_keys, ...$args);
+        $this->client->eval($script, $num_keys, ...$args);
     }
 
     public function set(string $key, mixed $value, mixed $options = null): bool
     {
-        $result = $this->getClient()->set($key, $value, ...$this->flattenFlags($options));
+        $result = $this->client->set($key, $value, ...$this->flattenFlags($options));
 
         return (string) $result === 'OK';
     }
@@ -103,32 +87,32 @@ class Predis implements RedisClient
 
     public function setNx(string $key, mixed $value): void
     {
-        $this->getClient()->setnx($key, $value);
+        $this->client->setnx($key, $value);
     }
 
     public function sMembers(string $key): array
     {
-        return $this->getClient()->smembers($key);
+        return $this->client->smembers($key);
     }
 
     public function hGetAll(string $key): array|false
     {
-        return $this->getClient()->hgetall($key);
+        return $this->client->hgetall($key);
     }
 
     public function keys(string $pattern): array
     {
-        return $this->getClient()->keys($pattern);
+        return $this->client->keys($pattern);
     }
 
     public function get(string $key): string|false
     {
-        return $this->getClient()->get($key) ?? false;
+        return $this->client->get($key) ?? false;
     }
 
     public function del(array|string $key, string ...$other_keys): void
     {
-        $this->getClient()->del($key, ...$other_keys);
+        $this->client->del($key, ...$other_keys);
     }
 
     /**
@@ -136,11 +120,10 @@ class Predis implements RedisClient
      */
     public function ensureOpenConnection(): void
     {
-        if ($this->client === null) {
+        if (!$this->client->isConnected()) {
             try {
-                $this->client = new Client($this->parameters, $this->options);
                 $this->client->connect();
-            } catch (InvalidArgumentException|\Predis\Connection\ConnectionException $e) {
+            } catch (\Predis\Connection\ConnectionException $e) {
                 throw new StorageException('Cannot establish Redis Connection:' . $e->getMessage(), 0, $e);
             }
         }
