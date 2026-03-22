@@ -17,9 +17,4 @@ class SummaryTest extends AbstractSummaryTest
         $this->adapter = new Predis(['host' => REDIS_HOST]);
         $this->adapter->wipeStorage();
     }
-
-    public function itShouldObserveWithLabels(): void
-    {
-        parent::itShouldObserveWithLabels();
-    }
 }
