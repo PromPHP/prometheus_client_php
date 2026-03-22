@@ -57,8 +57,8 @@ abstract class AbstractRedis implements Adapter
 
         $searchPattern = '';
 
-        $globalPrefix = $this->redis->getOption(RedisClient::OPT_PREFIX);
-        if (is_string($globalPrefix)) {
+        $globalPrefix = $this->redis->getPrefix();
+        if ($globalPrefix !== null) {
             $searchPattern .= $globalPrefix;
         }
 
@@ -371,11 +371,13 @@ LUA
 
     protected function removePrefixFromKey(string $key): string
     {
-        if ($this->redis->getOption(RedisClient::OPT_PREFIX) === null) {
+        $prefix = $this->redis->getPrefix();
+
+        if ($prefix === null) {
             return $key;
         }
 
-        return substr($key, strlen($this->redis->getOption(RedisClient::OPT_PREFIX)));
+        return substr($key, strlen($prefix));
     }
 
     /**

@@ -8,10 +8,6 @@ use Prometheus\Exception\StorageException;
 
 class PHPRedis implements RedisClient
 {
-    private const OPTIONS_MAP = [
-        RedisClient::OPT_PREFIX => \Redis::OPT_PREFIX,
-    ];
-
     /**
      * @var \Redis
      */
@@ -57,13 +53,9 @@ class PHPRedis implements RedisClient
         return $self;
     }
 
-    public function getOption(string $option): mixed
+    public function getPrefix(): ?string
     {
-        if (!isset(self::OPTIONS_MAP[$option])) {
-            return null;
-        }
-
-        return $this->redis->getOption(self::OPTIONS_MAP[$option]);
+        return $this->redis->getOption(\Redis::OPT_PREFIX) ?: null;
     }
 
     public function eval(string $script, array $args = [], int $num_keys = 0): void

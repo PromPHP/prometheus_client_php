@@ -10,10 +10,6 @@ use Prometheus\Exception\StorageException;
 
 class Predis implements RedisClient
 {
-    private const OPTIONS_MAP = [
-        RedisClient::OPT_PREFIX => 'prefix',
-    ];
-
     private Client $client;
 
     public function __construct(Client $client)
@@ -40,18 +36,13 @@ class Predis implements RedisClient
         return new self($client);
     }
 
-    public function getOption(string $option): mixed
+    public function getPrefix(): ?string
     {
-        if (! isset(self::OPTIONS_MAP[$option])) {
-            return null;
-        }
-
-        $mappedOption = self::OPTIONS_MAP[$option];
-        $value = $this->client->getOptions()->$mappedOption;
+        $value = $this->client->getOptions()->prefix;
 
         return $value instanceof \Predis\Command\Processor\KeyPrefixProcessor
             ? $value->getPrefix()
-            : $value;
+            : null;
     }
 
     public function eval(string $script, array $args = [], int $num_keys = 0): void
