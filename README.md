@@ -102,7 +102,7 @@ $client = new \Predis\Client(['host' => '127.0.0.1']);
 $registry = new CollectorRegistry(\Prometheus\Storage\Predis::fromExistingConnection($client));
 ```
 
-> **Note:** `Redis::setPrefix()` and `Predis::setPrefix()` share the same prefix. Using both adapters with different prefixes in the same application is not supported.
+> **Note:** Using `Redis::setPrefix()` and `Predis::setPrefix()` share the same prefix. Using both adapters with different prefixes in the same application is not supported.
 
 Using the InMemory storage:
 
