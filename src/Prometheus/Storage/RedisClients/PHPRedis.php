@@ -104,7 +104,7 @@ class PHPRedis implements RedisClient
         try {
             $this->redis->del($key, ...$other_keys);
         } catch (\RedisException $e) {
-            throw new RedisClientException($e->getMessage());
+            throw new RedisClientException($e->getMessage(), $e->getCode(), $e);
         }
     }
 
@@ -167,6 +167,7 @@ class PHPRedis implements RedisClient
             throw new StorageException(
                 sprintf("Can't connect to Redis server. %s", $e->getMessage()),
                 $e->getCode(),
+                $e,
             );
         }
     }
