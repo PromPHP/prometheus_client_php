@@ -74,7 +74,7 @@ header('Content-type: ' . RenderTextFormat::MIME_TYPE);
 echo $result;
 ```
 
-change the Redis options (the example shows the defaults):
+Change the Redis options (the example shows the defaults):
 
 ```php
 \Prometheus\Storage\Redis::setDefaultOptions(
