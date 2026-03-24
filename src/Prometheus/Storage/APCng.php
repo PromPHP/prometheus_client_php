@@ -304,6 +304,14 @@ class APCng implements Adapter
     }
 
     /**
+     * @inheritDoc
+     */
+    public function wipeKey(string $type, string $key): void
+    {
+        // not implemented yet
+    }
+
+    /**
      * Scans the APCu keyspace for all metainfo keys. A new metainfo cache array is built,
      * which references all metadata keys in APCu at that moment. This prevents a corner-case
      * where an orphaned key, while remaining writable, is rendered permanently invisible when reading

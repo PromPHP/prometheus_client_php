@@ -62,6 +62,14 @@ class InMemory implements Adapter
     }
 
     /**
+     * @inheritDoc
+     */
+    public function wipeKey(string $type, string $key): void
+    {
+        // not implemented yet
+    }
+
+    /**
      * @return MetricFamilySamples[]
      */
     protected function collectHistograms(): array
