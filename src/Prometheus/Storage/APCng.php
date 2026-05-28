@@ -148,17 +148,17 @@ class APCng implements Adapter
         // Check if sample counter for this timestamp already exists, so we can deterministically
         // store observations+counts, one key per second
         // Atomic increment of the observation counter, or initialize if new
-        $sampleCount = apcu_fetch($sampleCountKey);
-
-        if ($sampleCount === false) {
-            $sampleCount = 0;
-            apcu_add($sampleCountKey, $sampleCount, $data['maxAgeSeconds']);
+        if (apcu_fetch($sampleCountKey) === false) {
+            apcu_add($sampleCountKey, 0, $data['maxAgeSeconds']);
         }
 
-        $this->doIncrementKeyWithValue($sampleCountKey, 1);
+        $sampleCount = apcu_inc($sampleCountKey);
+        if ($sampleCount === false) { /** @phpstan-ignore-line */
+            throw new RuntimeException('Failed to increment summary sample counter');
+        }
 
         // We now have a deterministic keyname for this observation; let's save the observed value
-        $sampleKey = $sampleKeyPrefix . '.' . $sampleCount;
+        $sampleKey = $sampleKeyPrefix . '.' . ($sampleCount - 1);
         apcu_add($sampleKey, $data['value'], $data['maxAgeSeconds']);
     }
 
