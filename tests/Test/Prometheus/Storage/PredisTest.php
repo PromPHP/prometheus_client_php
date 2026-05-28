@@ -58,4 +58,24 @@ class PredisTest extends TestCase
             self::equalTo(['not a prometheus metric key'])
         );
     }
+
+    /**
+     * @test
+     */
+    public function itShouldReturnAnEmptyArrayWhenSMembersReturnsNull(): void
+    {
+        $client = $this->getMockBuilder(Client::class)
+            ->disableOriginalConstructor()
+            ->addMethods(['smembers'])
+            ->getMock();
+
+        $client->expects(self::once())
+            ->method('smembers')
+            ->with('missing-key')
+            ->willReturn(null);
+
+        $predis = new \Prometheus\Storage\RedisClients\Predis($client);
+
+        self::assertSame([], $predis->sMembers('missing-key'));
+    }
 }
