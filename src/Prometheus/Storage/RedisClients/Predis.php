@@ -83,7 +83,8 @@ class Predis implements RedisClient
 
     public function sMembers(string $key): array
     {
-        return $this->client->smembers($key);
+        /** @phpstan-ignore-next-line Predis can return null at runtime despite its array return type. */
+        return $this->client->smembers($key) ?? [];
     }
 
     public function hGetAll(string $key): array|false
