@@ -19,7 +19,7 @@
         "ext-json": "*"
     },
     "require-dev": {
-        "guzzlehttp/guzzle": "^6.3|^7.0",
+        "guzzlehttp/guzzle": "^6.3|^7.0|^8.0",
         "phpstan/extension-installer": "^1.0",
         "phpstan/phpstan": "^1.5.4",
         "phpstan/phpstan-phpunit": "^1.1.0",
