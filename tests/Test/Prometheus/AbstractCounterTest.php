@@ -6,8 +6,10 @@ namespace Test\Prometheus;
 
 use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
+use Prometheus\CollectorRegistry;
 use Prometheus\Counter;
 use Prometheus\MetricFamilySamples;
+use Prometheus\RenderTextFormat;
 use Prometheus\Sample;
 use Prometheus\Storage\Adapter;
 
@@ -222,5 +224,58 @@ abstract class AbstractCounterTest extends TestCase
             $cases['ASCII code ' . $i] = [chr($i)];
         }
         return $cases;
+    }
+
+    /**
+     * @test
+     */
+    public function itShouldUpdateMetadataWhenLabelSchemaChanges(): void
+    {
+        $registry = new CollectorRegistry($this->adapter, false);
+
+        $counterV1 = $registry->getOrRegisterCounter('test', 'some_metric', 'help', ['foo']);
+        $counterV1->inc(['val1']);
+
+        $metrics = $this->adapter->collect();
+        self::assertCount(1, $metrics);
+        self::assertSame(['foo'], $metrics[0]->getLabelNames());
+
+        $this->adapter->wipeStorage();
+        $registry = new CollectorRegistry($this->adapter, false);
+
+        $counterV2 = $registry->getOrRegisterCounter('test', 'some_metric', 'help', ['foo', 'bar']);
+        $counterV2->inc(['val1', 'val2']);
+
+        $metrics = $this->adapter->collect();
+        self::assertCount(1, $metrics);
+        self::assertSame(['foo', 'bar'], $metrics[0]->getLabelNames());
+
+        $renderer = new RenderTextFormat();
+        $output = $renderer->render($metrics);
+        self::assertStringContainsString('test_some_metric{foo="val1",bar="val2"} 1', $output);
+    }
+
+    /**
+     * @test
+     */
+    public function itShouldRenderWithoutErrorAfterLabelSchemaChangeWithoutWipe(): void
+    {
+        $registry = new CollectorRegistry($this->adapter, false);
+
+        $counterV1 = $registry->getOrRegisterCounter('test', 'some_metric', 'help', ['foo']);
+        $counterV1->inc(['val1']);
+
+        $registry = new CollectorRegistry($this->adapter, false);
+
+        $counterV2 = $registry->getOrRegisterCounter('test', 'some_metric', 'help', ['foo', 'bar']);
+        $counterV2->inc(['val1', 'val2']);
+
+        $metrics = $this->adapter->collect();
+        self::assertCount(1, $metrics);
+        self::assertSame(['foo', 'bar'], $metrics[0]->getLabelNames());
+
+        $renderer = new RenderTextFormat();
+        $output = $renderer->render($metrics);
+        self::assertStringContainsString('test_some_metric', $output);
     }
 }
