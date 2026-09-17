@@ -6,6 +6,7 @@ namespace Test\Prometheus;
 
 use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
+use Prometheus\CollectorRegistry;
 use Prometheus\Gauge;
 use Prometheus\MetricFamilySamples;
 use Prometheus\Sample;
@@ -356,5 +357,30 @@ abstract class AbstractGaugeTest extends TestCase
             $cases['ASCII code ' . $i] = [chr($i)];
         }
         return $cases;
+    }
+
+    /**
+     * @test
+     */
+    public function itShouldUpdateMetadataWhenLabelSchemaChanges(): void
+    {
+        $registry = new CollectorRegistry($this->adapter, false);
+
+        $gaugeV1 = $registry->getOrRegisterGauge('test', 'some_metric', 'help', ['foo']);
+        $gaugeV1->set(42, ['val1']);
+
+        $metrics = $this->adapter->collect();
+        self::assertCount(1, $metrics);
+        self::assertSame(['foo'], $metrics[0]->getLabelNames());
+
+        $this->adapter->wipeStorage();
+        $registry = new CollectorRegistry($this->adapter, false);
+
+        $gaugeV2 = $registry->getOrRegisterGauge('test', 'some_metric', 'help', ['foo', 'bar']);
+        $gaugeV2->set(99, ['val1', 'val2']);
+
+        $metrics = $this->adapter->collect();
+        self::assertCount(1, $metrics);
+        self::assertSame(['foo', 'bar'], $metrics[0]->getLabelNames());
     }
 }

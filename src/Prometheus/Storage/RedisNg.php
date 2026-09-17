@@ -335,18 +335,8 @@ LUA
         $this->redis->eval(
             <<<LUA
 local result = redis.call(ARGV[1], KEYS[1], ARGV[2], ARGV[3])
-
-if ARGV[1] == 'hSet' then
-    if result == 1 then
-        redis.call('hSet', KEYS[1], '__meta', ARGV[4])
-        redis.call('sAdd', KEYS[2], KEYS[1])
-    end
-else
-    if result == ARGV[3] then
-        redis.call('hSet', KEYS[1], '__meta', ARGV[4])
-        redis.call('sAdd', KEYS[2], KEYS[1])
-    end
-end
+redis.call('hSet', KEYS[1], '__meta', ARGV[4])
+redis.call('sAdd', KEYS[2], KEYS[1])
 LUA
             ,
             [
@@ -373,10 +363,8 @@ LUA
         $this->redis->eval(
             <<<LUA
 local result = redis.call(ARGV[1], KEYS[1], ARGV[3], ARGV[2])
-local added = redis.call('sAdd', KEYS[2], KEYS[1])
-if added == 1 then
-    redis.call('hMSet', KEYS[1], '__meta', ARGV[4])
-end
+redis.call('sAdd', KEYS[2], KEYS[1])
+redis.call('hMSet', KEYS[1], '__meta', ARGV[4])
 return result
 LUA
             ,
