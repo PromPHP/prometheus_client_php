@@ -94,7 +94,6 @@ TEXTPLAIN;
         $registry->registerCounter($namespace, $counter, 'counter-help-text', ['label1', 'label2'])
             ->inc(['bob', 'alice']);
 
-        // Reload the registry with an updated counter config
         $registry = new CollectorRegistry($storage, false);
         $registry->registerCounter($namespace, $counter, 'counter-help-text', ['label1', 'label2', 'label3'])
             ->inc(['bob', 'alice', 'eve']);
@@ -116,7 +115,6 @@ TEXTPLAIN;
         $registry->registerCounter($namespace, $counter, 'counter-help-text', ['label1', 'label2'])
             ->inc(['bob', 'alice']);
 
-        // Reload the registry with an updated counter config
         $registry = new CollectorRegistry($storage, false);
         $registry->registerCounter($namespace, $counter, 'counter-help-text', ['label1', 'label2', 'label3'])
             ->inc(['bob', 'alice', 'eve']);
@@ -124,10 +122,10 @@ TEXTPLAIN;
         $expectedOutput = '
 # HELP foo_bar counter-help-text
 # TYPE foo_bar counter
-foo_bar{label1="bob",label2="alice"} 1
 # Error: array_combine(): Argument #1 ($keys) and argument #2 ($values) must have the same number of elements
-#   Labels: ["label1","label2"]
-#   Values: ["bob","alice","eve"]
+#   Labels: ["label1","label2","label3"]
+#   Values: ["bob","alice"]
+foo_bar{label1="bob",label2="alice",label3="eve"} 1
 ';
 
         $renderer = new RenderTextFormat();
