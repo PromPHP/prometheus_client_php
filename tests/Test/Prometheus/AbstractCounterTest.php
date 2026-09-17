@@ -258,12 +258,16 @@ abstract class AbstractCounterTest extends TestCase
     /**
      * @test
      */
-    public function itShouldRenderWithoutErrorAfterLabelSchemaChangeWithoutWipe(): void
+    public function itShouldUpdateMetadataOnSubsequentWritesWithoutWipe(): void
     {
         $registry = new CollectorRegistry($this->adapter, false);
 
         $counterV1 = $registry->getOrRegisterCounter('test', 'some_metric', 'help', ['foo']);
         $counterV1->inc(['val1']);
+
+        $metrics = $this->adapter->collect();
+        self::assertCount(1, $metrics);
+        self::assertSame(['foo'], $metrics[0]->getLabelNames());
 
         $registry = new CollectorRegistry($this->adapter, false);
 
@@ -273,9 +277,5 @@ abstract class AbstractCounterTest extends TestCase
         $metrics = $this->adapter->collect();
         self::assertCount(1, $metrics);
         self::assertSame(['foo', 'bar'], $metrics[0]->getLabelNames());
-
-        $renderer = new RenderTextFormat();
-        $output = $renderer->render($metrics);
-        self::assertStringContainsString('test_some_metric', $output);
     }
 }

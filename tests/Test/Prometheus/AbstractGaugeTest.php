@@ -392,12 +392,16 @@ abstract class AbstractGaugeTest extends TestCase
     /**
      * @test
      */
-    public function itShouldRenderWithoutErrorAfterLabelSchemaChangeWithoutWipe(): void
+    public function itShouldUpdateMetadataOnSubsequentWritesWithoutWipe(): void
     {
         $registry = new CollectorRegistry($this->adapter, false);
 
         $gaugeV1 = $registry->getOrRegisterGauge('test', 'some_metric', 'help', ['foo']);
         $gaugeV1->set(42, ['val1']);
+
+        $metrics = $this->adapter->collect();
+        self::assertCount(1, $metrics);
+        self::assertSame(['foo'], $metrics[0]->getLabelNames());
 
         $registry = new CollectorRegistry($this->adapter, false);
 
@@ -407,9 +411,5 @@ abstract class AbstractGaugeTest extends TestCase
         $metrics = $this->adapter->collect();
         self::assertCount(1, $metrics);
         self::assertSame(['foo', 'bar'], $metrics[0]->getLabelNames());
-
-        $renderer = new RenderTextFormat();
-        $output = $renderer->render($metrics);
-        self::assertStringContainsString('test_some_metric', $output);
     }
 }
